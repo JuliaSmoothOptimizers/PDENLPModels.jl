@@ -11,9 +11,3 @@ include("pde-only-incompressible-NS.jl")
 #include("1d-Burger-example.jl")
 
 #include("distributed-Poisson-control-with-Dirichlet-bdry.jl")
-
-#Test the solvers:
-#On a toy rosenbrock variation.
-include("test/test-solvers/test-0.jl")
-#On a problem from the package OptimizationProblems
-include("test/test-solvers/test-1.jl")
