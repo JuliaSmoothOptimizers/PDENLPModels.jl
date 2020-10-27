@@ -1,0 +1,4 @@
+name = "PDENLPModels"
+uuid = "80da258d-c172-4540-9646-64f172512520"
+authors = ["tmigot <tangi.migot@gmail.com>"]
+version = "0.1.0"
