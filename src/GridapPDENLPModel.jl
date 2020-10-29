@@ -482,7 +482,7 @@ function hprod!(nlp  :: GridapPDENLPModel, x :: AbstractVector, λ :: AbstractVe
   @lencheck nlp.meta.nvar x v Hv
   @lencheck nlp.meta.ncon λ
   increment!(nlp, :neval_hprod)
-  @warn "My last big challenge ! Almost there, what is not working?"
+  @warn "Almost there, what is not working?"
 
   λ_edp = λ[1:nlp.nvar_edp]
   λ_con = λ[nlp.nvar_edp + 1 : nlp.meta.ncon]
@@ -524,7 +524,7 @@ function hprod!(nlp  :: GridapPDENLPModel, x :: AbstractVector, λ :: AbstractVe
 
       _dotvalues = Array{Any, 1}(undef, ncells)
       for term in nlp.op.terms
-        _vc = restrict(vc,  term.trian)
+        _vc = restrict(vc,  term.trian) #One error is here: ERROR: AssertionError: length(a) == length(b)
         _yu = restrict(yu, term.trian)
         cellvals = integrate(term.res(_yu, _vc), term.trian, term.quad)
         for i=1:ncells
