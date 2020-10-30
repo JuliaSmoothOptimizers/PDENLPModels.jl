@@ -9,5 +9,6 @@ include("pde-only-incompressible-NS.jl")
 
 #Optimization problem with PDE constraint:
 #include("1d-Burger-example.jl")
+#include("poisson-with-Neumann-and-Dirichlet.jl")
 
 #include("distributed-Poisson-control-with-Dirichlet-bdry.jl")

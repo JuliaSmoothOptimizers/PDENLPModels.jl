@@ -80,8 +80,7 @@ Ycon = TrialFESpace(Xcon)
 using NLPModels, Krylov, Main.PDENLPModels
 Y = MultiFieldFESpace([U, Ycon])
 xin = zeros(Gridap.FESpaces.num_free_dofs(Y))
-@warn "Fix GridapPDENLPModel to let Yedp and Ycon be SingleFieldFESpace!"
-@time nlp = GridapPDENLPModel(xin, zeros(0), f, MultiFieldFESpace([U]), MultiFieldFESpace([Ycon]), V, Xcon, trian, quad, op = op)
+@time nlp = GridapPDENLPModel(xin, zeros(0), f, U, Ycon, V, Xcon, trian, quad, op = op)
 
 @test nlp.meta.nvar == 1024
 @test nlp.meta.ncon == 511

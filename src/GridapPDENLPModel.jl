@@ -77,7 +77,7 @@ mutable struct GridapPDENLPModel <: AbstractNLPModel
   analytic_hessian  :: Bool
   analytic_jacobian :: Bool
 
-  function GridapPDENLPModel(x0   :: AbstractVector{T}, #required to get the type
+  function GridapPDENLPModel(x0   :: AbstractVector{T}, #required to get the type and the length
                              y0   :: AbstractVector{T}, #required to get number of functional constraints
                              f    :: Function,
                              Yedp :: FESpace,
@@ -93,24 +93,31 @@ mutable struct GridapPDENLPModel <: AbstractNLPModel
                              lcon :: AbstractVector             = fill!(similar(y0), zero(T)),
                              ucon :: AbstractVector             = fill!(similar(y0), zero(T)),
                              J    :: Union{Function, Nothing}   = nothing,
-                             kwargs...) where T
+                             kwargs...) where T <: AbstractFloat
 
                              if Xcon != nothing && Ycon != nothing
                                  _xedp = typeof(Xedp) <: MultiFieldFESpace ? Xedp : MultiFieldFESpace([Xedp])
                                  _xcon = typeof(Xcon) <: MultiFieldFESpace ? Xcon : MultiFieldFESpace([Xcon])
+                                 #Handle the case where Yedp or Ycon are single field FE space(s).
+                                 _yedp = typeof(Yedp) <: MultiFieldFESpace ? Yedp : MultiFieldFESpace([Yedp])
+                                 _ycon = typeof(Ycon) <: MultiFieldFESpace ? Ycon : MultiFieldFESpace([Ycon])
+                                 #Build Y (resp. X) the trial (resp. test) space of the Multi Field function [y,u]
                                  X     = MultiFieldFESpace(vcat(_xedp.spaces, _xcon.spaces))
-                                 Y     = MultiFieldFESpace(vcat(Yedp.spaces, Ycon.spaces))
+                                 Y     = MultiFieldFESpace(vcat(_yedp.spaces, _ycon.spaces))
+                             elseif (Xcon == nothing) ⊻ (Ycon == nothing)
+                                 throw("Error: Xcon or Ycon are both nothing or must be specified.")
                              else
                                  _xedp = typeof(Xedp) <: MultiFieldFESpace ? Xedp : MultiFieldFESpace([Xedp])
                                  X = _xedp
                                  Y = Yedp
                              end
 
-                             n_edp_fields     = Gridap.MultiField.num_fields(Yedp)
-                             n_control_fields = Ycon != nothing ? Gridap.MultiField.num_fields(Ycon) : 0
+                             #Handle the case where Yedp or Ycon are single field FE space(s).
+                             n_edp_fields     = typeof(Yedp) <: MultiFieldFESpace ? Gridap.MultiField.num_fields(Yedp) : 1
+                             n_control_fields = Ycon != nothing ? (typeof(Ycon) <: MultiFieldFESpace ? Gridap.MultiField.num_fields(Ycon) : 1) : 0
                              nvar_edp         = Gridap.FESpaces.num_free_dofs(Yedp)
                              nvar_control     = Ycon != nothing ? Gridap.FESpaces.num_free_dofs(Ycon) : 0
-                             nvar             =  length(x0)
+                             nvar             = length(x0)
                              nparam           = nvar - (nvar_edp + nvar_control)
 
                              nfields = n_edp_fields + n_control_fields
@@ -259,7 +266,7 @@ function cons!(nlp :: GridapPDENLPModel, x :: AbstractVector{T}, c :: AbstractVe
     edp_residual = Array{T,1}(undef, nvar_edp)
 
     uy = FEFunction(nlp.Y, x)
-    v  = Gridap.FESpaces.get_cell_basis(nlp.op.test) #Xedp
+    v  = Gridap.FESpaces.get_cell_basis(nlp.Xedp) #nlp.op.test
 
     w, r = [], []
     for term in nlp.op.terms
@@ -338,7 +345,7 @@ function jac(nlp :: GridapPDENLPModel, x :: AbstractVector{T}) where T
 
   end
 
-  @warn "Decompose assemble_matrix! as it returns a dense matrix. Check Au, Ay."
+  #@warn "Decompose assemble_matrix! as it returns a dense matrix. Check Au, Ay."
   if nvar_control != 0
       assem_u = Gridap.FESpaces.SparseMatrixAssembler(nlp.Ycon, nlp.Xedp)
       Gridap.FESpaces.assemble_matrix!(Au, assem_u, (wu,ru,cu))
@@ -507,7 +514,7 @@ function hprod!(nlp  :: GridapPDENLPModel, x :: AbstractVector, λ :: AbstractVe
   yu = FEFunction(nlp.Y, x)
   vf = FEFunction(nlp.Y, v)
   λf = FEFunction(nlp.Yedp, λ_edp)
-  vc = Gridap.FESpaces.get_cell_basis(nlp.op.test) #Xedp
+  vc = Gridap.FESpaces.get_cell_basis(nlp.Xedp) #X or Xedp? /nlp.op.test
 
   cell_yu = Gridap.FESpaces.get_cell_values(yu)
   cell_vf = Gridap.FESpaces.get_cell_values(vf)
@@ -524,14 +531,16 @@ function hprod!(nlp  :: GridapPDENLPModel, x :: AbstractVector, λ :: AbstractVe
 
       _dotvalues = Array{Any, 1}(undef, ncells)
       for term in nlp.op.terms
-        _vc = restrict(vc,  term.trian) #One error is here: ERROR: AssertionError: length(a) == length(b)
+        _vc = restrict(vc,  term.trian)
         _yu = restrict(yu, term.trian)
         cellvals = integrate(term.res(_yu, _vc), term.trian, term.quad)
-        for i=1:ncells
+        for i=1:ncells #doesn't work as ncells varies function of trian ...
+            @show i
         _dotvalues[i] = dot(cellvals[i], cell_λf[i]) #setindex not defined for Gridap.Arrays
         end
       end
-      _lag += _dotvalues
+      #_lag += _dotvalues
+      return _lag
   end
 
   #Compute the gradient with AD
@@ -542,7 +551,7 @@ function hprod!(nlp  :: GridapPDENLPModel, x :: AbstractVector, λ :: AbstractVe
       for i=1:ncells
           _cell[i] = cell_yu[i] + ct .* cell_vf[i]
       end
-      Gridap.Arrays.autodiff_array_gradient(_cell_lag_t, _cell, cell_id)
+      Gridap.Arrays.autodiff_array_gradient(_cell_lag_t, _cell, cell_id) #returns NaN sometimes ? se pde-only-incompressible-NS.jl
   end
 
   #Compute the derivative w.r.t. to t of _cell_grad_t
