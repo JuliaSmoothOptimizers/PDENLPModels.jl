@@ -71,6 +71,8 @@ Ycon, Xcon = nothing, nothing
 @time gx = grad(nlp, xin)
 @test gx == zeros(nlp.meta.nvar)
 @test gradient_check(nlp) == Dict{Int64,Float64}()
+@time _Hxv = hprod(nlp, rand(nlp.meta.nvar), ones(nlp.meta.nvar));
+@test _Hxv == zeros(nlp.meta.nvar)
 
 #We also compare cons and Gridap.FESpaces.residual using @btime:
 @btime cons(nlp, xin)

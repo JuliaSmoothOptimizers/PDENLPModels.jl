@@ -30,6 +30,10 @@ TODO:
 - Handle several terms in the objective function (via an FEOperator)
 - Handle finite dimension variables/unknwon parameters. Should we ask: f(yu, k) all the times or only when necessary (otw. f(yu) )
 - Handle the constraints in the cell space by adding a new term in the weak formulation. Right now I handle the constraints at each dofs, which is ***.
+- Handle FESource term (as in poisson-with-Neumann-and-Dirichlet example). [Now we model them via FETerm with a minus sign!]
+- Test the Right-hand side if op is an AffineFEOperator
+- Improve Gridap.FESpaces.assemble_matrix in hess! to get directly the lower triangular?
+- l.257, in hess!: sparse(LowerTriangular(hess_yu)) #there must be a better way for this
 
 Example:
 Unconstrained case:
@@ -155,7 +159,7 @@ mutable struct GridapPDENLPModel <: AbstractNLPModel
                                  if typeof(op) <: Gridap.FESpaces.FEOperatorFromTerms
                                    rhs_edp = zeros(nvar_edp)
                                  elseif typeof(op) <: AffineFEOperator
-                                   rhs_edp = get_vector(op)
+                                   rhs_edp = zeros(nvar_edp) #get_vector(op)
                                  end
                              end
                              lcon_disc  = vcat(rhs_edp, _lcon)
@@ -248,8 +252,10 @@ function hess(nlp :: GridapPDENLPModel, x :: AbstractVector; obj_weight :: Real 
     #Assemble the matrix in the "good" space
     hess_yu   = Gridap.FESpaces.assemble_matrix(assem, matdata_yu)
 
-    @warn "hess(nlp, x) returns (for now) the full matrix (to check symmetry)"
-    return hess_yu #LowerTriangular(_hess_yu)
+    #Tangi: test symmetry (should be removed later on)
+    if !issymmetric(hess_yu) throw("Error: non-symmetric hessian matrix") end
+
+    return sparse(LowerTriangular(hess_yu)) #there must be a better way for this
 end
 
 #In the affine case, returns : - get_matrix(opl) * get_free_values(uh)
@@ -430,56 +436,24 @@ function jtprod!(nlp :: GridapPDENLPModel, x :: AbstractVector, v :: AbstractVec
   return Jtv
 end
 
-#ℓ(x) = obj_weight * nlp.f(x)
-#Hv .= ForwardDiff.derivative(t -> ForwardDiff.gradient(ℓ, x + t * v), 0)
+
 function hprod!(nlp :: GridapPDENLPModel, x :: AbstractVector, v :: AbstractVector, Hv :: AbstractVector; obj_weight :: Real = one(eltype(x)))
-  n = nlp.meta.nvar
-  @lencheck n x v Hv
+  @lencheck nlp.meta.nvar x v Hv
   increment!(nlp, :neval_hprod)
 
   if obj_weight == zero(eltype(x))
-      @warn "Why would you do that?"
       Hv .= zero(similar(x))
       return Hv
   end
 
-  assem = Gridap.FESpaces.SparseMatrixAssembler(nlp.Y, nlp.X)
-  #We prepare computation of x + t * v
-  #At t=0.
-  yu    = FEFunction(nlp.Y, x)
-  vf    = FEFunction(nlp.Y, v)
+  Hx = hess(nlp, x)
+  rows, cols, vals = findnz(Hx)
 
-  cell_yu   = Gridap.FESpaces.get_cell_values(yu)
-  cell_vf   = Gridap.FESpaces.get_cell_values(vf)
-  ncells    = length(cell_yu)
-  cell_id = Gridap.Arrays.IdentityVector(length(cell_yu))
+  #Only one triangle of the Hessian should be given.
+  increment!(nlp, :neval_hprod)
+  coo_sym_prod!(cols, rows, vals, v, Hv)
 
-  function _cell_obj_t(cell)
-       th = CellField(nlp.Y, cell)
-      _th = Gridap.FESpaces.restrict(th, nlp.trian)
-      integrate(nlp.f(_th), nlp.trian, nlp.quad) #function needs to return array of size 1.
-  end
-
-  #Compute the gradient with AD
-  function _cell_grad_t(t)
-      ct     = t * ones(length(cell_vf[1]))
-      _cell  = Array{typeof(ct .* cell_vf[1])}(undef, ncells)
-      for i=1:ncells
-          _cell[i] = cell_yu[i] + ct .* cell_vf[i]
-      end
-      Gridap.Arrays.autodiff_array_gradient(_cell_obj_t, _cell, cell_id)
-  end
-
-  #Compute the derivative w.r.t. to t of _cell_grad_t
-  #This might be slow as it cannot be decomposed (easily) cell by cell
-  cell_r_yu = ForwardDiff.derivative(_cell_grad_t, 0.)
-
-  #Put the result in the format expected by Gridap.FESpaces.assemble_matrix
-  vecdata_yu = [[cell_r_yu], [cell_id]]
-  #Assemble the gradient in the "good" space
-  Hv .= Gridap.FESpaces.assemble_vector(assem, vecdata_yu)
-
-  return Hv
+ return Hv
 end
 
 #ℓ(x) = obj_weight * nlp.f(x) + dot(nlp.c(x), y)
@@ -489,7 +463,8 @@ function hprod!(nlp  :: GridapPDENLPModel, x :: AbstractVector, λ :: AbstractVe
   @lencheck nlp.meta.nvar x v Hv
   @lencheck nlp.meta.ncon λ
   increment!(nlp, :neval_hprod)
-  @warn "Almost there, what is not working?"
+  @warn "Almost there, what is not working? - update the hprod of the objective function"
+  @warn "Specialize one when op is an AffineFEOperator !"
 
   λ_edp = λ[1:nlp.nvar_edp]
   λ_con = λ[nlp.nvar_edp + 1 : nlp.meta.ncon]
@@ -567,59 +542,4 @@ function hprod!(nlp  :: GridapPDENLPModel, x :: AbstractVector, λ :: AbstractVe
   return Hv
 end
 
-"""
-`_get_y_and_u(:: GridapPDENLPModel, :: AbstractVector{T}) `
-
-Returns y and u in matrix format where
-y ∈ n_edp_fields x nvar_per_field
-u ∈ n_control_fields x nvar_per_field
-It is useful when evaluating the function constraint (and jacobian) functions.
-"""
-function _get_y_and_u(nlp :: GridapPDENLPModel, x :: AbstractVector{T}) where T
-
-    y = Array{T,2}(undef, nlp.n_edp_fields, nlp.nvar_per_field)
-    for i=1:nlp.n_edp_fields
-        y[i,:] = [x[k] for k in i:nlp.n_edp_fields:nlp.nvar_edp]
-    end
-
-    u = Array{T,2}(undef, nlp.n_control_fields, nlp.nvar_per_field)
-    for i=1:nlp.n_control_fields
-        u[i,:] = [x[k] for k in nlp.nvar_edp+i:nlp.n_control_fields:nlp.meta.nvar-nlp.nparam]
-    end
-
-    return y, u
-end
-
-function _get_y_and_u_i(nlp :: GridapPDENLPModel, x :: AbstractVector{T}, j :: Int) where T
-
-    y = Array{T,1}(undef, nlp.n_edp_fields)
-    for i=1:nlp.n_edp_fields
-        y[i] = x[(j-1)*nlp.n_edp_fields + i]
-    end
-
-    u = Array{T,1}(undef, nlp.n_control_fields)
-    for i=1:nlp.n_control_fields
-        u[i] = x[nlp.nvar_edp+(j-1)*nlp.n_control_fields + i]
-    end
-
-    return y, u
-end
-
-function _get_y_and_u_i(nlp :: GridapPDENLPModel, x :: AbstractVector{T}, v :: AbstractVector{T}, j :: Int) where T
-
-    _v = Array{T,1}(undef, nlp.n_edp_fields + nlp.n_control_fields)
-
-    y = Array{T,1}(undef, nlp.n_edp_fields)
-    for i=1:nlp.n_edp_fields
-        y[i] = x[(j-1)*nlp.n_edp_fields + i]
-       _v[i] = v[(j-1)*nlp.n_edp_fields + i]
-    end
-
-    u = Array{T,1}(undef, nlp.n_control_fields)
-    for i=1:nlp.n_control_fields
-        u[i] = x[nlp.nvar_edp + (j-1) * nlp.n_control_fields + i]
-       _v[i] = v[nlp.n_edp_fields + nlp.nvar_edp + (j-1) * nlp.n_control_fields + i]
-    end
-
-    return y, u, _v
-end
+include("additional_functions.jl")

@@ -1,7 +1,7 @@
 using Gridap, Test
 n = 512
 domain = (0,1)
-partition = n#(n,n)
+partition = n
 model = CartesianDiscreteModel(domain,partition)
 
 labels = get_face_labeling(model)
@@ -85,8 +85,12 @@ xin = zeros(Gridap.FESpaces.num_free_dofs(Y))
 @test nlp.meta.nvar == 1024
 @test nlp.meta.ncon == 511
 
+@time _fx =  obj(nlp, sol_gridap)
+@time _gx = grad(nlp, sol_gridap)
 @time _Hx = hess(nlp, sol_gridap)
-@test issymmetric(_Hx)
+@time _cx = cons(nlp, sol_gridap)
+
+@time _Jx =  PDENLPModels.jac(nlp, sol_gridap)
 
 #Test hprod
 #hprod!(nlp  :: GridapPDENLPModel, x :: AbstractVector, λ :: AbstractVector, v :: AbstractVector, Hv :: AbstractVector

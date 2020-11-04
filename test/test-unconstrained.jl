@@ -47,7 +47,7 @@ x1 = vcat(rand(Gridap.FESpaces.num_free_dofs(Yedp)), ones(Gridap.FESpaces.num_fr
 @time  Hx = hess(nlp, x1);
 @time _Hx = hess(nlp, rand(nlp.meta.nvar))
 @test norm(Hx - _Hx) <= eps(Float64) #the hesian is constant
-@time Hxv = Hx * v;
+@time  Hxv = Symmetric(Hx,:L) * v;
 @time _Hxv = hprod(nlp, x1, v);
 @test norm(Hxv - _Hxv) <= eps(Float64)
 

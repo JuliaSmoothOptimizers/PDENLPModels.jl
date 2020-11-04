@@ -1,4 +1,5 @@
 using Gridap
+using BenchmarkTools, LinearAlgebra, NLPModels, Main.PDENLPModels, SparseArrays, Test
 
 model = DiscreteModelFromFile("test/models/model.json")
 
@@ -45,21 +46,20 @@ function f(yu) #:: Union{Gridap.MultiField.MultiFieldFEFunction, Gridap.CellData
     f(y,u)
 end
 
-function res_Ω(yu, v) #u is the solution of the PDE and z the control
- u, z = yu
+function res_Ω(yu, v)
+ y, u = yu
  v
 
- ∇(v)⊙∇(u) + v*z #∇(v)⊙∇(u) - v*z
+ ∇(v)⊙∇(y) - v*u
 end
 topt_Ω = FETerm(res_Ω, trian, quad)
-function res_Γ(yu, v) #u is the solution of the PDE and z the control
- u, z = yu
+function res_Γ(yu, v)
+ y, u = yu
  v
 
- v*h
+ -v*h
 end
 topt_Γ = FETerm(res_Γ, btrian, bquad)#FESource(res_Γ, btrian, bquad)
-op = FEOperator(Ug, V0, topt_Ω,topt_Γ)
 
 Yedp = Ug
 Xedp = V0
@@ -69,28 +69,43 @@ Xcon = TestFESpace(
 Ycon = TrialFESpace(Xcon)
 
 Y = MultiFieldFESpace([Yedp, Ycon])
-xin = zeros(Gridap.FESpaces.num_free_dofs(Y))
+op = FEOperator(Y, V0, topt_Ω, topt_Γ) #or #op = FEOperator(Ug, V0, topt_Ω, topt_Γ)
 
-using BenchmarkTools, LinearAlgebra, NLPModels, Main.PDENLPModels, SparseArrays, Test
+xin = zeros(Gridap.FESpaces.num_free_dofs(Y));
 @time nlp = GridapPDENLPModel(xin, zeros(0), f, Yedp, Ycon, Xedp, Xcon, trian, quad, op = op)
 
 sol_gridap = vcat(get_free_values(uh), 1.0*ones(nlp.nvar_control))
 
+#Check the objective function:
 @time _fx = obj(nlp, sol_gridap)
 @time _gx = grad(nlp, sol_gridap)
 #@test gradient_check(nlp) == Dict{Int64,Float64}() #works but slow
 @time _Hx = hess(nlp, sol_gridap)
-@test issymmetric(_Hx)
-@time _Hxv = hprod(nlp, sol_gridap, ones(nlp.meta.nvar), obj_weight = 1.0)
-@test norm(_Hxv - _Hx * ones(nlp.meta.nvar), Inf) <= 5e-5#eps(Float64)
+#The problem is quadratic so the hessian is constant:
+@time _Hx2 = hess(nlp, rand(nlp.meta.nvar))
+@test norm(_Hx - _Hx2) <= eps(Float64)
+#H_errs_fg = hessian_check_from_grad(nlp) #needs hess_structure!
+#@test H_errs_fg[0] == Dict{Int, Dict{Tuple{Int,Int}, Float64}}()
 
-@warn "Something is wrong here:"
-@time _cx = cons(nlp, sol_gridap)
+#We now test hprod for the objective hessian
+@time _Hxv  = hprod(nlp, sol_gridap, ones(nlp.meta.nvar), obj_weight = 1.0)
+@time _Hxv2 = hprod(nlp, rand(nlp.meta.nvar), ones(nlp.meta.nvar), obj_weight = 1.0)
+@test norm(_Hxv - _Hxv2) <= eps(Float64) #since the hessian is constant
+@test norm(_Hxv - Symmetric(_Hx,:L) * ones(nlp.meta.nvar), Inf) <= 5e-5#eps(Float64)
+
+#We test the constraints (with the source term here):
+@time _cx  = cons(nlp, sol_gridap)
+op2 = FEOperator(Y, V0, topt_Ω, topt_Γ)
+@time _cx2 = Gridap.FESpaces.residual(op2, FEFunction(Gridap.FESpaces.get_trial(op2), sol_gridap))
+@test norm(_cx - _cx2) <= eps(Float64)
 #Recall that cGx is also equal to "get_matrix(op_edp) * get_free_values(uh) - get_vector(op_edp)" here
 @time cGx = Gridap.FESpaces.residual(op_edp, FEFunction(Gridap.FESpaces.get_trial(op_edp), get_free_values(uh)))
-@test norm(_cx,Inf) <= 1e-2
-@time _Jx = jac(nlp, sol_gridap)
-@test jacobian_check(nlp) == Dict{Tuple{Int64,Int64},Float64}()
+@test norm(_cx - cGx ,Inf) <= sqrt(eps(Float64))
+@test norm(_cx, Inf) <= sqrt(eps(Float64))
+
+
+@time _Jx = PDENLPModels.jac(nlp, sol_gridap)
+#@test jacobian_check(nlp) == Dict{Tuple{Int64,Int64},Float64}()#works but very slow
 
 l = zeros(nlp.nvar_edp)
 #Error here:
