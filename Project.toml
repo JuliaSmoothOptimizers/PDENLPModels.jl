@@ -2,3 +2,24 @@ name = "PDENLPModels"
 uuid = "80da258d-c172-4540-9646-64f172512520"
 authors = ["tmigot <tangi.migot@gmail.com>"]
 version = "0.1.0"
+
+[deps]
+NLPModels = "a4795742-8479-5a88-8948-cc11e1c8c1a6"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
+SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
+LinearOperators = "5c8ed15e-5a4c-59e4-a42b-c7e8811fb125"
+ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
+Gridap = "56d4f2e9-7ea1-5844-9cf6-b9c51ca7ce8e"
+JSOSolvers = "10dff2fc-5484-5881-a0e0-c90441020f8a"
+
+[compat]
+julia = "^1.0.0"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"

@@ -70,6 +70,7 @@ using JSOSolvers
 @test obj(nlp, _t.solution) <= 1/n
 @test norm(_t.solution[nlp.nvar_edp + 1: nlp.meta.nvar] - solu, Inf) <= sqrt(1/n)
 
+@show "derivatives check. This may take approx. 5 minutes."
 #Check derivatives using NLPModels tools:
 #https://github.com/JuliaSmoothOptimizers/NLPModels.jl/blob/master/src/dercheck.jl
 @test gradient_check(nlp) == Dict{Int64,Float64}()
