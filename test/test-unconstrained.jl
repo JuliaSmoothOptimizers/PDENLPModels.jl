@@ -70,12 +70,14 @@ using JSOSolvers
 @test obj(nlp, _t.solution) <= 1/n
 @test norm(_t.solution[nlp.nvar_edp + 1: nlp.meta.nvar] - solu, Inf) <= sqrt(1/n)
 
-@show "derivatives check. This may take approx. 5 minutes."
-#Check derivatives using NLPModels tools:
-#https://github.com/JuliaSmoothOptimizers/NLPModels.jl/blob/master/src/dercheck.jl
-@test gradient_check(nlp) == Dict{Int64,Float64}()
-@test jacobian_check(nlp) == Dict{Tuple{Int64,Int64},Float64}() #not a surprise as there are no constraints...
-H_errs = hessian_check(nlp) #slow
-@test H_errs[0] == Dict{Int, Dict{Tuple{Int,Int}, Float64}}()
-H_errs_fg = hessian_check_from_grad(nlp)
-@test H_errs_fg[0] == Dict{Int, Dict{Tuple{Int,Int}, Float64}}()
+if false
+    @show "derivatives check. This may take approx. 5 minutes."
+    #Check derivatives using NLPModels tools:
+    #https://github.com/JuliaSmoothOptimizers/NLPModels.jl/blob/master/src/dercheck.jl
+    @test gradient_check(nlp) == Dict{Int64,Float64}()
+    @test jacobian_check(nlp) == Dict{Tuple{Int64,Int64},Float64}() #not a surprise as there are no constraints...
+    H_errs = hessian_check(nlp) #slow
+    @test H_errs[0] == Dict{Int, Dict{Tuple{Int,Int}, Float64}}()
+    H_errs_fg = hessian_check_from_grad(nlp)
+    @test H_errs_fg[0] == Dict{Int, Dict{Tuple{Int,Int}, Float64}}()
+end

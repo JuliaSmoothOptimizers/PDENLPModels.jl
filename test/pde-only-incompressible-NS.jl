@@ -55,7 +55,7 @@ end
 trian = Triangulation(model)
 degree = (order-1)*2
 quad = CellQuadrature(trian,degree)
-t_Ω = FETerm(res,trian,quad)#t_Ω = FETerm(res,jac,trian,quad)
+t_Ω = FETerm(res,trian,quad)
 op = FEOperator(Y,X,t_Ω)
 t_with_jac_Ω = FETerm(res,jac,trian,quad)
 op_with_jac = FEOperator(Y,X,t_with_jac_Ω)
@@ -67,7 +67,7 @@ Ycon, Xcon = nothing, nothing
 @time nlp = GridapPDENLPModel(xin, zeros(0), x->0.0, Y, Ycon, X, Xcon, trian, quad, op = op)
 
 @time fx = obj(nlp, xin)
-@test fx == 0.0 #just to check :)
+@test fx == 0.0
 @time gx = grad(nlp, xin)
 @test gx == zeros(nlp.meta.nvar)
 @test gradient_check(nlp) == Dict{Int64,Float64}()

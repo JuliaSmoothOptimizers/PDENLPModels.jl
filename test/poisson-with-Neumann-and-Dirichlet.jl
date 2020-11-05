@@ -3,6 +3,8 @@ using BenchmarkTools, LinearAlgebra, NLPModels, Main.PDENLPModels, SparseArrays,
 
 model = DiscreteModelFromFile("test/models/model.json")
 
+#writevtk(model,"model")
+
 V0 = TestFESpace(
   reffe=:Lagrangian, order=1, valuetype=Float64,
   conformity=:H1, model=model, dirichlet_tags="sides")
@@ -74,6 +76,18 @@ op = FEOperator(Y, V0, topt_Ω, topt_Γ) #or #op = FEOperator(Ug, V0, topt_Ω, t
 xin = zeros(Gridap.FESpaces.num_free_dofs(Y));
 @time nlp = GridapPDENLPModel(xin, zeros(0), f, Yedp, Ycon, Xedp, Xcon, trian, quad, op = op)
 
+######
+# 2nd test: we create a GridapPDENLPModel with affine operator
+taff_Ω = AffineFETerm(res_Ω, v->0*v, trian, quad)
+op_affine = AffineFEOperator(Y,V0,taff_Ω, t_Γ)
+
+@test size(get_matrix(op_affine)) == (num_free_dofs(Xedp), num_free_dofs(Y))
+@test length(get_vector(op_affine)) == num_free_dofs(Xedp)
+
+nlp_affine = GridapPDENLPModel(xin, zeros(0), f, Yedp, Ycon, Xedp, Xcon, trian, quad, op = op_affine)
+################################################################################
+# Check solution
+
 sol_gridap = vcat(get_free_values(uh), 1.0*ones(nlp.nvar_control))
 
 #Check the objective function:
@@ -103,13 +117,34 @@ op2 = FEOperator(Y, V0, topt_Ω, topt_Γ)
 @test norm(_cx - cGx ,Inf) <= sqrt(eps(Float64))
 @test norm(_cx, Inf) <= sqrt(eps(Float64))
 
+@time _cxaff = cons(nlp_affine, sol_gridap)
+xrand = rand(nlp.meta.nvar)
+@time _affres = Gridap.FESpaces.residual(op_affine.op, xrand);
+@time _cxraff = cons(nlp_affine, xrand)
+@test norm(_cxraff - _affres , Inf) <= eps(Float64)
+@test norm(_cxraff - cons(nlp, xrand), Inf) <= 1e-15
+
 
 @time _Jx = PDENLPModels.jac(nlp, sol_gridap)
+@time _Jxaff = PDENLPModels.jac(nlp_affine, sol_gridap)
+@test norm(_Jx - get_matrix(nlp_affine.op)) <= eps(Float64)
+@test norm(_Jxaff - get_matrix(nlp_affine.op)) <= eps(Float64)
+#Test linear LinearOperators
+@time jop = jac_op(nlp, sol_gridap)
+v = rand(nlp.meta.nvar)
+@test norm(jop * v - _Jx * v) <= eps(Float64)
+_w = rand(nlp.meta.ncon)
+@test norm(jop' * _w - _Jx' * _w) <= eps(Float64)
 #@test jacobian_check(nlp) == Dict{Tuple{Int64,Int64},Float64}()#works but very slow
 
 l = zeros(nlp.nvar_edp)
-#Error here:
-#@time _Hxlv = hprod(nlp, sol_gridap, l, ones(nlp.meta.nvar), obj_weight = 1.0)
+@time _Hxlv = hprod(nlp_affine, sol_gridap, l, v, obj_weight = 1.0)
+@time _Hx   = hess(nlp_affine, sol_gridap)
+@test norm(_Hxlv - Symmetric(_Hx,:L) * v) <= eps(Float64)
+
+
+#We still miss the hprod! from the FEOperatorFromTerms
+# :(
 
 #function hess with multipliers not defined.
 #H_errs = hessian_check(nlp) #slow
