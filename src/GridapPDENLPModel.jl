@@ -36,6 +36,7 @@ TODO:
 - l.257, in hess!: sparse(LowerTriangular(hess_yu)) #there must be a better way for this
 - Be more explicit on the different types of FETerm in  _from_term_to_terms!
 - Right now we handle only AffineFEOperator and FEOperatorFromTerms [to be specified]
+- Could we control the Dirichlet boundary condition? (like classical control of heat equations)
 - Clean the tests.
 
 Example:

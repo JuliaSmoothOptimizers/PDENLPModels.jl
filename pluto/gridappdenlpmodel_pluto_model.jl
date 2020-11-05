@@ -14,6 +14,23 @@ V0 = TestFESpace(
 g(x) = 0.0
 Ug = TrialFESpace(V0,g)
 
+###############################################################################
+#Gridap resolution:
+#This corresponds to a Poisson equation with Dirichlet and Neumann conditions
+#described here: https://gridap.github.io/Tutorials/stable/pages/t001_poisson/
+w(x) = 10.0
+a(u,v) = ∇(v)⊙∇(u)
+b_Ω(v) = v*w
+t_Ω = AffineFETerm(a,b_Ω,trian,quad)
+
+op_edp = AffineFEOperator(Ug,V0,t_Ω)
+ls = LUSolver()
+solver = LinearFESolver(ls)
+uh = solve(solver,op_edp)
+
+writevtk(trian,"results",cellfields=["uh"=>uh])
+###############################################################################
+
 Yedp = Ug
 Xedp = V0
 Xcon = TestFESpace(
@@ -89,6 +106,7 @@ sol = x[1:nlp.meta.nvar]
 @show obj(nlp, x[1:nlp.meta.nvar])
 yu = FEFunction(nlp.Y, sol)
 y, u = yu
+
 writevtk(trian,"results-u",cellfields=["uh"=>u])
 writevtk(trian,"results-y",cellfields=["yh"=>y])
 
