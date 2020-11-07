@@ -23,7 +23,7 @@ end
 # ╔═╡ 156e53ec-1f12-11eb-2766-8f32aadc1b9e
 begin
 
-	using Main.workspace16.PDENLPModels
+	using Main.workspace3.PDENLPModels
 end
 
 # ╔═╡ 1b2edd22-1f82-11eb-26aa-b9db6cb28123
@@ -52,7 +52,7 @@ md"
 \begin{equation}
 	\begin{aligned}
 	\min_{y \in Y_{edp},u \in Y_{con} } \  & \int_{\Omega} f(y,u)d\Omega, \\
-	\mbox{ s.t. } & y \mbox{ sol. of } \mathrm{EDP}(u) \mbox{ (+ boundary conditions on $\partial\Omega$)}.
+	\mbox{ s.t. } & y \mbox{ sol. of } \mathrm{PDE}(u) \mbox{ (+ boundary conditions on $\partial\Omega$)}.
 	\end{aligned}
 	\end{equation}
 ```"
@@ -64,7 +64,7 @@ For instance, consider the control of a membrane under a force f:
 \begin{equation}
 	\begin{array}{clc}
 	\min\limits_{y(x) \in \mathbb{R},u(x) \in \mathbb{R} } \  & \int_{\Omega} |y - y_d(x)|^2 + \alpha|u|^2dx, \\
-	\mbox{ s.t. } & -\Delta y(x) = f(x) + u(x), &\quad x \in \Omega,\\
+	\mbox{ s.t. } & -\Delta y(x) = w(x) + u(x), &\quad x \in \Omega,\\
                   & y(x) = 0, &\quad x \in \partial \Omega.
 	\end{array}
 	\end{equation}
@@ -80,7 +80,7 @@ In order to apply FE methods, we use the weak formulation of the PDE, in this ca
 \begin{equation}
 	\begin{array}{clc}
 	\min\limits_{y(x) \in \mathbb{R},u(x) \in \mathbb{R} } \  & \int_{\Omega} |y - y_d(x)|^2 + \alpha|u|^2dx, \\
-	\mbox{ s.t. } & \int_{\Omega}\nabla y ⋅ \nabla vdx = \int_{\Omega}(f + u)vdx, &\quad \text{ in } \Omega, \forall v \in V,\\
+	\mbox{ s.t. } & \int_{\Omega}\nabla y ⋅ \nabla vdx = \int_{\Omega}(w + u)vdx, &\quad \text{ in } \Omega, \forall v \in V,\\
                   & y = 0, &\quad \text{ on } \partial \Omega.
 	\end{array}
 	\end{equation}
@@ -119,7 +119,7 @@ end
 md"
 **Step 3** Once the framework is set, we define the problem. Each integral is described with a **FETerm**. In our example, we have
 ``
-$a(u,v)= \int_{\Omega}\nabla y ⋅ \nabla v~dx ,\text{ and } b(v) = \int_{\Omega}w v~dx.$
+$a(y,v)= \int_{\Omega}\nabla y ⋅ \nabla v~dx ,\text{ and } b(v) = \int_{\Omega}w v~dx.$
 ``
 "
 
@@ -129,7 +129,7 @@ begin
 	#Now, we describe the equation we want to solve.
 	#Each integral is described with a FETerm.
 	w(x)   = 10.0
-	a(u,v) = ∇(v)⊙∇(u)
+	a(y,v) = ∇(v)⊙∇(y)
 	b_Ω(v) = v*w
 	t_Ω    = AffineFETerm(a,b_Ω,trian,quad) #In the linear case, we use AffineFETerm.
 
@@ -164,7 +164,12 @@ md"
 "
 
 # ╔═╡ 5d72f79e-1f86-11eb-12ba-c3546a5bbed9
+begin
 
+	#and print the solution (using Paraview):
+	writevtk(trian,"data/results",cellfields=["uh"=>uh])
+	
+end
 
 # ╔═╡ 929926b0-1f0f-11eb-3fa0-8d5815006d72
 md" 
@@ -201,7 +206,7 @@ end
 md"
 **Step 3** Once the framework is set, we define the problem. Each integral is described with a **FETerm**. In our example, we have
 ``
-$a(u,v)= \int_{\Omega}\nabla y ⋅ \nabla v - v u~dx ,\text{ and } b(v) = \int_{\Omega}w v~dx.$
+$a(y,u,v)= \int_{\Omega}\nabla y ⋅ \nabla v - v u~dx ,\text{ and } b(v) = \int_{\Omega}w v~dx.$
 ``
 and
 ``
@@ -289,7 +294,7 @@ where
 
 # ╔═╡ b24cf81c-1f8a-11eb-339c-4139a5064049
 md"
-To solve this linear-quadratic optimization problem, we will use an iterative method for the following symmetric quasi-definite linear system
+To solve this linear-quadratic optimization problem, we will use an iterative method for the following symmetric linear system
 ``
 $\left( \begin{array}{cc} G & A^T \\ A & 0 \end{array} \right)\left( \begin{array}{c} x \\ \lambda \end{array} \right) = \left( \begin{array}{c} -g \\ b \end{array} \right)$
 ``
@@ -328,6 +333,11 @@ begin
 
 	 return x, stats
 	end
+end
+
+# ╔═╡ 55fbe488-1f99-11eb-0c13-97a3126e320b
+begin
+	nlp.meta.ncon
 end
 
 # ╔═╡ a11246d0-1f8b-11eb-1273-a795fc9802ab
@@ -370,8 +380,8 @@ md"## Extensions
 ```math
 \begin{equation}
 	\begin{array}{clc}
-	\min\limits_{y(x) \in \mathbb{R},u(x) \in \mathbb{R},c \in \mathbb{R}_+ } \  & \int_{\Omega} |y - y_d(x)|^2 + \alpha|v|^2dx, \\
-	\mbox{ s.t. } & \int_{\Omega}c \nabla y ⋅ \nabla vdx = \int_{\Omega}(f + u)vdx, &\quad \text{ in } \Omega, \forall v \in V,\\
+	\min\limits_{y(x) \in \mathbb{R},u(x) \in \mathbb{R},c \in \mathbb{R}_+ } \  & \int_{\Omega} |y - y_d(x)|^2 + \alpha|u|^2dx + l(c), \\
+	\mbox{ s.t. } & \int_{\Omega}c \nabla y ⋅ \nabla vdx = \int_{\Omega}(w + u)vdx, &\quad \text{ in } \Omega, \forall v \in V,\\
                   & y = 0, &\quad \text{ on } \partial \Omega.
 	\end{array}
 	\end{equation}
@@ -415,6 +425,7 @@ md"## References
 # ╠═c2fdf630-1f89-11eb-3ede-1d2e96a49efb
 # ╟─b24cf81c-1f8a-11eb-339c-4139a5064049
 # ╠═3360adfc-1f8a-11eb-3a6e-77dfa01e929d
+# ╠═55fbe488-1f99-11eb-0c13-97a3126e320b
 # ╟─a11246d0-1f8b-11eb-1273-a795fc9802ab
 # ╠═217b9450-1f8b-11eb-26c1-1970f33d3543
 # ╟─a9e20bbc-1f8b-11eb-3b48-f39aff3b62ac
