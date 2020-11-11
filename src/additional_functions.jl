@@ -62,6 +62,36 @@ function hprod_autodiff!(nlp :: GridapPDENLPModel, x :: AbstractVector, v :: Abs
   return Hv
 end
 
+function hess(nlp :: GridapPDENLPModel, x :: AbstractVector; obj_weight :: Real = one(eltype(x)))
+
+    assem = Gridap.FESpaces.SparseMatrixAssembler(nlp.Y, nlp.X)
+    yu    = FEFunction(nlp.Y, x)
+
+    cell_yu    = Gridap.FESpaces.get_cell_values(yu)
+    cell_id_yu = Gridap.Arrays.IdentityVector(length(cell_yu))
+
+    #
+    function _cell_obj_yu(cell_yu)
+         yuh = CellField(nlp.Y, cell_yu)
+        _yuh = Gridap.FESpaces.restrict(yuh, nlp.trian)
+        integrate(nlp.f(_yuh), nlp.trian, nlp.quad)
+    end
+
+    #Compute the hessian with AD
+    cell_r_yu  = Gridap.Arrays.autodiff_array_hessian(_cell_obj_yu, cell_yu, cell_id_yu)
+    #Put the result in the format expected by Gridap.FESpaces.assemble_matrix
+    matdata_yu = [[cell_r_yu], [cell_id_yu], [cell_id_yu]]
+    #Assemble the matrix in the "good" space
+    hess_yu   = Gridap.FESpaces.assemble_matrix(assem, matdata_yu)
+
+    #Tangi: test symmetry (should be removed later on)
+    if !issymmetric(hess_yu) throw("Error: non-symmetric hessian matrix") end
+
+    #https://github.com/JuliaLang/julia/blob/539f3ce943f59dec8aff3f2238b083f1b27f41e5/base/iterators.jl#L110-L132
+
+    return sparse(LowerTriangular(hess_yu)) #there must be a better way for this
+end
+
 """
 `_get_y_and_u(:: GridapPDENLPModel, :: AbstractVector{T}) `
 
@@ -117,4 +147,48 @@ function _get_y_and_u_i(nlp :: GridapPDENLPModel, x :: AbstractVector{T}, v :: A
     end
 
     return y, u, _v
+end
+
+"""
+Would be better but somehow autodiff_cell_jacobian_from_residual is restricted to square matrices at some point.
+"""
+function _from_terms_to_jacobian2(op  :: Gridap.FESpaces.FEOperatorFromTerms,
+                                  x   :: AbstractVector{T},
+                                  nlp :: GridapPDENLPModel) where T <: AbstractFloat
+
+    #Notations
+    nvar_edp         = nlp.nvar_edp
+    nvar_control     = nlp.nvar_control
+    nvar_per_field   = nlp.nvar_per_field
+    n_control_fields = nlp.n_control_fields
+    n_edp_fields     = nlp.n_edp_fields
+    nfields          = nlp.meta_func.nvar
+    nconf            = nlp.meta_func.ncon
+
+    A = Array{T,2}(undef, nvar_edp, nvar_edp + nvar_control)
+    yu = FEFunction(nlp.Y, x)
+    du = Gridap.FESpaces.get_cell_basis(nlp.Y) #use only jac is furnished
+    v  = Gridap.FESpaces.get_cell_basis(nlp.Xedp)
+
+    w,r,c = [], [], []
+    for term in nlp.op.terms
+
+      _v  = restrict(v,  term.trian)
+
+      cellids  = Gridap.FESpaces.get_cell_id(term)
+
+      function yuh_to_cell_residual(yuf)
+        _yuf = Gridap.FESpaces.restrict(yuf, term.trian)
+        integrate(term.res(_yuf,_v), term.trian, term.quad)
+      end
+
+      cellvals_y = Gridap.FESpaces.autodiff_cell_jacobian_from_residual(yuh_to_cell_residual, yu, cellids) ###Problem here!
+      #end
+      Gridap.FESpaces._push_matrix_contribution!(w,r,c,cellvals_y,cellids)
+
+    end
+
+    assem_y = Gridap.FESpaces.SparseMatrixAssembler(nlp.Y, nlp.Xedp)
+    Gridap.FESpaces.assemble_matrix!(A, assem_y, (w,r,c))
+    return A
 end

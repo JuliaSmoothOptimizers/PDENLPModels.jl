@@ -152,4 +152,14 @@ l = zeros(nlp.nvar_edp)
 #H_errs_fg = hessian_check_from_grad(nlp)
 #@test H_errs_fg[0] == Dict{Int, Dict{Tuple{Int,Int}, Float64}}()
 
+#We conclude by a test on an FEOperatorFromTerms with non-linear terms:
+op_edp_nl = FEOperator(Ug,V0,t_Ω,t_Γ)
+x0 = zeros(Gridap.FESpaces.num_free_dofs(Ug))
+nlp_various = GridapPDENLPModel(x0, zeros(0), f, Ug, nothing, V0, nothing, trian, quad, op = op_edp_nl)
+cx_var = cons(nlp_various, x0)
+Jx_var = PDENLPModels.jac(nlp_various, x0)
+sol = get_free_values(uh)
+cx_var_s = cons(nlp_various, sol)
+Jx_var_s = PDENLPModels.jac(nlp_various, sol)
+
 nothing

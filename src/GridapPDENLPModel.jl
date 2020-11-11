@@ -206,6 +206,17 @@ end
 
 show_header(io :: IO, nlp :: GridapPDENLPModel) = println(io, "GridapPDENLPModel")
 
+"""
+Apply FEFunction to dofs corresponding to the solution `y` and the control `u`.
+"""
+function _split_FEFunction(nlp :: GridapPDENLPModel, x :: AbstractVector)
+
+    yh = FEFunction(nlp.Yedp, x[1:nlp.nvar_edp])
+    uh = (nlp.Ycon != nothing) ? FEFunction(nlp.Ycon, x[1+nlp.nvar_edp:nlp.nvar_edp+nlp.nvar_control]) : nothing
+
+ return yh, uh
+end
+
 function obj(nlp :: GridapPDENLPModel, x :: AbstractVector)
 
  @lencheck nlp.meta.nvar x
@@ -250,15 +261,15 @@ function grad!(nlp :: GridapPDENLPModel, x :: AbstractVector, g :: AbstractVecto
     return g
 end
 
-function hess(nlp :: GridapPDENLPModel, x :: AbstractVector; obj_weight :: Real = one(eltype(x)))
+include("hessian_func.jl")
 
-    assem = Gridap.FESpaces.SparseMatrixAssembler(nlp.Y, nlp.X)
+function hess_coo(nlp :: GridapPDENLPModel, x :: AbstractVector; obj_weight :: Real = one(eltype(x)))
+
     yu    = FEFunction(nlp.Y, x)
 
     cell_yu    = Gridap.FESpaces.get_cell_values(yu)
     cell_id_yu = Gridap.Arrays.IdentityVector(length(cell_yu))
 
-    #
     function _cell_obj_yu(cell_yu)
          yuh = CellField(nlp.Y, cell_yu)
         _yuh = Gridap.FESpaces.restrict(yuh, nlp.trian)
@@ -267,60 +278,68 @@ function hess(nlp :: GridapPDENLPModel, x :: AbstractVector; obj_weight :: Real 
 
     #Compute the hessian with AD
     cell_r_yu  = Gridap.Arrays.autodiff_array_hessian(_cell_obj_yu, cell_yu, cell_id_yu)
-    #Put the result in the format expected by Gridap.FESpaces.assemble_matrix
-    matdata_yu = [[cell_r_yu], [cell_id_yu], [cell_id_yu]]
     #Assemble the matrix in the "good" space
-    hess_yu   = Gridap.FESpaces.assemble_matrix(assem, matdata_yu)
+    assem      = Gridap.FESpaces.SparseMatrixAssembler(nlp.Y, nlp.X)
+    (I ,J, V) = assemble_hess(assem, cell_r_yu, cell_id_yu)
 
-    #Tangi: test symmetry (should be removed later on)
-    if !issymmetric(hess_yu) throw("Error: non-symmetric hessian matrix") end
-
-    return sparse(LowerTriangular(hess_yu)) #there must be a better way for this
+    return (I ,J, V)
 end
 
-#In the affine case, returns : - get_matrix(opl) * get_free_values(uh)
+function hess(nlp :: GridapPDENLPModel, x :: AbstractVector; obj_weight :: Real = one(eltype(x)))
+    @lencheck nlp.meta.nvar x v Hv
+    increment!(nlp, :neval_hess)
+
+
+    (I, J, V) = hess_coo(nlp, x, obj_weight = obj_weight)
+
+    mdofs = Gridap.FESpaces.num_free_dofs(nlp.X)
+    ndofs = Gridap.FESpaces.num_free_dofs(nlp.Y)
+
+    @assert mdofs == ndofs #otherwise there is an error in the Trial/Test spaces
+
+    hess_yu = sparse(I, J, V, mdofs, ndofs)
+
+    return hess_yu
+end
+
+function hprod!(nlp :: GridapPDENLPModel, x :: AbstractVector, v :: AbstractVector, Hv :: AbstractVector; obj_weight :: Real = one(eltype(x)))
+  @lencheck nlp.meta.nvar x v Hv
+  increment!(nlp, :neval_hprod)
+
+  if obj_weight == zero(eltype(x))
+      Hv .= zero(similar(x))
+      return Hv
+  end
+
+  #Only one lower triangular of the Hessian
+  (rows, cols, vals) = hess_coo(nlp, x, obj_weight = obj_weight)
+
+  coo_sym_prod!(cols, rows, vals, v, Hv)
+
+ return Hv
+end
+
+function hess_op!(nlp :: GridapPDENLPModel, x :: AbstractVector, Hv :: AbstractVector; obj_weight::Real=one(eltype(x)))
+  @lencheck nlp.meta.nvar x Hv
+  (rows, cols, vals) = hess_coo(nlp, x, obj_weight = obj_weight)
+  prod = @closure v -> coo_sym_prod!(cols, rows, vals, v, Hv)
+  return LinearOperator{eltype(x)}(nlp.meta.nvar, nlp.meta.nvar,
+                                   true, true, prod, prod, prod)
+end
+
+function hess_op(nlp :: GridapPDENLPModel, x :: AbstractVector; obj_weight::Real=one(eltype(x)))
+  @lencheck nlp.meta.nvar x
+  Hv = similar(x)
+  return hess_op!(nlp, x, Hv)
+end
+
 function cons!(nlp :: GridapPDENLPModel, x :: AbstractVector{T}, c :: AbstractVector{T})  where T
 
-    #Notations
-    nvar_edp         = nlp.nvar_edp
-    nvar_per_field   = nlp.nvar_per_field
-    n_control_fields = nlp.n_control_fields
-    n_edp_fields     = nlp.n_edp_fields
-    nfields          = nlp.meta_func.nvar
-    nconf            = nlp.meta_func.ncon
-
-    edp_residual = Array{T,1}(undef, nvar_edp)
+    edp_residual = Array{T,1}(undef, nlp.nvar_edp)
 
     _from_terms_to_residual!(nlp.op, x, nlp, edp_residual)
 
-    #uy = FEFunction(nlp.Y, x)
-    #v  = Gridap.FESpaces.get_cell_basis(nlp.Xedp) #nlp.op.test
-
-    #w, r = [], []
-    #for term in nlp.op.terms
-     # _v  = restrict(v,  term.trian)
-      #_uy = restrict(uy, term.trian)
-
-      #cellvals = integrate(term.res(_uy, _v), term.trian, term.quad)
-      #cellids  = Gridap.FESpaces.get_cell_id(term)
-
-      #Gridap.FESpaces._push_vector_contribution!(w, r, cellvals, cellids)
-    #end
-    #assem_y = Gridap.FESpaces.SparseMatrixAssembler(nlp.Yedp, nlp.Xedp)
-    #Gridap.FESpaces.assemble_vector!(edp_residual, assem_y, (w,r))
-
-    ##############################################################
-    #To be removed
-    cons_residual = Array{T,1}(undef, nconf * nvar_per_field)
-    if nlp.meta_func.ncon != 0
-        _y, _u = _get_y_and_u(nlp, x)
-        for i = 1:nvar_per_field
-         cons_residual[(i - 1) * nconf + 1: i * nconf] = nlp.c(_y[:,i],_u[:,i])
-        end
-    end
-    ##############################################################
-
-    c .= vcat(edp_residual, cons_residual)
+    c .= edp_residual
 
     return c
 end
@@ -330,38 +349,32 @@ function _from_terms_to_residual!(op  :: Gridap.FESpaces.FEOperatorFromTerms,
                                   nlp :: GridapPDENLPModel,
                                   res :: AbstractVector{T}) where T <: AbstractFloat
 
-    uy = FEFunction(nlp.Y, x)
+    yu = FEFunction(nlp.Y, x)
     v  = Gridap.FESpaces.get_cell_basis(nlp.Xedp) #nlp.op.test
 
     w, r = [], []
     for term in op.terms
-     #_from_term_to_terms!(term, yu, v, w, r)
-      _v  = restrict(v,  term.trian)
-      _uy = restrict(uy, term.trian)
 
-      cellvals = integrate(term.res(_uy, _v), term.trian, term.quad)
-      cellids  = Gridap.FESpaces.get_cell_id(term)
+     w, r = _from_term_to_terms!(term, yu, v, w, r)
 
-      Gridap.FESpaces._push_vector_contribution!(w, r, cellvals, cellids)
     end
+
     assem_y = Gridap.FESpaces.SparseMatrixAssembler(nlp.Yedp, nlp.Xedp)
     Gridap.FESpaces.assemble_vector!(res, assem_y, (w,r))
 
     return res
 end
 
-#Only For NonlinearFETermWithAutodiff ???
-#and FESource?
-function _from_term_to_terms!(term :: Gridap.FESpaces.NonlinearFETermWithAutodiff,
-                              yu   :: Union{Gridap.FESpaces.SingleFieldFEFunction,Gridap.MultiField.MultiFieldFEFunction},
-                              v    :: Gridap.CellData.GenericCellField,
+function _from_term_to_terms!(term :: Union{Gridap.FESpaces.NonlinearFETermWithAutodiff, Gridap.FESpaces.NonlinearFETerm},
+                              yu   :: Union{Gridap.FESpaces.SingleFieldFEFunction, Gridap.MultiField.MultiFieldFEFunction},
+                              v    :: Union{Gridap.CellData.GenericCellField, Gridap.MultiField.MultiFieldCellField},
                               w    :: AbstractVector,
                               r    :: AbstractVector)
 
  _v  = restrict(v,  term.trian)
- _uy = restrict(uy, term.trian)
+ _yu = restrict(yu, term.trian)
 
- cellvals = integrate(term.res(_uy, _v), term.trian, term.quad)
+ cellvals = integrate(term.res(_yu, _v), term.trian, term.quad)
  cellids  = Gridap.FESpaces.get_cell_id(term)
 
  Gridap.FESpaces._push_vector_contribution!(w, r, cellvals, cellids)
@@ -369,24 +382,20 @@ function _from_term_to_terms!(term :: Gridap.FESpaces.NonlinearFETermWithAutodif
  return w, r
 end
 
-function _from_term_to_terms!(term :: Gridap.FESpaces.FETerm,
+function _from_term_to_terms!(term :: Gridap.FESpaces.FETerm, #FESource, AffineFETerm
                               yu   :: Union{Gridap.FESpaces.SingleFieldFEFunction,Gridap.MultiField.MultiFieldFEFunction},
-                              v    :: Gridap.CellData.GenericCellField,
+                              v    :: Union{Gridap.CellData.GenericCellField, Gridap.MultiField.MultiFieldCellField},
                               w    :: AbstractVector,
                               r    :: AbstractVector)
 
- #This is faster:
- #_v  = restrict(v,  term.trian)
- #_uy = restrict(uy, term.trian)
- #cellvals = integrate(term.res(_uy, _v), term.trian, term.quad)
-
- cellvals = Gridap.FESpaces.get_cell_residual(term, uy, v)
+ cellvals = Gridap.FESpaces.get_cell_residual(term, yu, v)
  cellids  = Gridap.FESpaces.get_cell_id(term)
 
  Gridap.FESpaces._push_vector_contribution!(w, r, cellvals, cellids)
 
  return w, r
 end
+
 """
 Note:
 - mul! seems faster than doing:
@@ -407,38 +416,13 @@ function _from_terms_to_residual!(op  :: AffineFEOperator,
  return res
 end
 
-function jac(nlp :: GridapPDENLPModel, x :: AbstractVector{T}) where T
+function jac(nlp :: GridapPDENLPModel, x :: AbstractVector{T}) where T <: AbstractFloat
   @lencheck nlp.meta.nvar x
   increment!(nlp, :neval_jac)
 
-  #Notations
-  nvar_edp         = nlp.nvar_edp
-  nvar_control     = nlp.nvar_control
-  nvar_per_field   = nlp.nvar_per_field
-  n_control_fields = nlp.n_control_fields
-  n_edp_fields     = nlp.n_edp_fields
-  nfields          = nlp.meta_func.nvar
-  nconf            = nlp.meta_func.ncon
-
   edp_jac = _from_terms_to_jacobian(nlp.op, x, nlp)
 
-  ##############################################################
-  #To be removed
-  rows, cols, vals = Array{Int,1}(undef, 0), Array{Int,1}(undef, 0), Array{T,1}(undef, 0)
-  if nlp.meta_func.ncon != 0
-      _y, _u = _get_y_and_u(nlp, x)
-      for i = 1 : nvar_per_field
-       _jac = nlp.J(_y[:,i],_u[:,i]) #size nlp.meta_func.ncon x nfields
-       vals = vcat(vals, _jac[:])
-       rows = vcat(rows, repeat((i - 1) * nconf + 1: i * nconf, n_edp_fields + n_control_fields))
-       cols = vcat(cols, repeat((i-1) * n_edp_fields + 1 : i * n_edp_fields, nconf),
-                         repeat(nvar_edp + (i-1) * n_control_fields + 1 : nvar_edp + i * n_control_fields, nconf))
-      end
-  end
-  res_jac = length(rows) != 0 ? sparse(rows, cols, vals) : zeros(T, 0, nvar_edp + nvar_control)
-  ##############################################################
-
-  return vcat(edp_jac, res_jac)
+  return edp_jac
 end
 
 function _from_terms_to_jacobian(op  :: AffineFEOperator,
@@ -450,105 +434,250 @@ end
 
 """
 Note:
-- Is it really better to compute the derivatives of the y and u separately?
+1) Compute the derivatives w.r.t. y and u separately.
+
+2) Use AD for those derivatives. Only for the following:
+- NonlinearFETerm (we neglect the inapropriate jac function);
+- NonlinearFETermWithAutodiff
+- TODO: Gridap.FESpaces.FETerm & AffineFETerm ?
+- FESource <: AffineFETerm (jacobian of a FESource is nothing)
+- LinearFETerm <: AffineFETerm (not implemented)
 """
 function _from_terms_to_jacobian(op  :: Gridap.FESpaces.FEOperatorFromTerms,
                                  x   :: AbstractVector{T},
                                  nlp :: GridapPDENLPModel) where T <: AbstractFloat
 
- #Notations
- nvar_edp         = nlp.nvar_edp
- nvar_control     = nlp.nvar_control
- nvar_per_field   = nlp.nvar_per_field
- n_control_fields = nlp.n_control_fields
- n_edp_fields     = nlp.n_edp_fields
- nfields          = nlp.meta_func.nvar
- nconf            = nlp.meta_func.ncon
+ yh, uh = _split_FEFunction(nlp, x)
+ yu     = FEFunction(nlp.Y, x)
 
- Ay, Au = Array{T,2}(undef, nvar_edp, nvar_edp), Array{T,2}(undef, nvar_edp, nvar_control)
+ dy  = Gridap.FESpaces.get_cell_basis(nlp.Yedp)
+ du  = nlp.nvar_control != 0 ? Gridap.FESpaces.get_cell_basis(nlp.Ycon) : nothing #use only jac is furnished
+ dyu = Gridap.FESpaces.get_cell_basis(nlp.Y)
+ v   = Gridap.FESpaces.get_cell_basis(nlp.Xedp) #nlp.op.test
 
- yh = FEFunction(nlp.Yedp, x[1:nvar_edp])
- uh = (nlp.Ycon != nothing) ? FEFunction(nlp.Ycon, x[1+nvar_edp:nvar_edp+nvar_control]) : nothing
- du = Gridap.FESpaces.get_cell_basis(nlp.op.trial) #use only jac is furnished
- v  = Gridap.FESpaces.get_cell_basis(nlp.op.test) #Xedp
- wu, wy = [], []
- ru, ry = [], []
- cu, cy = [], []
+ wu, wy  = [], []
+ ru, ry  = [], []
+ cu, cy  = [], []
+ w, r, c = [], [], []
+
  for term in nlp.op.terms
 
-   _v  = restrict(v,  term.trian)
-   _yh = restrict(yh, term.trian)
-   _uh = (uh == nothing) ? Array{Gridap.CellData.GenericCellField{true,()}}(undef,0) : restrict(uh, term.trian)
-
-   cellids  = Gridap.FESpaces.get_cell_id(term)
-
-   if nvar_control != 0
-       function uh_to_cell_residual(uf)
-         _uf = Gridap.FESpaces.restrict(uf, term.trian)
-         integrate(term.res(vcat(_yh,_uf),_v), term.trian, term.quad)
-       end
-       cellvals_u = Gridap.FESpaces.autodiff_cell_jacobian_from_residual(uh_to_cell_residual, uh, cellids)
-       Gridap.FESpaces._push_matrix_contribution!(wu,ru,cu,cellvals_u,cellids)
-   end
-
-   #if :jac in fieldnames(typeof(term))
-   #else
-   function yh_to_cell_residual(yf)
-     _yf = Gridap.FESpaces.restrict(yf, term.trian)
-     integrate(term.res(vcat(_yf,_uh),_v), term.trian, term.quad)
-   end
-   cellvals_y = Gridap.FESpaces.autodiff_cell_jacobian_from_residual(yh_to_cell_residual, yh, cellids)
-   #end
-   Gridap.FESpaces._push_matrix_contribution!(wy,ry,cy,cellvals_y,cellids)
+   _jac_from_term_to_terms!(term, yu,  yh, uh,
+                                  dyu, dy, du,
+                                  v,
+                                  w,  r,  c,
+                                  wu, ru, cu,
+                                  wy, ry, cy)
 
  end
 
- #@warn "Decompose assemble_matrix! as it returns a dense matrix. Check Au, Ay."
- if nvar_control != 0
+ if nlp.nvar_control != 0
      assem_u = Gridap.FESpaces.SparseMatrixAssembler(nlp.Ycon, nlp.Xedp)
-     Gridap.FESpaces.assemble_matrix!(Au, assem_u, (wu,ru,cu))
+     Au      = Gridap.FESpaces.assemble_matrix(assem_u, (wu, ru, cu))
+ else
+     Au      = zeros(nlp.nvar_edp, 0)
  end
 
  assem_y = Gridap.FESpaces.SparseMatrixAssembler(nlp.Yedp, nlp.Xedp)
- Gridap.FESpaces.assemble_matrix!(Ay, assem_y, (wy,ry,cy))
+ Ay      = Gridap.FESpaces.assemble_matrix(assem_y, (wy, ry, cy))
 
- return sparse(hcat(sparse(Ay),sparse(Au)))
+ S = hcat(Ay,Au)
+
+ assem = Gridap.FESpaces.SparseMatrixAssembler(nlp.Y, nlp.Xedp)
+ #doesn't work as we may not have the good sparsity pattern.
+ #Gridap.FESpaces.assemble_matrix_add!(S, assem, (w, r, c))
+ S += Gridap.FESpaces.assemble_matrix(assem, (w, r, c))
+
+ return S
 end
 
-function _jac_from_term_to_terms!(term :: Gridap.FESpaces.FETerm,
-                                  yu   :: Union{Gridap.FESpaces.SingleFieldFEFunction,Gridap.MultiField.MultiFieldFEFunction},
-                                  du   :: Gridap.CellData.GenericCellField,
-                                  v    :: Gridap.CellData.GenericCellField,
-                                  w    :: AbstractVector,
-                                  r    :: AbstractVector,
-                                  c    :: AbstractVector)
-
-
- cellvals = get_cell_jacobian(term,uh,du,v)
- cellids = get_cell_id(term)
- _push_matrix_contribution!(w,r,c,cellvals,cellids)
-
- return w, r
+#https://github.com/gridap/Gridap.jl/blob/758a8620756e164ba0e6b83dc8dcbb278015b3d9/src/FESpaces/SparseMatrixAssemblers.jl#L242
+import Gridap.FESpaces._get_block_layout
+#Tanj: this is an error when the jacobian matrix are of size 1xn.
+#unit test: poinsson-with-Neumann-and-Dirichlet, l. 160.
+function _get_block_layout(a::AbstractArray)
+  nothing
 end
 
-function _jac_from_term_to_terms!(term :: Gridap.FESpaces.NonlinearFETerm,
-                                  yu   :: Union{Gridap.FESpaces.SingleFieldFEFunction,Gridap.MultiField.MultiFieldFEFunction},
-                                  v    :: Gridap.CellData.GenericCellField,
-                                  w    :: AbstractVector,
-                                  r    :: AbstractVector,
-                                  c    :: AbstractVector)
- #TODO
- return w, r
+function _jac_from_term_to_terms!(term  :: Gridap.FESpaces.FETerm,
+                                  yu    :: Union{Gridap.FESpaces.SingleFieldFEFunction,Gridap.MultiField.MultiFieldFEFunction},
+                                  yh    :: Union{Gridap.FESpaces.SingleFieldFEFunction,Gridap.MultiField.MultiFieldFEFunction},
+                                  uh    :: Union{Gridap.FESpaces.SingleFieldFEFunction,Gridap.MultiField.MultiFieldFEFunction,Nothing},
+                                  dyu   :: Union{Gridap.CellData.GenericCellField, Gridap.MultiField.MultiFieldCellField},
+                                  dy    :: Union{Gridap.CellData.GenericCellField, Gridap.MultiField.MultiFieldCellField},
+                                  du    :: Union{Gridap.CellData.GenericCellField, Gridap.MultiField.MultiFieldCellField,Nothing},
+                                  v     :: Union{Gridap.CellData.GenericCellField, Gridap.MultiField.MultiFieldCellField},
+                                  w     :: AbstractVector,
+                                  r     :: AbstractVector,
+                                  c     :: AbstractVector,
+                                  wu    :: AbstractVector,
+                                  ru    :: AbstractVector,
+                                  cu    :: AbstractVector,
+                                  wy    :: AbstractVector,
+                                  ry    :: AbstractVector,
+                                  cy    :: AbstractVector)
+
+ @warn "_jac_from_term_to_terms!(::FETerm, ...): If that works, good for you."
+
+ cellvals = get_cell_jacobian(term, yu, dyu, v)
+ cellids  = get_cell_id(term)
+ _push_matrix_contribution!(w, r, c, cellvals, cellids)
+
 end
 
-function _jac_from_term_to_terms!(term :: Gridap.FESpaces.NonlinearFETermWithAutodiff,
-                                  yu   :: Union{Gridap.FESpaces.SingleFieldFEFunction,Gridap.MultiField.MultiFieldFEFunction},
-                                  v    :: Gridap.CellData.GenericCellField,
-                                  w    :: AbstractVector,
-                                  r    :: AbstractVector,
-                                  c    :: AbstractVector)
- #TODO
- return w, r
+#https://github.com/gridap/Gridap.jl/blob/758a8620756e164ba0e6b83dc8dcbb278015b3d9/src/FESpaces/FETerms.jl#L367
+function _jac_from_term_to_terms!(term  :: Union{Gridap.FESpaces.LinearFETerm, Gridap.FESpaces.AffineFETermFromIntegration},
+                                  yu    :: Union{Gridap.FESpaces.SingleFieldFEFunction,Gridap.MultiField.MultiFieldFEFunction},
+                                  yh    :: Union{Gridap.FESpaces.SingleFieldFEFunction,Gridap.MultiField.MultiFieldFEFunction},
+                                  uh    :: Union{Gridap.FESpaces.SingleFieldFEFunction,Gridap.MultiField.MultiFieldFEFunction,Nothing},
+                                  dyu   :: Union{Gridap.CellData.GenericCellField, Gridap.MultiField.MultiFieldCellField},
+                                  dy    :: Union{Gridap.CellData.GenericCellField, Gridap.MultiField.MultiFieldCellField},
+                                  du    :: Union{Gridap.CellData.GenericCellField, Gridap.MultiField.MultiFieldCellField,Nothing},
+                                  v     :: Union{Gridap.CellData.GenericCellField, Gridap.MultiField.MultiFieldCellField},
+                                  w     :: AbstractVector,
+                                  r     :: AbstractVector,
+                                  c     :: AbstractVector,
+                                  wu    :: AbstractVector,
+                                  ru    :: AbstractVector,
+                                  cu    :: AbstractVector,
+                                  wy    :: AbstractVector,
+                                  ry    :: AbstractVector,
+                                  cy    :: AbstractVector)
+
+ _v  = restrict(v,  term.trian)
+ _yuh = restrict(yu, term.trian)
+
+ cellids  = Gridap.FESpaces.get_cell_id(term)
+ cellvals = integrate(term.biform(_yuh, _v), term.trian, term.quad)
+
+ Gridap.FESpaces._push_matrix_contribution!(w, r, c, cellvals, cellids)
+
+end
+
+function _jac_from_term_to_terms!(term  :: Union{Gridap.FESpaces.NonlinearFETermWithAutodiff,Gridap.FESpaces.NonlinearFETerm},
+                                  yu    :: Union{Gridap.FESpaces.SingleFieldFEFunction,Gridap.MultiField.MultiFieldFEFunction},
+                                  yh    :: Union{Gridap.FESpaces.SingleFieldFEFunction,Gridap.MultiField.MultiFieldFEFunction},
+                                  uh    :: Union{Gridap.FESpaces.SingleFieldFEFunction,Gridap.MultiField.MultiFieldFEFunction,Nothing},
+                                  dyu   :: Union{Gridap.CellData.GenericCellField, Gridap.MultiField.MultiFieldCellField},
+                                  dy    :: Union{Gridap.CellData.GenericCellField, Gridap.MultiField.MultiFieldCellField},
+                                  du    :: Union{Gridap.CellData.GenericCellField, Gridap.MultiField.MultiFieldCellField,Nothing},
+                                  v     :: Union{Gridap.CellData.GenericCellField, Gridap.MultiField.MultiFieldCellField},
+                                  w     :: AbstractVector,
+                                  r     :: AbstractVector,
+                                  c     :: AbstractVector,
+                                  wu    :: AbstractVector,
+                                  ru    :: AbstractVector,
+                                  cu    :: AbstractVector,
+                                  wy    :: AbstractVector,
+                                  ry    :: AbstractVector,
+                                  cy    :: AbstractVector)
+
+ if typeof(term) == Gridap.FESpaces.NonlinearFETerm
+     @warn "_jac_from_term_to_terms!: For NonlinearFETerm, function jac is used to compute the derivative w.r.t. y."
+ end
+
+ if du != nothing
+     _jac_from_term_to_terms_u!(term, yh, uh, du, v, wu, ru, cu)
+ end
+
+ _jac_from_term_to_terms_y!(term, yh, uh, dy, v, wy, ry, cy)
+
+end
+
+#https://github.com/gridap/Gridap.jl/blob/758a8620756e164ba0e6b83dc8dcbb278015b3d9/src/FESpaces/FETerms.jl#L332
+function _jac_from_term_to_terms!(term  :: Gridap.FESpaces.FESource,
+                                  yu    :: Union{Gridap.FESpaces.SingleFieldFEFunction,Gridap.MultiField.MultiFieldFEFunction},
+                                  yh    :: Union{Gridap.FESpaces.SingleFieldFEFunction,Gridap.MultiField.MultiFieldFEFunction},
+                                  uh    :: Union{Gridap.FESpaces.SingleFieldFEFunction,Gridap.MultiField.MultiFieldFEFunction,Nothing},
+                                  dyu   :: Union{Gridap.CellData.GenericCellField, Gridap.MultiField.MultiFieldCellField},
+                                  dy    :: Union{Gridap.CellData.GenericCellField, Gridap.MultiField.MultiFieldCellField},
+                                  du    :: Union{Gridap.CellData.GenericCellField, Gridap.MultiField.MultiFieldCellField,Nothing},
+                                  v     :: Union{Gridap.CellData.GenericCellField, Gridap.MultiField.MultiFieldCellField},
+                                  w     :: AbstractVector,
+                                  r     :: AbstractVector,
+                                  c     :: AbstractVector,
+                                  wu    :: AbstractVector,
+                                  ru    :: AbstractVector,
+                                  cu    :: AbstractVector,
+                                  wy    :: AbstractVector,
+                                  ry    :: AbstractVector,
+                                  cy    :: AbstractVector)
+
+ nothing
+end
+
+function _jac_from_term_to_terms_u!(term :: Union{Gridap.FESpaces.NonlinearFETermWithAutodiff,Gridap.FESpaces.NonlinearFETerm},
+                                    yh   :: Union{Gridap.FESpaces.SingleFieldFEFunction,Gridap.MultiField.MultiFieldFEFunction},
+                                    uh   :: Union{Gridap.FESpaces.SingleFieldFEFunction,Gridap.MultiField.MultiFieldFEFunction},
+                                    du   :: Union{Gridap.CellData.GenericCellField, Gridap.MultiField.MultiFieldCellField},
+                                    v    :: Union{Gridap.CellData.GenericCellField, Gridap.MultiField.MultiFieldCellField},
+                                    w    :: AbstractVector,
+                                    r    :: AbstractVector,
+                                    c    :: AbstractVector)
+
+ _v  = restrict(v,  term.trian)
+ _yh = restrict(yh, term.trian)
+
+ cellids  = Gridap.FESpaces.get_cell_id(term)
+
+ function uh_to_cell_residual(uf)
+   _uf = Gridap.FESpaces.restrict(uf, term.trian)
+   integrate(term.res(vcat(_yh, _uf), _v), term.trian, term.quad)
+ end
+ cellvals_u = Gridap.FESpaces.autodiff_cell_jacobian_from_residual(uh_to_cell_residual, uh, cellids)
+
+ Gridap.FESpaces._push_matrix_contribution!(w, r, c, cellvals_u, cellids)
+
+ return w, r, c
+end
+
+function _jac_from_term_to_terms_y!(term :: Gridap.FESpaces.NonlinearFETermWithAutodiff,
+                                    yh   :: Union{Gridap.FESpaces.SingleFieldFEFunction,Gridap.MultiField.MultiFieldFEFunction},
+                                    uh   :: Union{Gridap.FESpaces.SingleFieldFEFunction,Gridap.MultiField.MultiFieldFEFunction, Nothing},
+                                    dy   :: Union{Gridap.CellData.GenericCellField, Gridap.MultiField.MultiFieldCellField, Nothing},
+                                    v    :: Union{Gridap.CellData.GenericCellField, Gridap.MultiField.MultiFieldCellField},
+                                    w    :: AbstractVector,
+                                    r    :: AbstractVector,
+                                    c    :: AbstractVector)
+
+ _v  = restrict(v,  term.trian)
+ _uh = (uh == nothing) ? Array{Gridap.CellData.GenericCellField{true,()}}(undef,0) : restrict(uh, term.trian)
+
+ cellids  = Gridap.FESpaces.get_cell_id(term)
+
+ function yh_to_cell_residual(yf)
+   _yf = Gridap.FESpaces.restrict(yf, term.trian)
+   integrate(term.res(vcat(_yf,_uh),_v), term.trian, term.quad)
+ end
+
+ cellvals_y = Gridap.FESpaces.autodiff_cell_jacobian_from_residual(yh_to_cell_residual, yh, cellids)
+
+ Gridap.FESpaces._push_matrix_contribution!(w, r, c ,cellvals_y, cellids)
+
+ return w, r, c
+end
+
+function _jac_from_term_to_terms_y!(term :: Gridap.FESpaces.NonlinearFETerm,
+                                    yh   :: Union{Gridap.FESpaces.SingleFieldFEFunction,Gridap.MultiField.MultiFieldFEFunction},
+                                    uh   :: Union{Gridap.FESpaces.SingleFieldFEFunction,Gridap.MultiField.MultiFieldFEFunction, Nothing},
+                                    dy   :: Union{Gridap.CellData.GenericCellField, Gridap.MultiField.MultiFieldCellField, Nothing},
+                                    v    :: Union{Gridap.CellData.GenericCellField, Gridap.MultiField.MultiFieldCellField},
+                                    w    :: AbstractVector,
+                                    r    :: AbstractVector,
+                                    c    :: AbstractVector)
+
+ _v  = restrict(v,  term.trian)
+ _yh = restrict(yh, term.trian)
+ _uh = (uh == nothing) ? Array{Gridap.CellData.GenericCellField{true,()}}(undef,0) : restrict(uh, term.trian)
+ _dy = restrict(dy, term.trian)
+
+ cellids  = Gridap.FESpaces.get_cell_id(term)
+
+ cellvals_y = integrate(term.jac(vcat(_yh, _uh), _du, _v), term.trian, term.quad)
+
+ Gridap.FESpaces._push_matrix_contribution!(w, r, c ,cellvals_y, cellids)
+
+ return w, r, c
 end
 
 """
@@ -616,24 +745,6 @@ function jac_op!(nlp :: AbstractNLPModel, x :: AbstractVector,
 end
 
 
-function hprod!(nlp :: GridapPDENLPModel, x :: AbstractVector, v :: AbstractVector, Hv :: AbstractVector; obj_weight :: Real = one(eltype(x)))
-  @lencheck nlp.meta.nvar x v Hv
-  increment!(nlp, :neval_hprod)
-
-  if obj_weight == zero(eltype(x))
-      Hv .= zero(similar(x))
-      return Hv
-  end
-
-  Hx = hess(nlp, x)
-  rows, cols, vals = findnz(Hx)
-
-  #Only one triangle of the Hessian should be given.
-  coo_sym_prod!(cols, rows, vals, v, Hv)
-
- return Hv
-end
-
 #ℓ(x) = obj_weight * nlp.f(x) + dot(nlp.c(x), y)
 #Hv .= ForwardDiff.derivative(t -> ForwardDiff.gradient(ℓ, x + t * v), 0)
 function hprod!(nlp  :: GridapPDENLPModel, x :: AbstractVector, λ :: AbstractVector, v :: AbstractVector, Hv :: AbstractVector; obj_weight :: Real = one(eltype(x)))
@@ -646,25 +757,6 @@ function hprod!(nlp  :: GridapPDENLPModel, x :: AbstractVector, λ :: AbstractVe
   λ_con = λ[nlp.nvar_edp + 1 : nlp.meta.ncon]
 
   _from_terms_to_hprod!(nlp.op, x, λ_edp, v, nlp, Hv, obj_weight)
-
-  ##############################################################
-  #To be removed
-  #First part we compute with AD line by line.
-  cons_residual = zero(Hv)
-  if nlp.meta_func.ncon != 0
-      for i = 1:nlp.nvar_per_field-1
-          yi, ui, vi = _get_y_and_u_i(nlp, x, v, i)
-          λ_coni = λ_con[nlp.meta_func.ncon * (i-1) + 1 : nlp.meta_func.ncon * i]
-          function _c(_x)
-              _y = _x[1:nlp.n_edp_fields]
-              _u = _x[nlp.n_edp_fields + 1:nlp.n_edp_fields + nlp.n_control_fields]
-              _res = dot(nlp.c(_y, _u), λ_coni)
-          end
-          _temp = ForwardDiff.derivative(t -> ForwardDiff.gradient(_c, vcat(yi, ui) + t * vi), 0.)
-          cons_residual[(i - 1) * nlp.meta_func.nvar + 1: i * nlp.meta_func.nvar] = _temp
-      end
-  end
-  ##############################################################
 
   return Hv
 end
