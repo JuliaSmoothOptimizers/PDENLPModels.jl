@@ -56,6 +56,7 @@ cell_xs = get_cell_coordinates(trian)
 midpoint(xs) = sum(xs)/length(xs)
 cell_xm = apply(midpoint, cell_xs) #this is a vector of size num_cells(trian)
 cell_ubis = apply(ubis, cell_xm) #this is a vector of size num_cells(trian)
+#Warning: `interpolate(fs::SingleFieldFESpace, object)` is deprecated, use `interpolate(object, fs::SingleFieldFESpace)` instead.
 solu = get_free_values(Gridap.FESpaces.interpolate(Ucon, cell_ubis))
 soly = get_free_values(zero(Yedp))
 sol = vcat(soly, solu)

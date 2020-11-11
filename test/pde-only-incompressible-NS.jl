@@ -1,4 +1,5 @@
-using Gridap
+using BenchmarkTools, Gridap, LinearAlgebra, NLPModels, PDENLPModels, SparseArrays, Test
+
 n = 3
 domain = (0,1,0,1)
 partition = (n,n)
@@ -60,7 +61,7 @@ op = FEOperator(Y,X,t_Ω)
 t_with_jac_Ω = FETerm(res,jac,trian,quad)
 op_with_jac = FEOperator(Y,X,t_with_jac_Ω)
 
-using BenchmarkTools, LinearAlgebra, NLPModels, PDENLPModels, SparseArrays, Test
+
 ndofs = Gridap.FESpaces.num_free_dofs(Y)
 xin   = zeros(ndofs)
 Ycon, Xcon = nothing, nothing

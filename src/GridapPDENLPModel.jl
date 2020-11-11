@@ -720,7 +720,7 @@ function jtprod!(nlp :: GridapPDENLPModel, x :: AbstractVector, v :: AbstractVec
   return Jtv
 end
 
-function jac_op(nlp :: AbstractNLPModel, x :: AbstractVector{T}) where T <: AbstractFloat
+function jac_op(nlp :: GridapPDENLPModel, x :: AbstractVector{T}) where T <: AbstractFloat
   @lencheck nlp.meta.nvar x
 
   Jv  = Array{T,1}(undef, nlp.meta.ncon)
@@ -729,8 +729,10 @@ function jac_op(nlp :: AbstractNLPModel, x :: AbstractVector{T}) where T <: Abst
   return jac_op!(nlp, x, Jv, Jtv)
 end
 
-function jac_op!(nlp :: AbstractNLPModel, x :: AbstractVector,
-                 Jv :: AbstractVector, Jtv :: AbstractVector)
+function jac_op!(nlp :: GridapPDENLPModel,
+                 x   :: AbstractVector,
+                 Jv  :: AbstractVector,
+                 Jtv :: AbstractVector)
   @lencheck nlp.meta.nvar x Jtv
   @lencheck nlp.meta.ncon Jv
 

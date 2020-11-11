@@ -62,7 +62,15 @@ function hprod_autodiff!(nlp :: GridapPDENLPModel, x :: AbstractVector, v :: Abs
   return Hv
 end
 
-function hess(nlp :: GridapPDENLPModel, x :: AbstractVector; obj_weight :: Real = one(eltype(x)))
+"""
+julia> @btime hess(nlp, sol_gridap);
+  614.938 ms (724536 allocations: 90.46 MiB)
+
+julia> @btime hess_old(nlp, sol_gridap);
+  643.689 ms (724599 allocations: 127.48 MiB)
+
+"""
+function hess_old(nlp :: GridapPDENLPModel, x :: AbstractVector; obj_weight :: Real = one(eltype(x)))
 
     assem = Gridap.FESpaces.SparseMatrixAssembler(nlp.Y, nlp.X)
     yu    = FEFunction(nlp.Y, x)
