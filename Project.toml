@@ -11,12 +11,10 @@ LinearOperators = "5c8ed15e-5a4c-59e4-a42b-c7e8811fb125"
 ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
 Gridap = "56d4f2e9-7ea1-5844-9cf6-b9c51ca7ce8e"
 FastClosures = "9aa1b823-49e4-5ca5-8b0f-3971ec8bab6a"
-
-[compat]
-julia = "^1.0.0"
-
-[extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 JSOSolvers = "10dff2fc-5484-5881-a0e0-c90441020f8a"
+
+[compat]
+julia = "^1.0.0"
