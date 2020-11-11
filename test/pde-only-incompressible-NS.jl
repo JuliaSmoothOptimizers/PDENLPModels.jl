@@ -60,7 +60,7 @@ op = FEOperator(Y,X,t_Ω)
 t_with_jac_Ω = FETerm(res,jac,trian,quad)
 op_with_jac = FEOperator(Y,X,t_with_jac_Ω)
 
-using BenchmarkTools, LinearAlgebra, NLPModels, Main.PDENLPModels, SparseArrays, Test
+using BenchmarkTools, LinearAlgebra, NLPModels, PDENLPModels, SparseArrays, Test
 ndofs = Gridap.FESpaces.num_free_dofs(Y)
 xin   = zeros(ndofs)
 Ycon, Xcon = nothing, nothing
@@ -87,14 +87,14 @@ Gcx = Gridap.FESpaces.residual(op, FEFunction(Gridap.FESpaces.get_trial(op), xin
 
 #We also compare jac and Gridap.FESpaces.jacobian using @btime:
 #Note: Avoid confusion with the function jac from the problem
-@btime Main.PDENLPModels.jac(nlp, xin); #for now we use AD to compute jacobian
+@btime PDENLPModels.jac(nlp, xin); #for now we use AD to compute jacobian
 @btime Gridap.FESpaces.jacobian(op, FEFunction(Gridap.FESpaces.get_trial(op), xin));
 @btime Gridap.FESpaces.jacobian(op_with_jac, FEFunction(Gridap.FESpaces.get_trial(op), xin));
 #expected results:
 #9.656 ms (28898 allocations: 12.78 MiB) for jac :)
 #25.290 ms (71788 allocations: 31.69 MiB) for jacobian without analytical jacobian
 #8.562 ms (56321 allocations: 6.61 MiB) for jacobian with analytical jacobian
-Jx  = Main.PDENLPModels.jac(nlp, xin)
+Jx  = PDENLPModels.jac(nlp, xin)
 GJx = Gridap.FESpaces.jacobian(op, FEFunction(Gridap.FESpaces.get_trial(op), xin))
 GJx_with_jac = Gridap.FESpaces.jacobian(op_with_jac, FEFunction(Gridap.FESpaces.get_trial(op), xin))
 @test issparse(Jx)
@@ -129,7 +129,7 @@ cx  = cons(nlp, sol_gridap)
 @test norm(cx - cGx, Inf) <= eps(Float64)
 
 JGsolx = Gridap.FESpaces.jacobian(op, FEFunction(Gridap.FESpaces.get_trial(op), sol_gridap))
-Jsolx = Main.PDENLPModels.jac(nlp, sol_gridap)
+Jsolx = PDENLPModels.jac(nlp, sol_gridap)
 @test norm(JGsolx - Jsolx,Inf) <= eps(Float64)
 
 #This is an example where the jacobian is not symmetric

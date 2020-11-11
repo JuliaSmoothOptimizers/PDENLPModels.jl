@@ -1,7 +1,7 @@
 using Gridap
-using BenchmarkTools, LinearAlgebra, NLPModels, Main.PDENLPModels, SparseArrays, Test
+using BenchmarkTools, LinearAlgebra, NLPModels, SparseArrays, Test
 
-using Main.PDENLPModels
+using PDENLPModels
 
 #Exercice 10.2.11 (p. 313) in Allaire, Analyse numérique et optimisation, Les éditions de Polytechnique
 #More eigenvalue problems can be found in Section 7.3.2

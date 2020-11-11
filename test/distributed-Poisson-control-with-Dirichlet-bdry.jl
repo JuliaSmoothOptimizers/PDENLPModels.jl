@@ -1,7 +1,7 @@
 using Gridap
-using BenchmarkTools, LinearAlgebra, NLPModels, Main.PDENLPModels, SparseArrays, Test
+using BenchmarkTools, LinearAlgebra, NLPModels, SparseArrays, Test
 
-using Main.PDENLPModels
+using PDENLPModels
 
 # Using Gridap and GridapPDENLPModel, we solve the following
 # distributed Poisson control proble with Dirichlet boundary:

@@ -1,5 +1,5 @@
 using ForwardDiff, Gridap, JSOSolvers, LinearAlgebra, NLPModels, Test
-using Main.PDENLPModels
+using PDENLPModels
 
 #I. Test on GridapPDENLPModel:
 #Elementary tests on an unconstrained problem

@@ -1,5 +1,5 @@
 using Gridap
-using BenchmarkTools, LinearAlgebra, NLPModels, Main.PDENLPModels, SparseArrays, Test
+using BenchmarkTools, LinearAlgebra, NLPModels, PDENLPModels, SparseArrays, Test
 
 model = DiscreteModelFromFile("test/models/model.json")
 

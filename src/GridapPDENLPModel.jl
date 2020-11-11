@@ -723,8 +723,6 @@ end
 function jac_op(nlp :: AbstractNLPModel, x :: AbstractVector{T}) where T <: AbstractFloat
   @lencheck nlp.meta.nvar x
 
-  Jx = jac(nlp, x)
-
   Jv  = Array{T,1}(undef, nlp.meta.ncon)
   Jtv = Array{T,1}(undef, nlp.meta.nvar)
 

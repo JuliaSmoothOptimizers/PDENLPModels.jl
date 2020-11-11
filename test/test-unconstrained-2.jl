@@ -1,7 +1,7 @@
 using Gridap, LinearAlgebra, NLPModels, SparseArrays, Test
 
 #include("../GridapPDENLPModel.jl")
-using Main.PDENLPModels
+using PDENLPModels
 
 ###############################################################################
 #

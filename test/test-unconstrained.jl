@@ -1,7 +1,7 @@
 using Gridap, LinearAlgebra, NLPModels, SparseArrays, Test
 
 #include("../GridapPDENLPModel.jl")
-using Main.PDENLPModels
+using PDENLPModels
 
 ubis(x) =  x[1]^2+x[2]^2
 f(y,u) = 0.5 * (ubis - u) * (ubis - u) + 0.5 * y * y
