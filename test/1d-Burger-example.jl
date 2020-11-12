@@ -90,10 +90,40 @@ xin = zeros(Gridap.FESpaces.num_free_dofs(Y))
 @time _Hx = hess(nlp, sol_gridap)
 @time _cx = cons(nlp, sol_gridap)
 
-@time _Jx =  PDENLPModels.jac(nlp, sol_gridap)
+@time _Jx =  Main.PDENLPModels.jac(nlp, sol_gridap);
+@time _Jx2 =  Main.PDENLPModels.jac(nlp, zeros(nlp.meta.nvar))
+@time _Jx3 =  Main.PDENLPModels.jac(nlp, ones(nlp.meta.nvar))
+#Note that the derivative w.r.t. to the control is constant.
+@test norm(_Jx2[:,512:1024] - _Jx3[:,512:1024]) == 0.0
+@test norm(_Jx[:,512:1024] - _Jx3[:,512:1024]) == 0.0
 
 #Test hprod
+
+using ForwardDiff
+function vector_hessian(nlp, x, l, v)
+       n = length(x)
+       agrad(t) = ForwardDiff.gradient(x->dot(cons(nlp, x),l), x + t*v)
+       out = ForwardDiff.derivative(t -> agrad(t), 0.)
+       return out
+end
+
 #hprod!(nlp  :: GridapPDENLPModel, x :: AbstractVector, λ :: AbstractVector, v :: AbstractVector, Hv :: AbstractVector
+@time Hv = hprod(nlp, sol_gridap, rand(nlp.meta.ncon), rand(nlp.meta.nvar), obj_weight = 0.)
+@test Hv[512:1024] == zeros(513)
+@time Hvo = hprod(nlp, sol_gridap, zeros(nlp.meta.ncon), rand(nlp.meta.nvar), obj_weight = 0.)
+@test Hvo == zeros(1024)
+
+#using BenchmarkTools
+#@btime Hv = hprod(nlp, sol_gridap, rand(nlp.meta.nvar))
+#  9.871 ms (66841 allocations: 6.32 MiB)
+#@btime Hv = hprod(nlp, sol_gridap, rand(nlp.meta.ncon), rand(nlp.meta.nvar))
+#    254.611 ms (1997841 allocations: 130.14 MiB)
+
+
+#_Hxou = hprod(nlp, xin, zeros(nlp.meta.ncon), ones(ndofs))
+#@test norm(_Hxou, Inf) <= eps(Float64)
+#_Hxrr = hprod(nlp, xin, rand(nlp.meta.ncon), rand(ndofs))
+#@test norm(_Hxrr, Inf) <= eps(Float64)
 
 #For Fletcher_penalty_solver take sigma = 10^3,
 #(0,0) as initial guess, and B1 approximation of the hessian.
@@ -102,5 +132,13 @@ xin = zeros(Gridap.FESpaces.num_free_dofs(Y))
 #x, fx, norm∇x, ncx = solver_eq(nlp) #hess_op is not available
 
 #include("../../FletcherPenaltyNLPSolver/src/FletcherPenaltyNLPSolver.jl")
+
+#Prove that hess_coo is wrong...
+global hess_is_zero = true
+for k in 1:5
+ I,J,Vi = Main.PDENLPModels.hess_coo(nlp, rand(nlp.meta.nvar), rand(nlp.meta.ncon))
+ global hess_is_zero &= (Vi == zeros(length(Vi)))
+end
+@test hess_is_zero
 
 nothing

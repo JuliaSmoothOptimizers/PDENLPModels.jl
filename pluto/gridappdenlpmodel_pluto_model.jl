@@ -85,17 +85,22 @@ function my_quick_algorithm_for_quad_lin_problems(nlp; x0 :: AbstractVector{T} =
  rhs = vcat(- grad(nlp, zeros(nlp.meta.nvar)), cons(nlp, zeros(nlp.meta.nvar)))
 
  #We now create a LinearOperator
+ jacop = jac_op(nlp, x0)
  Jv  = Array{T,1}(undef, nlp.meta.ncon)
  Jtv = Array{T,1}(undef, nlp.meta.nvar)
- prod = @closure v ->  vcat(hprod(nlp, x0, v[1:nlp.meta.nvar]) + jtprod(nlp, x0, v[nlp.meta.nvar+1:nlp.meta.nvar+nlp.meta.ncon]),
-                           jprod(nlp, x0, v[1:nlp.meta.nvar]))
- ctprod = @closure v ->  vcat(hprod(nlp, x0, v[1:nlp.meta.nvar]) + jtprod(nlp, x0, v[nlp.meta.nvar+1:nlp.meta.nvar+nlp.meta.ncon]),
-                           jprod(nlp, x0, v[1:nlp.meta.nvar]))
+ prod = @closure v ->  vcat(hprod(nlp, x0, v[1:nlp.meta.nvar]) + jacop'*v[nlp.meta.nvar+1:nlp.meta.nvar+nlp.meta.ncon],
+                           jacop*v[1:nlp.meta.nvar])
+ ctprod = @closure v ->  vcat(hprod(nlp, x0, v[1:nlp.meta.nvar]) + jacop'*v[nlp.meta.nvar+1:nlp.meta.nvar+nlp.meta.ncon],
+                           jacop*v[1:nlp.meta.nvar])
+ #prod = @closure v ->  vcat(hprod(nlp, x0, v[1:nlp.meta.nvar]) + jtprod(nlp, x0, v[nlp.meta.nvar+1:nlp.meta.nvar+nlp.meta.ncon]),
+#                           jprod(nlp, x0, v[1:nlp.meta.nvar]))
+ #ctprod = @closure v ->  vcat(hprod(nlp, x0, v[1:nlp.meta.nvar]) + jtprod(nlp, x0, v[nlp.meta.nvar+1:nlp.meta.nvar+nlp.meta.ncon]),
+#                           jprod(nlp, x0, v[1:nlp.meta.nvar]))
 #PreallocatedLinearOperator{T}(nrow::Int, ncol::Int, symmetric::Bool, hermitian::Bool, prod, tprod, ctprod)
- jac_op = PreallocatedLinearOperator{T}(nlp.meta.ncon+nlp.meta.nvar, nlp.meta.ncon+nlp.meta.nvar, true, true, prod, ctprod, ctprod)
+ sad_op = PreallocatedLinearOperator{T}(nlp.meta.ncon+nlp.meta.nvar, nlp.meta.ncon+nlp.meta.nvar, true, true, prod, ctprod, ctprod)
 
  #(x, stats) = symmlq(A, rhs)
- (x, stats) = minres(jac_op, rhs)
+ (x, stats) = minres(sad_op, rhs)
 
  return x, stats
 end

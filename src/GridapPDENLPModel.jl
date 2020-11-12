@@ -286,9 +286,27 @@ function hess_coo(nlp :: GridapPDENLPModel, x :: AbstractVector; obj_weight :: R
 end
 
 function hess(nlp :: GridapPDENLPModel, x :: AbstractVector; obj_weight :: Real = one(eltype(x)))
-    @lencheck nlp.meta.nvar x v Hv
+    @lencheck nlp.meta.nvar x
     increment!(nlp, :neval_hess)
 
+
+    (I, J, V) = hess_coo(nlp, x, obj_weight = obj_weight)
+
+    mdofs = Gridap.FESpaces.num_free_dofs(nlp.X)
+    ndofs = Gridap.FESpaces.num_free_dofs(nlp.Y)
+
+    @assert mdofs == ndofs #otherwise there is an error in the Trial/Test spaces
+
+    hess_yu = sparse(I, J, V, mdofs, ndofs)
+
+    return hess_yu
+end
+
+function hess(nlp :: GridapPDENLPModel, x :: AbstractVector, l :: AbstractVector; obj_weight :: Real = one(eltype(x)))
+    @lencheck nlp.meta.nvar x
+    increment!(nlp, :neval_hess)
+
+    throw("NotImplemented")
 
     (I, J, V) = hess_coo(nlp, x, obj_weight = obj_weight)
 
@@ -333,21 +351,21 @@ function hess_op(nlp :: GridapPDENLPModel, x :: AbstractVector; obj_weight::Real
   return hess_op!(nlp, x, Hv)
 end
 
-function cons!(nlp :: GridapPDENLPModel, x :: AbstractVector{T}, c :: AbstractVector{T})  where T
+function cons!(nlp :: GridapPDENLPModel, x :: AbstractVector, c :: AbstractVector)
 
-    edp_residual = Array{T,1}(undef, nlp.nvar_edp)
+    #edp_residual = Array{eltype(x),1}(undef, nlp.nvar_edp)
 
-    _from_terms_to_residual!(nlp.op, x, nlp, edp_residual)
+    _from_terms_to_residual!(nlp.op, x, nlp, c)
 
-    c .= edp_residual
+    #c .= edp_residual
 
     return c
 end
 
 function _from_terms_to_residual!(op  :: Gridap.FESpaces.FEOperatorFromTerms,
-                                  x   :: AbstractVector{T},
+                                  x   :: AbstractVector,
                                   nlp :: GridapPDENLPModel,
-                                  res :: AbstractVector{T}) where T <: AbstractFloat
+                                  res :: AbstractVector)
 
     yu = FEFunction(nlp.Y, x)
     v  = Gridap.FESpaces.get_cell_basis(nlp.Xedp) #nlp.op.test
@@ -406,10 +424,11 @@ coo_prod!(cols, rows, vals, v, res)
 - Benchmark equivalent to Gridap.FESpaces.residual!(res, op_affine.op, xrand)
 """
 function _from_terms_to_residual!(op  :: AffineFEOperator,
-                                  x   :: AbstractVector{T},
+                                  x   :: AbstractVector,
                                   nlp :: GridapPDENLPModel,
-                                  res :: AbstractVector{T}) where T <: AbstractFloat
+                                  res :: AbstractVector)
 
+ T = eltype(x)
  mul!(res, get_matrix(op), x)
  axpy!(-one(T), get_vector(op), res)
 
@@ -745,8 +764,6 @@ function jac_op!(nlp :: GridapPDENLPModel,
 end
 
 
-#ℓ(x) = obj_weight * nlp.f(x) + dot(nlp.c(x), y)
-#Hv .= ForwardDiff.derivative(t -> ForwardDiff.gradient(ℓ, x + t * v), 0)
 function hprod!(nlp  :: GridapPDENLPModel, x :: AbstractVector, λ :: AbstractVector, v :: AbstractVector, Hv :: AbstractVector; obj_weight :: Real = one(eltype(x)))
 
   @lencheck nlp.meta.nvar x v Hv
@@ -782,62 +799,12 @@ function _from_terms_to_hprod!(op  :: Gridap.FESpaces.FEOperatorFromTerms,
                                Hv  :: AbstractVector{T},
                                obj_weight :: T) where T <: AbstractFloat
 
- @warn "Almost there, what is not working? - update the hprod of the objective function"
- #Second part: obj_weight * nlp.f(x) + dot(nlp.c(x), y)
- yu = FEFunction(nlp.Y, x)
- vf = FEFunction(nlp.Y, v)
- λf = FEFunction(nlp.Yedp, λ_edp)
- vc = Gridap.FESpaces.get_cell_basis(nlp.Xedp) #X or Xedp? /nlp.op.test
-
- cell_yu = Gridap.FESpaces.get_cell_values(yu)
- cell_vf = Gridap.FESpaces.get_cell_values(vf)
- cell_λf = Gridap.FESpaces.get_cell_values(λf)
-
- ncells    = length(cell_yu)
- cell_id = Gridap.Arrays.IdentityVector(length(cell_yu))
-
- function _cell_lag_t(cell)
-      yu  = CellField(nlp.Y, cell)
-
-     _yu  = Gridap.FESpaces.restrict(yu, nlp.trian)
-     _lag = integrate(nlp.f(_yu), nlp.trian, nlp.quad)
-
-     _dotvalues = Array{Any, 1}(undef, ncells)
-     for term in nlp.op.terms
-       _vc = restrict(vc,  term.trian)
-       _yu = restrict(yu, term.trian)
-       cellvals = integrate(term.res(_yu, _vc), term.trian, term.quad)
-       for i=1:ncells #doesn't work as ncells varies function of trian ...
-           @show i
-       _dotvalues[i] = dot(cellvals[i], cell_λf[i]) #setindex not defined for Gridap.Arrays
-       end
-     end
-     #_lag += _dotvalues
-     return _lag
- end
-
- #Compute the gradient with AD
- function _cell_lag_grad_t(t)
-
-      ct    = t * ones(length(cell_vf[1]))
-     _cell  = Array{typeof(ct .* cell_vf[1])}(undef, ncells)
-     for i=1:ncells
-         _cell[i] = cell_yu[i] + ct .* cell_vf[i]
-     end
-     Gridap.Arrays.autodiff_array_gradient(_cell_lag_t, _cell, cell_id) #returns NaN sometimes ? se pde-only-incompressible-NS.jl
- end
-
- #Compute the derivative w.r.t. to t of _cell_grad_t
- #This might be slow as it cannot be decomposed (easily) cell by cell
- cell_r_yu = ForwardDiff.derivative(_cell_lag_grad_t, 0.)
-
- #Put the result in the format expected by Gridap.FESpaces.assemble_matrix
- vecdata_yu = [[cell_r_yu], [cell_id]]
- assem = Gridap.FESpaces.SparseMatrixAssembler(nlp.Y, nlp.X)
- #Assemble the gradient in the "good" space
- Hv .= Gridap.FESpaces.assemble_vector(assem, vecdata_yu) + cons_residual
+ agrad(t) = ForwardDiff.gradient(x->(obj_weight * obj(nlp, x) + dot(cons(nlp, x), λ)), x + t*v)
+ Hv .= ForwardDiff.derivative(t -> agrad(t), 0.)
 
  return Hv
 end
+
+include("hess_difficulty.jl")
 
 include("additional_functions.jl")
