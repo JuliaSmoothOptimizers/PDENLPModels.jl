@@ -157,13 +157,12 @@ mutable struct GridapPDENLPModel <: AbstractNLPModel
                              rhs_edp = []
                              if op != nothing #has a PDE constraint
                                  ncon_disc  += nvar_edp
-                                 nnzj += nvar_edp * nvar
-
-
                                  if typeof(op) <: Gridap.FESpaces.FEOperatorFromTerms
                                    rhs_edp = zeros(nvar_edp)
+                                   nnzj += nvar_edp * nvar
                                  elseif typeof(op) <: AffineFEOperator
                                    rhs_edp = zeros(nvar_edp) #get_vector(op)
+                                   nnzj += nnz(get_matrix(op))
                                  end
                              end
                              lcon_disc  = vcat(rhs_edp, _lcon)
@@ -174,7 +173,7 @@ mutable struct GridapPDENLPModel <: AbstractNLPModel
 
                              nnzh = nvar * (nvar + 1) / 2
 
-                             meta = NLPModelMeta(nvar; ncon = ncon_disc, y0 = y0_disc, lcon = lcon_disc, ucon = ucon_disc, kwargs...)
+                             meta = NLPModelMeta(nvar; ncon = ncon_disc, y0 = y0_disc, lcon = lcon_disc, ucon = ucon_disc, nnzj = nnzj, kwargs...)
 
                              analytic_gradient = g != nothing
                              analytic_hessian  = H != nothing
@@ -209,10 +208,14 @@ show_header(io :: IO, nlp :: GridapPDENLPModel) = println(io, "GridapPDENLPModel
 """
 Apply FEFunction to dofs corresponding to the solution `y` and the control `u`.
 """
-function _split_FEFunction(nlp :: GridapPDENLPModel, x :: AbstractVector)
+function _split_FEFunction(x    :: AbstractVector,
+                           Yedp :: FESpace,
+                           Ycon :: Union{FESpace, Nothing})
 
-    yh = FEFunction(nlp.Yedp, x[1:nlp.nvar_edp])
-    uh = (nlp.Ycon != nothing) ? FEFunction(nlp.Ycon, x[1+nlp.nvar_edp:nlp.nvar_edp+nlp.nvar_control]) : nothing
+    nvar_edp = Gridap.FESpaces.num_free_dofs(Yedp)
+    nvar_control = (Ycon != nothing) ? Gridap.FESpaces.num_free_dofs(Ycon) : 0
+    yh = FEFunction(Yedp, x[1:nvar_edp])
+    uh = (Ycon != nothing) ? FEFunction(Ycon, x[1+nvar_edp:nvar_edp+nvar_control]) : nothing
 
  return yh, uh
 end
@@ -302,22 +305,55 @@ function hess(nlp :: GridapPDENLPModel, x :: AbstractVector; obj_weight :: Real 
     return hess_yu
 end
 
-function hess(nlp :: GridapPDENLPModel, x :: AbstractVector, l :: AbstractVector; obj_weight :: Real = one(eltype(x)))
-    @lencheck nlp.meta.nvar x
-    increment!(nlp, :neval_hess)
+function hess_coord!(nlp :: GridapPDENLPModel, x :: AbstractVector, vals :: AbstractVector; obj_weight :: Real = one(eltype(x)))
+  @lencheck nlp.meta.nvar x
+  @lencheck nlp.meta.nnzh vals
+  increment!(nlp, :neval_hess)
+  ℓ(x) = obj_weight * obj(nlp, x)
+  Hx = ForwardDiff.hessian(ℓ, x)
+  k = 1
+  for j = 1 : nlp.meta.nvar
+    for i = j : nlp.meta.nvar
+      vals[k] = Hx[i, j]
+      k += 1
+    end
+  end
+  return vals
+end
 
-    throw("NotImplemented")
+function hess(nlp :: GridapPDENLPModel, x :: AbstractVector, λ :: AbstractVector; obj_weight :: Real = one(eltype(x)))
+  @lencheck nlp.meta.nvar x
+  @lencheck nlp.meta.ncon λ
+  increment!(nlp, :neval_hess)
+  ℓ(x) = obj_weight * obj(nlp, x) + dot(cons(nlp, x), λ)
+  Hx = ForwardDiff.hessian(ℓ, x)
+  return tril(Hx)
+end
 
-    (I, J, V) = hess_coo(nlp, x, obj_weight = obj_weight)
+function hess_structure!(nlp :: GridapPDENLPModel, rows :: AbstractVector{<: Integer}, cols :: AbstractVector{<: Integer})
+  n = nlp.meta.nvar
+  @lencheck nlp.meta.nnzh rows cols
+  I = ((i,j) for i = 1:n, j = 1:n if i ≥ j)
+  rows .= getindex.(I, 1)
+  cols .= getindex.(I, 2)
+  return rows, cols
+end
 
-    mdofs = Gridap.FESpaces.num_free_dofs(nlp.X)
-    ndofs = Gridap.FESpaces.num_free_dofs(nlp.Y)
-
-    @assert mdofs == ndofs #otherwise there is an error in the Trial/Test spaces
-
-    hess_yu = sparse(I, J, V, mdofs, ndofs)
-
-    return hess_yu
+function hess_coord!(nlp :: GridapPDENLPModel, x :: AbstractVector, λ :: AbstractVector, vals :: AbstractVector; obj_weight :: Real = one(eltype(x)))
+  @lencheck nlp.meta.nvar x
+  @lencheck nlp.meta.ncon λ
+  @lencheck nlp.meta.nnzh vals
+  increment!(nlp, :neval_hess)
+  ℓ(x) = obj_weight * obj(nlp, x) + dot(cons(nlp, x), λ)
+  Hx = ForwardDiff.hessian(ℓ, x)
+  k = 1
+  for j = 1 : nlp.meta.nvar
+    for i = j : nlp.meta.nvar
+      vals[k] = Hx[i, j]
+      k += 1
+    end
+  end
+  return vals
 end
 
 function hprod!(nlp :: GridapPDENLPModel, x :: AbstractVector, v :: AbstractVector, Hv :: AbstractVector; obj_weight :: Real = one(eltype(x)))
@@ -439,14 +475,17 @@ function jac(nlp :: GridapPDENLPModel, x :: AbstractVector{T}) where T <: Abstra
   @lencheck nlp.meta.nvar x
   increment!(nlp, :neval_jac)
 
-  edp_jac = _from_terms_to_jacobian(nlp.op, x, nlp)
+  edp_jac = _from_terms_to_jacobian(nlp.op, x, nlp.Y, nlp.Xedp, nlp.Yedp, nlp.Ycon)
 
   return edp_jac
 end
 
-function _from_terms_to_jacobian(op  :: AffineFEOperator,
-                                 x   :: AbstractVector{T},
-                                 nlp :: GridapPDENLPModel) where T <: AbstractFloat
+function _from_terms_to_jacobian(op   :: AffineFEOperator,
+                                 x    :: AbstractVector{T},
+                                 Y    :: FESpace,
+                                 Xedp :: FESpace,
+                                 Yedp :: FESpace,
+                                 Ycon :: Union{FESpace, Nothing}) where T <: AbstractFloat
 
  return get_matrix(op)
 end
@@ -462,24 +501,27 @@ Note:
 - FESource <: AffineFETerm (jacobian of a FESource is nothing)
 - LinearFETerm <: AffineFETerm (not implemented)
 """
-function _from_terms_to_jacobian(op  :: Gridap.FESpaces.FEOperatorFromTerms,
-                                 x   :: AbstractVector{T},
-                                 nlp :: GridapPDENLPModel) where T <: AbstractFloat
+function _from_terms_to_jacobian(op   :: Gridap.FESpaces.FEOperatorFromTerms,
+                                 x    :: AbstractVector{T},
+                                 Y    :: FESpace,
+                                 Xedp :: FESpace,
+                                 Yedp :: FESpace,
+                                 Ycon :: Union{FESpace, Nothing}) where T <: AbstractFloat
 
- yh, uh = _split_FEFunction(nlp, x)
- yu     = FEFunction(nlp.Y, x)
+ yh, uh = _split_FEFunction(x, Yedp, Ycon)
+ yu     = FEFunction(Y, x)
 
- dy  = Gridap.FESpaces.get_cell_basis(nlp.Yedp)
- du  = nlp.nvar_control != 0 ? Gridap.FESpaces.get_cell_basis(nlp.Ycon) : nothing #use only jac is furnished
- dyu = Gridap.FESpaces.get_cell_basis(nlp.Y)
- v   = Gridap.FESpaces.get_cell_basis(nlp.Xedp) #nlp.op.test
+ dy  = Gridap.FESpaces.get_cell_basis(Yedp)
+ du  = Ycon != nothing ? Gridap.FESpaces.get_cell_basis(Ycon) : nothing #use only jac is furnished
+ dyu = Gridap.FESpaces.get_cell_basis(Y)
+ v   = Gridap.FESpaces.get_cell_basis(Xedp) #nlp.op.test
 
  wu, wy  = [], []
  ru, ry  = [], []
  cu, cy  = [], []
  w, r, c = [], [], []
 
- for term in nlp.op.terms
+ for term in op.terms
 
    _jac_from_term_to_terms!(term, yu,  yh, uh,
                                   dyu, dy, du,
@@ -490,19 +532,19 @@ function _from_terms_to_jacobian(op  :: Gridap.FESpaces.FEOperatorFromTerms,
 
  end
 
- if nlp.nvar_control != 0
-     assem_u = Gridap.FESpaces.SparseMatrixAssembler(nlp.Ycon, nlp.Xedp)
+ if Ycon != nothing
+     assem_u = Gridap.FESpaces.SparseMatrixAssembler(Ycon, Xedp)
      Au      = Gridap.FESpaces.assemble_matrix(assem_u, (wu, ru, cu))
  else
-     Au      = zeros(nlp.nvar_edp, 0)
+     Au      = zeros(Gridap.FESpaces.num_free_dofs(Yedp), 0)
  end
 
- assem_y = Gridap.FESpaces.SparseMatrixAssembler(nlp.Yedp, nlp.Xedp)
+ assem_y = Gridap.FESpaces.SparseMatrixAssembler(Yedp, Xedp)
  Ay      = Gridap.FESpaces.assemble_matrix(assem_y, (wy, ry, cy))
 
  S = hcat(Ay,Au)
 
- assem = Gridap.FESpaces.SparseMatrixAssembler(nlp.Y, nlp.Xedp)
+ assem = Gridap.FESpaces.SparseMatrixAssembler(Y, Xedp)
  #doesn't work as we may not have the good sparsity pattern.
  #Gridap.FESpaces.assemble_matrix_add!(S, assem, (w, r, c))
  S += Gridap.FESpaces.assemble_matrix(assem, (w, r, c))
@@ -763,6 +805,55 @@ function jac_op!(nlp :: GridapPDENLPModel,
                                    false, false, prod, ctprod, ctprod)
 end
 
+function jac_structure!(nlp :: GridapPDENLPModel, rows :: AbstractVector{<: Integer}, cols :: AbstractVector{<: Integer})
+  @lencheck nlp.meta.nnzj rows cols
+  return _jac_structure!(nlp.op, nlp, rows, cols)
+end
+
+function _jac_structure!(op :: AffineFEOperator, nlp :: GridapPDENLPModel, rows :: AbstractVector{<: Integer}, cols :: AbstractVector{<: Integer})
+
+ #In this case, the jacobian matrix is constant:
+ I, J, V = findnz(get_matrix(op))
+ rows .= I
+ cols .= J
+
+ return rows, cols
+end
+
+function _jac_structure!(op :: Gridap.FESpaces.FEOperatorFromTerms, nlp :: GridapPDENLPModel, rows :: AbstractVector{<: Integer}, cols :: AbstractVector{<: Integer})
+
+ m, n = nlp.meta.ncon, nlp.meta.nvar
+ I = ((i,j) for i = 1:m, j = 1:n)
+ rows .= getindex.(I, 1)[:]
+ cols .= getindex.(I, 2)[:]
+
+ return rows, cols
+end
+
+function jac_coord!(nlp :: GridapPDENLPModel, x :: AbstractVector, vals :: AbstractVector)
+  @lencheck nlp.meta.nvar x
+  @lencheck nlp.meta.nnzj vals
+  increment!(nlp, :neval_jac)
+  return _jac_coord!(nlp.op, nlp, x, vals)
+end
+
+function _jac_coord!(op :: AffineFEOperator, nlp :: GridapPDENLPModel, x :: AbstractVector, vals :: AbstractVector)
+  @lencheck nlp.meta.nvar x
+  @lencheck nlp.meta.nnzj vals
+  increment!(nlp, :neval_jac)
+  I, J, V = findnz(get_matrix(op))
+  vals .= V
+  return vals
+end
+
+function _jac_coord!(op :: Gridap.FESpaces.FEOperatorFromTerms, nlp :: GridapPDENLPModel, x :: AbstractVector, vals :: AbstractVector)
+  @lencheck nlp.meta.nvar x
+  @lencheck nlp.meta.nnzj vals
+  increment!(nlp, :neval_jac)
+  Jx = jac(nlp, x)
+  vals .= Jx[:]
+  return vals
+end
 
 function hprod!(nlp  :: GridapPDENLPModel, x :: AbstractVector, λ :: AbstractVector, v :: AbstractVector, Hv :: AbstractVector; obj_weight :: Real = one(eltype(x)))
 

@@ -28,7 +28,7 @@ ls = LUSolver()
 solver = LinearFESolver(ls)
 uh = solve(solver,op_edp)
 
-writevtk(trian,"results",cellfields=["uh"=>uh])
+#writevtk(trian,"results",cellfields=["uh"=>uh])
 ###############################################################################
 
 Yedp = Ug
@@ -112,7 +112,10 @@ sol = x[1:nlp.meta.nvar]
 yu = FEFunction(nlp.Y, sol)
 y, u = yu
 
-writevtk(trian,"results-u",cellfields=["uh"=>u])
-writevtk(trian,"results-y",cellfields=["yh"=>y])
+#writevtk(trian,"results-u",cellfields=["uh"=>u])
+#writevtk(trian,"results-y",cellfields=["yh"=>y])
+
+using NLPModelsIpopt
+@time stats = ipopt(nlp)
 
 nothing

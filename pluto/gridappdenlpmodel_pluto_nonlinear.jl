@@ -90,3 +90,6 @@ x0 = vcat(sol_gridap, 0.5*ones(Gridap.FESpaces.num_free_dofs(Ycon)))
 @time x = sqp_solver(nlp, x0 = x0, atol = 1e-3, max_iter = 10, itmax = 1000)
 
 @test obj(nlp, x) < obj(nlp, x0)
+
+using NLPModelsIpopt
+@time stats = ipopt(nlp)
