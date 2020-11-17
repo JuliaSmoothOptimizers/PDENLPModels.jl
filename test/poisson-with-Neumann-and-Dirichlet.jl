@@ -1,5 +1,5 @@
 using Gridap
-using BenchmarkTools, LinearAlgebra, NLPModels, PDENLPModels, SparseArrays, Test
+using BenchmarkTools, LinearAlgebra, NLPModels, Main.PDENLPModels, SparseArrays, Test
 
 model = DiscreteModelFromFile("test/models/model.json")
 
@@ -33,10 +33,10 @@ h(x) = 3.0
 b_Γ(v) = v*h
 t_Γ = FESource(b_Γ,btrian,bquad)
 
-op_edp = AffineFEOperator(Ug,V0,t_Ω,t_Γ)
+op_pde = AffineFEOperator(Ug,V0,t_Ω,t_Γ)
 ls = LUSolver()
 solver = LinearFESolver(ls)
-uh = solve(solver,op_edp)
+uh = solve(solver,op_pde)
 
 ###############################################################################
 # Create the NLP:
@@ -63,32 +63,31 @@ function res_Γ(yu, v)
 end
 topt_Γ = FETerm(res_Γ, btrian, bquad)#FESource(res_Γ, btrian, bquad)
 
-Yedp = Ug
-Xedp = V0
+Ypde = Ug
+Xpde = V0
 Xcon = TestFESpace(
         reffe=:Lagrangian, order=1, valuetype=Float64,
         conformity=:H1, model=model)
 Ycon = TrialFESpace(Xcon)
 
-Y = MultiFieldFESpace([Yedp, Ycon])
+Y = MultiFieldFESpace([Ypde, Ycon])
 op = FEOperator(Y, V0, topt_Ω, topt_Γ) #or #op = FEOperator(Ug, V0, topt_Ω, topt_Γ)
 
-xin = zeros(Gridap.FESpaces.num_free_dofs(Y));
-@time nlp = GridapPDENLPModel(xin, zeros(0), f, Yedp, Ycon, Xedp, Xcon, trian, quad, op = op)
+@time nlp = GridapPDENLPModel(f, trian, quad, Ypde, Ycon, Xpde, Xcon, op)
 
 ######
 # 2nd test: we create a GridapPDENLPModel with affine operator
 taff_Ω = AffineFETerm(res_Ω, v->0*v, trian, quad)
 op_affine = AffineFEOperator(Y,V0,taff_Ω, t_Γ)
 
-@test size(get_matrix(op_affine)) == (num_free_dofs(Xedp), num_free_dofs(Y))
-@test length(get_vector(op_affine)) == num_free_dofs(Xedp)
+@test size(get_matrix(op_affine)) == (num_free_dofs(Xpde), num_free_dofs(Y))
+@test length(get_vector(op_affine)) == num_free_dofs(Xpde)
 
-nlp_affine = GridapPDENLPModel(xin, zeros(0), f, Yedp, Ycon, Xedp, Xcon, trian, quad, op = op_affine)
+nlp_affine = GridapPDENLPModel(f, trian, quad, Ypde, Ycon, Xpde, Xcon, op_affine)
 ################################################################################
 # Check solution
 
-sol_gridap = vcat(get_free_values(uh), 1.0*ones(nlp.nvar_control))
+sol_gridap = vcat(get_free_values(uh), 1.0*ones(nlp.nvar_con))
 
 #Check the objective function:
 @time _fx = obj(nlp, sol_gridap)
@@ -112,8 +111,8 @@ sol_gridap = vcat(get_free_values(uh), 1.0*ones(nlp.nvar_control))
 op2 = FEOperator(Y, V0, topt_Ω, topt_Γ)
 @time _cx2 = Gridap.FESpaces.residual(op2, FEFunction(Gridap.FESpaces.get_trial(op2), sol_gridap))
 @test norm(_cx - _cx2) <= eps(Float64)
-#Recall that cGx is also equal to "get_matrix(op_edp) * get_free_values(uh) - get_vector(op_edp)" here
-@time cGx = Gridap.FESpaces.residual(op_edp, FEFunction(Gridap.FESpaces.get_trial(op_edp), get_free_values(uh)))
+#Recall that cGx is also equal to "get_matrix(op_pde) * get_free_values(uh) - get_vector(op_pde)" here
+@time cGx = Gridap.FESpaces.residual(op_pde, FEFunction(Gridap.FESpaces.get_trial(op_pde), get_free_values(uh)))
 @test norm(_cx - cGx ,Inf) <= sqrt(eps(Float64))
 @test norm(_cx, Inf) <= sqrt(eps(Float64))
 
@@ -125,8 +124,8 @@ xrand = rand(nlp.meta.nvar)
 @test norm(_cxraff - cons(nlp, xrand), Inf) <= 1e-15
 
 
-@time _Jx = PDENLPModels.jac(nlp, sol_gridap)
-@time _Jxaff = PDENLPModels.jac(nlp_affine, sol_gridap)
+@time _Jx = Main.PDENLPModels.jac(nlp, sol_gridap)
+@time _Jxaff = Main.PDENLPModels.jac(nlp_affine, sol_gridap)
 @test norm(_Jx - get_matrix(nlp_affine.op)) <= eps(Float64)
 @test norm(_Jxaff - get_matrix(nlp_affine.op)) <= eps(Float64)
 #Test linear LinearOperators
@@ -137,7 +136,7 @@ _w = rand(nlp.meta.ncon)
 @test norm(jop' * _w - _Jx' * _w) <= eps(Float64)
 #@test jacobian_check(nlp) == Dict{Tuple{Int64,Int64},Float64}()#works but very slow
 
-l = zeros(nlp.nvar_edp)
+l = zeros(nlp.nvar_pde)
 @time _Hxlv = hprod(nlp_affine, sol_gridap, l, v, obj_weight = 1.0)
 @time _Hx   = hess(nlp_affine, sol_gridap)
 @test norm(_Hxlv - Symmetric(_Hx,:L) * v) <= eps(Float64)
@@ -153,13 +152,13 @@ l = zeros(nlp.nvar_edp)
 #@test H_errs_fg[0] == Dict{Int, Dict{Tuple{Int,Int}, Float64}}()
 
 #We conclude by a test on an FEOperatorFromTerms with non-linear terms:
-op_edp_nl = FEOperator(Ug,V0,t_Ω,t_Γ)
+op_pde_nl = FEOperator(Ug,V0,t_Ω,t_Γ)
 x0 = zeros(Gridap.FESpaces.num_free_dofs(Ug))
-nlp_various = GridapPDENLPModel(x0, zeros(0), f, Ug, nothing, V0, nothing, trian, quad, op = op_edp_nl)
+nlp_various = GridapPDENLPModel(x0, f, trian, quad, Ug, nothing, V0, nothing, op_pde_nl)
 cx_var = cons(nlp_various, x0)
-Jx_var = PDENLPModels.jac(nlp_various, x0)
+Jx_var = Main.PDENLPModels.jac(nlp_various, x0)
 sol = get_free_values(uh)
 cx_var_s = cons(nlp_various, sol)
-Jx_var_s = PDENLPModels.jac(nlp_various, sol)
+Jx_var_s = Main.PDENLPModels.jac(nlp_various, sol)
 
 nothing

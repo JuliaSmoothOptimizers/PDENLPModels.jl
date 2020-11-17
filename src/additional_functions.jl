@@ -166,14 +166,9 @@ function _from_terms_to_jacobian2(op  :: Gridap.FESpaces.FEOperatorFromTerms,
 
     #Notations
     nvar_edp         = nlp.nvar_edp
-    nvar_control     = nlp.nvar_control
-    nvar_per_field   = nlp.nvar_per_field
-    n_control_fields = nlp.n_control_fields
-    n_edp_fields     = nlp.n_edp_fields
-    nfields          = nlp.meta_func.nvar
-    nconf            = nlp.meta_func.ncon
+    nvar_con         = nlp.nvar_con
 
-    A = Array{T,2}(undef, nvar_edp, nvar_edp + nvar_control)
+    A = Array{T,2}(undef, nvar_edp, nvar_edp + nvar_con)
     yu = FEFunction(nlp.Y, x)
     du = Gridap.FESpaces.get_cell_basis(nlp.Y) #use only jac is furnished
     v  = Gridap.FESpaces.get_cell_basis(nlp.Xedp)

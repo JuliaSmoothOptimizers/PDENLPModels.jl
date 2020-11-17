@@ -61,7 +61,7 @@ using Main.PDENLPModels
 
 nvar = Gridap.FESpaces.num_free_dofs(Y)
 xin  = zeros(nvar)
-nlp = GridapPDENLPModel(xin, f, Yedp, Ycon, Xedp, Xcon, trian, quad, op = op)
+nlp = GridapPDENLPModel(xin, f, trian, quad, Yedp, Ycon, Xedp, Xcon, op)
 
 using FastClosures, Krylov, LinearAlgebra, LinearOperators
 #This is a quadratic-linear optimizaion problem

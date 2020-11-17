@@ -10,8 +10,8 @@ function _from_terms_to_hprod!_wish_it_would_work(op  :: Gridap.FESpaces.FEOpera
  #Second part: obj_weight * nlp.f(x) + dot(nlp.c(x), y)
  yu = FEFunction(nlp.Y, x)
  vf = FEFunction(nlp.Y, v)
- λf = FEFunction(nlp.Xedp, λ) #λf = FEFunction(nlp.Xedp, λ_edp)
- vc = Gridap.FESpaces.get_cell_basis(nlp.Xedp) #X or Xedp? /nlp.op.test
+ λf = FEFunction(nlp.Xpde, λ) #λf = FEFunction(nlp.Xpde, λ_pde)
+ vc = Gridap.FESpaces.get_cell_basis(nlp.Xpde) #X or Xpde? /nlp.op.test
 
  cell_yu = Gridap.FESpaces.get_cell_values(yu)
  cell_vf = Gridap.FESpaces.get_cell_values(vf)
@@ -68,8 +68,8 @@ function hess_coo(nlp :: GridapPDENLPModel, x :: AbstractVector, λ :: AbstractV
     @warn "hess_coo: This doesn't work."
 
     yu    = FEFunction(nlp.Y, x)
-    λf    = FEFunction(nlp.Xedp, λ)
-    v   = Gridap.FESpaces.get_cell_basis(nlp.Xedp)
+    λf    = FEFunction(nlp.Xpde, λ)
+    v   = Gridap.FESpaces.get_cell_basis(nlp.Xpde)
 
     cell_yu    = Gridap.FESpaces.get_cell_values(yu)
     cell_λf    = Gridap.FESpaces.get_cell_values(λf)

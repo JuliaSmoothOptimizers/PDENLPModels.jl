@@ -79,7 +79,7 @@ op = FEOperator(Y, V, t_Ω)
 
 using NLPModels, Krylov, Main.PDENLPModels
 xin = zeros(Gridap.FESpaces.num_free_dofs(Y))
-@time nlp = GridapPDENLPModel(xin, f, Yedp, Ycon, Xedp, Xcon, trian, quad, op = op)
+@time nlp = GridapPDENLPModel(xin, f, trian, quad, Yedp, Ycon, Xedp, Xcon, op)
 
 include("../SQPalgorithm/SQP-factorization-free.jl")
 using Main.SQPFactFree

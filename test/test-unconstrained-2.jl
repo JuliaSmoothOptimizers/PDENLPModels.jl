@@ -1,7 +1,7 @@
 using Gridap, LinearAlgebra, NLPModels, SparseArrays, Test
 
 #include("../GridapPDENLPModel.jl")
-using PDENLPModels
+using Main.PDENLPModels
 
 ###############################################################################
 #
@@ -34,18 +34,18 @@ order = 1
 y0(x) = 0.0
 U    = TrialFESpace(V0, y0)
 
-Yedp = U
-Xedp = V0
+Ypde = U
+Xpde = V0
 Ycon, Xcon = nothing, nothing
 
 trian = Triangulation(model)
 degree = 2
 @time quad = CellQuadrature(trian,degree)
 
-xin = zeros(Gridap.FESpaces.num_free_dofs(Yedp))
-@time nlp = GridapPDENLPModel(xin, zeros(0), f, Yedp, Ycon, Xedp, Xcon, trian, quad)
+xin = zeros(Gridap.FESpaces.num_free_dofs(Ypde))
+@time nlp = GridapPDENLPModel(xin, f, trian, quad, Ypde, Xpde)
 
-x1 = vcat(rand(Gridap.FESpaces.num_free_dofs(Yedp))); v=x1;
+x1 = vcat(rand(Gridap.FESpaces.num_free_dofs(Ypde))); v=x1;
 
 @time fx = obj(nlp, x1);
 @time gx = grad(nlp, x1);
@@ -80,10 +80,10 @@ a(u,v) = ∇(v)⊙∇(u)
 b_Ω(v) = v*w
 t_Ω = AffineFETerm(a,b_Ω,trian,quad)
 
-op_edp = AffineFEOperator(U,V0,t_Ω)
+op_pde = AffineFEOperator(U,V0,t_Ω)
 ls = LUSolver()
 solver = LinearFESolver(ls)
-uh = solve(solver,op_edp)
+uh = solve(solver,op_pde)
 sol = get_free_values(uh)
 
 @time _fxsol  = obj(nlp, sol)

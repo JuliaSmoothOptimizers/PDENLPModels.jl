@@ -77,10 +77,10 @@ Ycon = TrialFESpace(Xcon)
 @test Gridap.FESpaces.num_free_dofs(U) < Gridap.FESpaces.num_free_dofs(Ycon)
 #################################################################################
 
-using NLPModels, Krylov, PDENLPModels
+using NLPModels, Krylov, Main.PDENLPModels
 Y = MultiFieldFESpace([U, Ycon])
 xin = zeros(Gridap.FESpaces.num_free_dofs(Y))
-@time nlp = GridapPDENLPModel(xin, zeros(0), f, U, Ycon, V, Xcon, trian, quad, op = op)
+@time nlp = Main.GridapPDENLPModel(xin, f, trian, quad, U, Ycon, V, Xcon, op)
 
 @test nlp.meta.nvar == 1024
 @test nlp.meta.ncon == 511

@@ -1,7 +1,7 @@
 using Gridap, LinearAlgebra, NLPModels, SparseArrays, Test
 
 #include("../GridapPDENLPModel.jl")
-using PDENLPModels
+using Main.PDENLPModels
 
 ubis(x) =  x[1]^2+x[2]^2
 f(y,u) = 0.5 * (ubis - u) * (ubis - u) + 0.5 * y * y
@@ -21,8 +21,8 @@ order = 1
 u(x) = 0.0
 U    = TrialFESpace(V0,u)
 
-Yedp = U
-Xedp = V0
+Ypde = U
+Xpde = V0
 Xcon = TestFESpace(reffe=:Lagrangian, order=order, valuetype=Float64,
                    conformity=:H1, model=model)
 Ucon = TrialFESpace(Xcon)
@@ -33,10 +33,12 @@ degree = 2
 @time quad = CellQuadrature(trian,degree)
 
 Y = MultiFieldFESpace([U, Ucon])
+X = MultiFieldFESpace([V0, Xcon])
 xin = zeros(Gridap.FESpaces.num_free_dofs(Y))
-@time nlp = GridapPDENLPModel(xin, zeros(0), f, Yedp, Ycon, Xedp, Xcon, trian, quad)
+#@time nlp = GridapPDENLPModel(xin, f, trian, quad, Ypde, Ycon, Xpde, Xcon)
+@time nlp = GridapPDENLPModel(xin, f, trian, quad, Y, X)
 
-x1 = vcat(rand(Gridap.FESpaces.num_free_dofs(Yedp)), ones(Gridap.FESpaces.num_free_dofs(Ycon))); x=x1;v=x1;
+x1 = vcat(rand(Gridap.FESpaces.num_free_dofs(Ypde)), ones(Gridap.FESpaces.num_free_dofs(Ycon))); x=x1;v=x1;
 
 @time fx = obj(nlp, x1);
 @time gx = grad(nlp, x1);
@@ -58,7 +60,7 @@ cell_xm = apply(midpoint, cell_xs) #this is a vector of size num_cells(trian)
 cell_ubis = apply(ubis, cell_xm) #this is a vector of size num_cells(trian)
 #Warning: `interpolate(fs::SingleFieldFESpace, object)` is deprecated, use `interpolate(object, fs::SingleFieldFESpace)` instead.
 solu = get_free_values(Gridap.FESpaces.interpolate(Ucon, cell_ubis))
-soly = get_free_values(zero(Yedp))
+soly = get_free_values(zero(Ypde))
 sol = vcat(soly, solu)
 
 @test obj(nlp, sol) <= 1/n
@@ -67,9 +69,10 @@ sol = vcat(soly, solu)
 using JSOSolvers
 #lbfgs solves the problem with too much precision.
 @time _t = lbfgs(nlp, x = x1, rtol = 0.0, atol = 1e-10) #lbfgs modifies the initial point !!
-@test norm(_t.solution[1:nlp.nvar_edp] - soly, Inf) <= 1/n
+nn  = Gridap.FESpaces.num_free_dofs(Ypde)
+@test norm(_t.solution[1:nn] - soly, Inf) <= 1/n
 @test obj(nlp, _t.solution) <= 1/n
-@test norm(_t.solution[nlp.nvar_edp + 1: nlp.meta.nvar] - solu, Inf) <= sqrt(1/n)
+@test norm(_t.solution[nn + 1: nlp.meta.nvar] - solu, Inf) <= sqrt(1/n)
 
 if false
     @show "derivatives check. This may take approx. 5 minutes."
