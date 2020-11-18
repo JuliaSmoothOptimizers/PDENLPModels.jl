@@ -1,13 +1,16 @@
 export poissonmixte
 
 """
+`poissonmixte(;args...)`
+
 This corresponds to a Poisson equation with Dirichlet and Neumann conditions
 described in the Gridap Tutorials:
 https://gridap.github.io/Tutorials/stable/pages/t001_poisson/
+
 """
 function poissonmixte(;args...)
 
-    model = DiscreteModelFromFile("models/model.json")
+    model = DiscreteModelFromFile(string(dirname(@__FILE__),"/models/model.json"))
 
     Xpde = TestFESpace(
       reffe=:Lagrangian, order=1, valuetype=Float64,

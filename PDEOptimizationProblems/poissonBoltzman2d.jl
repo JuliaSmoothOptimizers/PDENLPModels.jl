@@ -64,7 +64,9 @@ function poissonBoltzman2d(; n :: Int = 100)
      y, u = yu
      v
 
-     ∇(v)⊙∇(y) + sinh(y)*v - u*v - v * h
+     #∇(v)⊙∇(y) + sinh(y)*v - u*v - v * h
+     ∇(v)⊙∇(y) + operate(sinh, y)*v - u*v - v * h
+     #operate(tanh,ph)
     end
     t_Ω = FETerm(res,trian,quad)
     op = FEOperator(Y, Xpde, t_Ω)

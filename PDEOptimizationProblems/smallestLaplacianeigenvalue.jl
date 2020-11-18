@@ -43,22 +43,18 @@ function smallestLaplacianeigenvalue(; n :: Int = 10, args...)
     quad = CellQuadrature(trian,degree)
 
     #Now we move to the optimization:
-    function f(yu)
-        y, u = yu
-        ∇(y)⋅∇(y) #∇(y)⊙∇(y)
+    function f(y)
+        ∇(y)⋅∇(y)
     end
 
     #Definition of the constraint operator
-    function res(yu, v)
-     y, u = yu
-     v
-
-     y*y - 1
+    function res(y, v)
+     integrate(y*y - 1, trian, quad) * v #Really not smart as it dusplicates the constraint...
     end
     t_Ω = FETerm(res,trian,quad)
     op = FEOperator(Ypde, Xpde, t_Ω)
 
-    nlp = GridapPDENLPModel(f, trian, quad, Ypde, Ycon, Xpde, Xcon, op, name = "Burger1d")
+    nlp = GridapPDENLPModel(f, trian, quad, Ypde, Ycon, Xpde, Xcon, op, name = "smallestLaplacianeigenvalue")
 
     return nlp
 end

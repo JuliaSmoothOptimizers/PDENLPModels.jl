@@ -1,9 +1,12 @@
-using Main.PDEOptimizationProblems, Test
+using Main.PDEOptimizationProblems, Main.PDENLPModels, Test
 
 # Test that every problem can be instantiated.
 for prob in names(PDEOptimizationProblems)
   prob == :PDEOptimizationProblems && continue
-  println(prob)
+  print(prob)
   prob_fn = eval(prob)
-  prob_fn()
+  nlp = prob_fn()
+  println(" nvar=",nlp.meta.nvar," ncon=",nlp.meta.ncon)
+  obj(nlp, nlp.meta.x0)
+  nlp.meta.ncon != 0 && cons(nlp, nlp.meta.x0)
 end

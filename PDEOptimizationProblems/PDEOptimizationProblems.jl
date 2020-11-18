@@ -8,7 +8,13 @@
 #
 # TODO/Improvements: - generate the inclusions of the files;
 #                    - make this folder an independant module.
+#                    - the parameter n should reflect the size of the problem
+#                    - keep making test problems out of the Gridap tutorials:
+#                    remains 3, 4, 5, 6, 7, 9, 10, 11
+#                    https://gridap.github.io/Tutorials/stable/pages/t003_elasticity/
+#                    - take the models from Gridap.jl instead of copy-paste.
 #
+#Maybe this is better, but I prefer having comments on each link (for now)
 #path = dirname(@__FILE__)
 #files = filter(x->x[end-2:end] == ".jl", readdir(path))
 #for file in files
@@ -35,9 +41,10 @@ include("controlelasticmembrane1.jl") #constant bounds
 include("controlelasticmembrane2.jl") #bounds applied to midcells
 
 #Nonlinear constraints
-include("1d-Burger.jl")
+include("Burger1d.jl")
 include("poissonBoltzman2d.jl")
 include("smallestLaplacianeigenvalue.jl")
+include("poisson3d.jl")
 include("inversePoissonproblem2d.jl") #to be completed (in particular target function + check other things)
 
 end #end of module

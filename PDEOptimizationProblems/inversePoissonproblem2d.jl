@@ -52,7 +52,7 @@ function inversePoissonproblem2d(; n :: Int = 100)
 
     Xcon = TestFESpace(
             reffe=:Lagrangian, order=1, valuetype=Float64,
-            conformity=:H1, model=model) #should be L\infty not H1 here
+            conformity=:L2, model=model) #should be L\infty not H1 here
     Ycon = TrialFESpace(Xcon)
     Y = MultiFieldFESpace([Ypde, Ycon])
 

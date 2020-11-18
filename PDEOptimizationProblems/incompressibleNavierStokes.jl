@@ -4,7 +4,11 @@ export incompressibleNavierStokes
 
 `incompressibleNavierStokes(; n :: Int64 = 3, kargs...)`
 
-\TODO
+This corresponds to the incompressible Navier-Stokes equation
+described in the Gridap Tutorials:
+https://gridap.github.io/Tutorials/stable/pages/t008_inc_navier_stokes/
+
+It has no objective function and no control, just the PDE.
 """
 function incompressibleNavierStokes(; n :: Int64 = 3, kargs...)
 
