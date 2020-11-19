@@ -101,63 +101,6 @@ function hess_old(nlp :: GridapPDENLPModel, x :: AbstractVector; obj_weight :: R
 end
 
 """
-`_get_y_and_u(:: GridapPDENLPModel, :: AbstractVector{T}) `
-
-Returns y and u in matrix format where
-y ∈ n_edp_fields x nvar_per_field
-u ∈ n_control_fields x nvar_per_field
-It is useful when evaluating the function constraint (and jacobian) functions.
-"""
-function _get_y_and_u(nlp :: GridapPDENLPModel, x :: AbstractVector{T}) where T
-
-    y = Array{T,2}(undef, nlp.n_edp_fields, nlp.nvar_per_field)
-    for i=1:nlp.n_edp_fields
-        y[i,:] = [x[k] for k in i:nlp.n_edp_fields:nlp.nvar_edp]
-    end
-
-    u = Array{T,2}(undef, nlp.n_control_fields, nlp.nvar_per_field)
-    for i=1:nlp.n_control_fields
-        u[i,:] = [x[k] for k in nlp.nvar_edp+i:nlp.n_control_fields:nlp.meta.nvar-nlp.nparam]
-    end
-
-    return y, u
-end
-
-function _get_y_and_u_i(nlp :: GridapPDENLPModel, x :: AbstractVector{T}, j :: Int) where T
-
-    y = Array{T,1}(undef, nlp.n_edp_fields)
-    for i=1:nlp.n_edp_fields
-        y[i] = x[(j-1)*nlp.n_edp_fields + i]
-    end
-
-    u = Array{T,1}(undef, nlp.n_control_fields)
-    for i=1:nlp.n_control_fields
-        u[i] = x[nlp.nvar_edp+(j-1)*nlp.n_control_fields + i]
-    end
-
-    return y, u
-end
-
-function _get_y_and_u_i(nlp :: GridapPDENLPModel, x :: AbstractVector{T}, v :: AbstractVector{T}, j :: Int) where T
-
-    _v = Array{T,1}(undef, nlp.n_edp_fields + nlp.n_control_fields)
-
-    y = Array{T,1}(undef, nlp.n_edp_fields)
-    for i=1:nlp.n_edp_fields
-        y[i] = x[(j-1)*nlp.n_edp_fields + i]
-       _v[i] = v[(j-1)*nlp.n_edp_fields + i]
-    end
-
-    u = Array{T,1}(undef, nlp.n_control_fields)
-    for i=1:nlp.n_control_fields
-        u[i] = x[nlp.nvar_edp + (j-1) * nlp.n_control_fields + i]
-       _v[i] = v[nlp.n_edp_fields + nlp.nvar_edp + (j-1) * nlp.n_control_fields + i]
-    end
-
-    return y, u, _v
-end
-
-"""
 Would be better but somehow autodiff_cell_jacobian_from_residual is restricted to square matrices at some point.
 """
 function _from_terms_to_jacobian2(op  :: Gridap.FESpaces.FEOperatorFromTerms,

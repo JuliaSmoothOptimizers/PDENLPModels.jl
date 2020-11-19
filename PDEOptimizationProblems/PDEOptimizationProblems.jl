@@ -13,6 +13,8 @@
 #                    remains 3, 4, 5, 6, 7, 9, 10, 11
 #                    https://gridap.github.io/Tutorials/stable/pages/t003_elasticity/
 #                    - take the models from Gridap.jl instead of copy-paste.
+#https://github.com/gridap/Gridap.jl/blob/master/test/GridapTests/PoissonTests.jl
+#https://github.com/gridap/Gridap.jl/blob/master/test/GridapTests/StokesTaylorHoodTests.jl
 #
 #Maybe this is better, but I prefer having comments on each link (for now)
 #path = dirname(@__FILE__)

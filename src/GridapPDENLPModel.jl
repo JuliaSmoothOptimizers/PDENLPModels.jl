@@ -2,7 +2,8 @@
 PDENLPModels using Gridap.jl
 
 https://github.com/gridap/Gridap.jl
-Cite: Badia, S., & Verdugo, F. (2020). Gridap: An extensible Finite Element toolbox in Julia. Journal of Open Source Software, 5(52), 2520.
+Cite: Badia, S., & Verdugo, F. (2020). Gridap: An extensible Finite Element toolbox in Julia.
+Journal of Open Source Software, 5(52), 2520.
 
 Find functions (y,u): Y -> ℜⁿ x ℜⁿ and κ ∈ ℜⁿ satisfying
 
@@ -20,17 +21,13 @@ https://gridap.github.io/Tutorials/stable/pages/t008_inc_navier_stokes/
 
 The set Ω​ is represented here with *trian* and *quad*.
 
-`GridapPDENLPModel(:: Function, :: FESpace, :: FESpace, :: FEOperator, trian, quad; g :: Union{Function, Nothing} = nothing, H :: Union{Function, Nothing} = nothing, c :: Union{Function, Nothing} = nothing, J :: Union{Function, Nothing} = nothing, kwargs...)`
+`GridapPDENLPModel(:: NLPModelMeta, :: Counters, :: Function, :: Triangulation, :: CellQuadrature, :: FESpace, :: Union{FESpace,Nothing}, :: FESpace, :: Union{FESpace,Nothing}, :: FESpace, :: Union{FESpace,Nothing}, :: Union{FEOperator, Nothing},  :: Int, :: Int, :: Int)`
 
 TODO:
-- time evolution edp problems.
-- Handle the case where op.jac is given
-- Handle the case where J is not given (in jac - use ForwardDiff as in hess)
+- time evolution pde problems.
 - Handle the case where g and H are given
-- Handle several terms in the objective function (via an FEOperator)
+- Handle several terms in the objective function (via an FEOperator)?
 - Handle finite dimension variables/unknwon parameters. Should we ask: f(yu, k) all the times or only when necessary (otw. f(yu) )
-- Handle the constraints in the cell space by adding a new term in the weak formulation. Right now I handle the constraints at each dofs, which is ***.
-- Handle FESource term (as in poisson-with-Neumann-and-Dirichlet example). [Now we model them via FETerm with a minus sign!]
 - Test the Right-hand side if op is an AffineFEOperator
 - Improve Gridap.FESpaces.assemble_matrix in hess! to get directly the lower triangular?
 - l.257, in hess!: sparse(LowerTriangular(hess_yu)) #there must be a better way for this
@@ -39,78 +36,95 @@ TODO:
 - Could we control the Dirichlet boundary condition? (like classical control of heat equations)
 - Clean the tests.
 
+- Missing: constraint ncon with num_free_dofs(Xpde)?
+
 Example:
 i) Unconstrained and no control
-GridapPDENLPModel(x0, f, trian, quad, Ypde, Xpde)
-GridapPDENLPModel(f, trian, quad, Ypde, Xpde)
+ GridapPDENLPModel(x0, f, trian, quad, Ypde, Xpde)
+ GridapPDENLPModel(f, trian, quad, Ypde, Xpde)
 ii) Bound constraints
-GridapPDENLPModel(x0, f, trian, quad, Ypde, Xpde, lvar, uvar)
-GridapPDENLPModel(f, trian, quad, Ypde, Xpde, lvar, uvar)
+ GridapPDENLPModel(x0, f, trian, quad, Ypde, Xpde, lvar, uvar)
+ GridapPDENLPModel(f, trian, quad, Ypde, Xpde, lvar, uvar)
 iii) PDE-Constrained
-GridapPDENLPModel(x0, f, trian, quad, Ypde, Ycon, Xpde, Xcon, c) #assuming lcon=ucon=zeros(ncon)
-GridapPDENLPModel(f, trian, quad, Ypde, Ycon, Xpde, Xcon, c) #assuming lcon=ucon=zeros(ncon)
-GridapPDENLPModel(x0, f, trian, quad, Ypde, Ycon, Xpde, Xcon, c, lcon, ucon)
-GridapPDENLPModel(f, trian, quad, Ypde, Ycon, Xpde, Xcon, c, lcon, ucon)
+ GridapPDENLPModel(x0, f, trian, quad, Ypde, Ycon, Xpde, Xcon, c) #assuming lcon=ucon=zeros(ncon)
+ GridapPDENLPModel(f, trian, quad, Ypde, Ycon, Xpde, Xcon, c) #assuming lcon=ucon=zeros(ncon)
+ GridapPDENLPModel(x0, f, trian, quad, Ypde, Ycon, Xpde, Xcon, c, lcon, ucon)
+ GridapPDENLPModel(f, trian, quad, Ypde, Ycon, Xpde, Xcon, c, lcon, ucon)
 iv) PDE-constraint and bounds
-GridapPDENLPModel(x0, f, trian, quad, Ypde, Ycon, Xpde, Xcon, lvar, uvar, c)
-GridapPDENLPModel(f, trian, quad, Ypde, Ycon, Xpde, Xcon, lvar, uvar, c)
-GridapPDENLPModel(x0, f, trian, quad, Ypde, Ycon, Xpde, Xcon, lvar, uvar, c, lcon, ucon)
-GridapPDENLPModel(f, trian, quad, Ypde, Ycon, Xpde, Xcon, lvar, uvar, c, lcon, ucon)
+ GridapPDENLPModel(x0, f, trian, quad, Ypde, Ycon, Xpde, Xcon, lvar, uvar, c)
+ GridapPDENLPModel(f, trian, quad, Ypde, Ycon, Xpde, Xcon, lvar, uvar, c)
+ GridapPDENLPModel(x0, f, trian, quad, Ypde, Ycon, Xpde, Xcon, lvar, uvar, c, lcon, ucon)
+ GridapPDENLPModel(f, trian, quad, Ypde, Ycon, Xpde, Xcon, lvar, uvar, c, lcon, ucon)
 
+The following keyword arguments are available to all constructors:
+- `name`: The name of the model (default: "Generic")
+The following keyword arguments are available to the constructors for constrained problems:
+- `lin`: An array of indexes of the linear constraints
+(default: `Int[]` or 1:ncon if c is an AffineFEOperator)
+
+The following keyword arguments are available to the constructors for constrained problems
+explictly giving lcon and ucon:
+- `y0`: An inital estimate to the Lagrangian multipliers (default: zeros)
+
+We handle only two types of FEOperator: AffineFEOperator, and FEOperatorFromTerms
+which is the obtained by the FEOperator constructor.
+The terms supported in FEOperatorFromTerms are: FESource, NonlinearFETerm,
+NonlinearFETermWithAutodiff, LinearFETerm, AffineFETerm.
 """
 mutable struct GridapPDENLPModel <: AbstractNLPModel
 
-  meta      :: NLPModelMeta
+  meta     :: NLPModelMeta
 
   counters :: Counters
 
   # For the objective function
-  f :: Function
-  trian
-  quad
+  f        :: Function
+  trian    :: Triangulation
+  quad     :: CellQuadrature
 
   #Gridap discretization
-  Ypde  :: FESpace #TrialFESpace for the solution of the PDE
-  Ycon  :: Union{FESpace, Nothing} #TrialFESpace for the parameter
-  Xpde  :: FESpace #TestFESpace for the solution of the PDE
-  Xcon  :: Union{FESpace, Nothing} #TestFESpace for the parameter
+  Ypde     :: FESpace #TrialFESpace for the solution of the PDE
+  Ycon     :: Union{FESpace, Nothing} #TrialFESpace for the parameter
+  Xpde     :: FESpace #TestFESpace for the solution of the PDE
+  Xcon     :: Union{FESpace, Nothing} #TestFESpace for the parameter
 
-  Y     :: Union{FESpace, Nothing} #concatenated TrialFESpace
-  X     :: Union{FESpace, Nothing} #concatenated TestFESpace
+  Y        :: FESpace #concatenated TrialFESpace
+  X        :: FESpace #concatenated TestFESpace
 
-  op    :: Union{FEOperator, Nothing}
+  op       :: Union{FEOperator, Nothing}
 
-  nvar_pde         :: Int #number of dofs in the solution functions
-  nvar_con         :: Int #number of dofs in the control functions
-  nparam           :: Int #number of unknown parameters
+  nvar_pde :: Int #number of dofs in the solution functions
+  nvar_con :: Int #number of dofs in the control functions
+  nparam   :: Int #number of unknown parameters
 
 end
 
 function GridapPDENLPModel(x0    :: AbstractVector{T},
                            f     :: Function,
-                           trian,
-                           quad,
+                           trian :: Triangulation,
+                           quad  :: CellQuadrature,
                            Ypde  :: FESpace,
                            Xpde  :: FESpace;
                            name  :: String = "Generic") where T <: AbstractFloat
 
  nvar = length(x0)
-
  nnzh = nvar * (nvar + 1) / 2
-
- meta = NLPModelMeta(nvar, x0=x0, nnzh=nnzh, minimize=true, islp=false, name=name)
 
  X, Y     = Xpde, Ypde
  nvar_pde = Gridap.FESpaces.num_free_dofs(Ypde)
  nvar_con = 0
  nparam   = nvar - (nvar_pde + nvar_con)
 
+ @assert nparam>=0 throw(DimensionError("x0", nvar_pde, nvar))
+
+ meta = NLPModelMeta(nvar, x0=x0, nnzh=nnzh, minimize=true, islp=false, name=name)
+
  return GridapPDENLPModel(meta, Counters(), f, trian, quad, Ypde, nothing, Xpde, nothing, Y, X, nothing, nvar_pde, nvar_con, nparam)
 end
 
 function GridapPDENLPModel(f     :: Function,
-                           trian,
-                           quad,
+                           trian :: Triangulation,
+                           quad  :: CellQuadrature,
                            Ypde  :: FESpace,
                            Xpde  :: FESpace;
                            name  :: String = "Generic")
@@ -122,8 +136,8 @@ end
 
 function GridapPDENLPModel(x0    :: AbstractVector{T},
                            f     :: Function,
-                           trian,
-                           quad,
+                           trian :: Triangulation,
+                           quad  :: CellQuadrature,
                            Ypde  :: FESpace,
                            Xpde  :: FESpace,
                            lvar  :: AbstractVector{T},
@@ -131,23 +145,24 @@ function GridapPDENLPModel(x0    :: AbstractVector{T},
                            name  :: String = "Generic") where T <: AbstractFloat
 
  nvar = length(x0)
- @lencheck nvar x0 lvar uvar
-
  nnzh = nvar * (nvar + 1) / 2
-
- meta = NLPModelMeta(nvar, x0=x0, lvar=lvar, uvar=uvar, nnzh=nnzh, minimize=true, islp=false, name=name)
 
  X, Y     = Xpde, Ypde
  nvar_pde = Gridap.FESpaces.num_free_dofs(Ypde)
  nvar_con = 0
  nparam   = nvar - (nvar_pde + nvar_con)
 
+ @assert nparam>=0 throw(DimensionError("x0", nvar_pde, nvar))
+ @lencheck nvar x0 lvar uvar
+
+ meta = NLPModelMeta(nvar, x0=x0, lvar=lvar, uvar=uvar, nnzh=nnzh, minimize=true, islp=false, name=name)
+
  return GridapPDENLPModel(meta, Counters(), f, trian, quad, Ypde, nothing, Xpde, nothing, Y, X, nothing, nvar_pde, nvar_con, nparam)
 end
 
 function GridapPDENLPModel(f     :: Function,
-                           trian,
-                           quad,
+                           trian :: Triangulation,
+                           quad  :: CellQuadrature,
                            Ypde  :: FESpace,
                            Xpde  :: FESpace,
                            lvar  :: AbstractVector{T},
@@ -156,48 +171,50 @@ function GridapPDENLPModel(f     :: Function,
 
  x0 = zeros(T, Gridap.FESpaces.num_free_dofs(Ypde))
 
- return GridapPDENLPModel(x0, f, trian, quad, Ypde, Xpde; name = name)
+ return GridapPDENLPModel(x0, f, trian, quad, Ypde, Xpde, lvar, uvar; name = name)
 end
 
 function GridapPDENLPModel(x0    :: AbstractVector{T},
                            f     :: Function,
-                           trian,
-                           quad,
+                           trian :: Triangulation,
+                           quad  :: CellQuadrature,
                            Ypde  :: FESpace,
                            Ycon  :: Union{FESpace, Nothing},
                            Xpde  :: FESpace,
                            Xcon  :: Union{FESpace, Nothing},
                            c     :: FEOperator;
-                           name  :: String = "Generic") where T <: AbstractFloat
+                           name  :: String = "Generic",
+                           lin   :: AbstractVector{<: Integer} = Int[]) where T <: AbstractFloat
 
  nvar_pde = Gridap.FESpaces.num_free_dofs(Ypde)
  lcon     = zeros(nvar_pde)
  ucon     = zeros(nvar_pde)
 
- return GridapPDENLPModel(x0, f, trian, quad, Ypde, Ycon, Xpde, Xcon, c, lcon, ucon; name = name)
+ return GridapPDENLPModel(x0, f, trian, quad, Ypde, Ycon, Xpde, Xcon, c, lcon, ucon; name = name, lin = lin)
 end
 
 function GridapPDENLPModel(f     :: Function,
-                           trian,
-                           quad,
+                           trian :: Triangulation,
+                           quad  :: CellQuadrature,
                            Ypde  :: FESpace,
                            Ycon  :: Union{FESpace, Nothing},
                            Xpde  :: FESpace,
                            Xcon  :: Union{FESpace, Nothing},
                            c     :: FEOperator;
-                           name  :: String = "Generic")
+                           name  :: String = "Generic",
+                           lin   :: AbstractVector{<: Integer} = Int[])
 
  nvar_pde = Gridap.FESpaces.num_free_dofs(Ypde)
  lcon     = zeros(nvar_pde)
  ucon     = zeros(nvar_pde)
 
- return GridapPDENLPModel(f, trian, quad, Ypde, Ycon, Xpde, Xcon, c, lcon, ucon; name = name)
+ return GridapPDENLPModel(f, trian, quad, Ypde, Ycon, Xpde, Xcon, c, lcon, ucon; name = name, lin = lin)
 end
 
 function GridapPDENLPModel(x0    :: AbstractVector{T},
                            f     :: Function,
-                           trian,
-                           quad,
+                           trian :: Triangulation,
+                           quad  :: CellQuadrature,
                            Ypde  :: FESpace,
                            Ycon  :: Union{FESpace, Nothing},
                            Xpde  :: FESpace,
@@ -213,6 +230,12 @@ function GridapPDENLPModel(x0    :: AbstractVector{T},
  ncon = length(lcon)
  @lencheck ncon ucon y0
 
+ nvar_pde = Gridap.FESpaces.num_free_dofs(Ypde)
+ nvar_con = Ycon == nothing ? 0 : Gridap.FESpaces.num_free_dofs(Ycon)
+ nparam   = nvar - (nvar_pde + nvar_con)
+
+ @assert nparam>=0 throw(DimensionError("x0", nvar_pde + nvar_con, nvar))
+
  nnzh = nvar * (nvar + 1) / 2
 
  if typeof(c) <: AffineFEOperator #Here we expect ncon = nvar_pde
@@ -227,33 +250,29 @@ function GridapPDENLPModel(x0    :: AbstractVector{T},
  meta = NLPModelMeta(nvar, x0=x0, ncon=ncon, y0=y0, lcon=lcon, ucon=ucon,
     nnzj=nnzj, nnzh=nnzh, lin=lin, nln=nln, minimize=true, islp=false, name=name)
 
-    if Xcon != nothing && Ycon != nothing
-    _xedp = typeof(Xpde) <: MultiFieldFESpace ? Xpde : MultiFieldFESpace([Xpde])
-    _xcon = typeof(Xcon) <: MultiFieldFESpace ? Xcon : MultiFieldFESpace([Xcon])
-    #Handle the case where Ypde or Ycon are single field FE space(s).
-    _yedp = typeof(Ypde) <: MultiFieldFESpace ? Ypde : MultiFieldFESpace([Ypde])
-    _ycon = typeof(Ycon) <: MultiFieldFESpace ? Ycon : MultiFieldFESpace([Ycon])
-    #Build Y (resp. X) the trial (resp. test) space of the Multi Field function [y,u]
-    X     = MultiFieldFESpace(vcat(_xedp.spaces, _xcon.spaces))
-    Y     = MultiFieldFESpace(vcat(_yedp.spaces, _ycon.spaces))
-    elseif (Xcon == nothing) ⊻ (Ycon == nothing)
-    throw("Error: Xcon or Ycon are both nothing or must be specified.")
-    else
-    _xedp = typeof(Xpde) <: MultiFieldFESpace ? Xpde : MultiFieldFESpace([Xpde])
-    X = _xedp
-    Y = Ypde
-    end
-
- nvar_pde = Gridap.FESpaces.num_free_dofs(Ypde)
- nvar_con = Ycon == nothing ? 0 : Gridap.FESpaces.num_free_dofs(Ycon)
- nparam   = nvar - (nvar_pde + nvar_con)
+ if Xcon != nothing && Ycon != nothing
+  _xpde = typeof(Xpde) <: MultiFieldFESpace ? Xpde : MultiFieldFESpace([Xpde])
+  _xcon = typeof(Xcon) <: MultiFieldFESpace ? Xcon : MultiFieldFESpace([Xcon])
+  #Handle the case where Ypde or Ycon are single field FE space(s).
+  _ypde = typeof(Ypde) <: MultiFieldFESpace ? Ypde : MultiFieldFESpace([Ypde])
+  _ycon = typeof(Ycon) <: MultiFieldFESpace ? Ycon : MultiFieldFESpace([Ycon])
+  #Build Y (resp. X) the trial (resp. test) space of the Multi Field function [y,u]
+  X     = MultiFieldFESpace(vcat(_xpde.spaces, _xcon.spaces))
+  Y     = MultiFieldFESpace(vcat(_ypde.spaces, _ycon.spaces))
+ elseif (Xcon == nothing) ⊻ (Ycon == nothing)
+  throw("Error: Xcon or Ycon are both nothing or must be specified.")
+ else
+  _xpde = typeof(Xpde) <: MultiFieldFESpace ? Xpde : MultiFieldFESpace([Xpde])
+  X = _xpde
+  Y = Ypde
+ end
 
  return GridapPDENLPModel(meta, Counters(), f, trian, quad, Ypde, Ycon, Xpde, Xcon, Y, X, c, nvar_pde, nvar_con, nparam)
 end
 
 function GridapPDENLPModel(f     :: Function,
-                           trian,
-                           quad,
+                           trian :: Triangulation,
+                           quad  :: CellQuadrature,
                            Ypde  :: FESpace,
                            Ycon  :: Union{FESpace, Nothing},
                            Xpde  :: FESpace,
@@ -273,8 +292,8 @@ end
 
 function GridapPDENLPModel(x0    :: AbstractVector{T},
                            f     :: Function,
-                           trian,
-                           quad,
+                           trian :: Triangulation,
+                           quad  :: CellQuadrature,
                            Ypde  :: FESpace,
                            Ycon  :: Union{FESpace, Nothing},
                            Xpde  :: FESpace,
@@ -282,7 +301,6 @@ function GridapPDENLPModel(x0    :: AbstractVector{T},
                            lvar  :: AbstractVector{T},
                            uvar  :: AbstractVector{T},
                            c     :: FEOperator;
-                           y0    :: AbstractVector = fill!(similar(lcon), zero(T)),
                            name  :: String = "Generic",
                            lin   :: AbstractVector{<: Integer} = Int[]) where T <: AbstractFloat
 
@@ -290,12 +308,12 @@ function GridapPDENLPModel(x0    :: AbstractVector{T},
  lcon     = zeros(T, nvar_pde)
  ucon     = zeros(T, nvar_pde)
 
- return return GridapPDENLPModel(x0, f, trian, quad, Ypde, Ycon, Xpde, Xcon, lvar, uvar, c, lcon, ucon; y0 = y0, name = name, lin = lin)
+ return return GridapPDENLPModel(x0, f, trian, quad, Ypde, Ycon, Xpde, Xcon, lvar, uvar, c, lcon, ucon; name = name, lin = lin)
 end
 
 function GridapPDENLPModel(f     :: Function,
-                           trian,
-                           quad,
+                           trian :: Triangulation,
+                           quad  :: CellQuadrature,
                            Ypde  :: FESpace,
                            Ycon  :: Union{FESpace, Nothing},
                            Xpde  :: FESpace,
@@ -303,7 +321,6 @@ function GridapPDENLPModel(f     :: Function,
                            lvar  :: AbstractVector{T},
                            uvar  :: AbstractVector{T},
                            c     :: FEOperator;
-                           #y0    :: AbstractVector = fill!(similar(lcon), zero(T)),
                            name  :: String = "Generic",
                            lin   :: AbstractVector{<: Integer} = Int[]) where T <: AbstractFloat
 
@@ -317,8 +334,8 @@ end
 
 function GridapPDENLPModel(x0    :: AbstractVector{T},
                            f     :: Function,
-                           trian,
-                           quad,
+                           trian :: Triangulation,
+                           quad  :: CellQuadrature,
                            Ypde  :: FESpace,
                            Ycon  :: Union{FESpace, Nothing},
                            Xpde  :: FESpace,
@@ -334,6 +351,12 @@ function GridapPDENLPModel(x0    :: AbstractVector{T},
 
  nvar = length(x0)
  ncon = length(lcon)
+
+ nvar_pde = Gridap.FESpaces.num_free_dofs(Ypde)
+ nvar_con = Ycon == nothing ? 0 : Gridap.FESpaces.num_free_dofs(Ycon)
+ nparam   = nvar - (nvar_pde + nvar_con)
+
+ @assert nparam>=0 throw(DimensionError("x0", nvar_pde + nvar_con, nvar))
  @lencheck nvar lvar uvar
  @lencheck ncon ucon y0
 
@@ -351,33 +374,29 @@ function GridapPDENLPModel(x0    :: AbstractVector{T},
  meta = NLPModelMeta(nvar, x0=x0, lvar=lvar, uvar=uvar, ncon=ncon, y0=y0, lcon=lcon, ucon=ucon,
     nnzj=nnzj, nnzh=nnzh, lin=lin, nln=nln, minimize=true, islp=false, name=name)
 
-    if Xcon != nothing && Ycon != nothing
-    _xedp = typeof(Xpde) <: MultiFieldFESpace ? Xpde : MultiFieldFESpace([Xpde])
-    _xcon = typeof(Xcon) <: MultiFieldFESpace ? Xcon : MultiFieldFESpace([Xcon])
-    #Handle the case where Ypde or Ycon are single field FE space(s).
-    _yedp = typeof(Ypde) <: MultiFieldFESpace ? Ypde : MultiFieldFESpace([Ypde])
-    _ycon = typeof(Ycon) <: MultiFieldFESpace ? Ycon : MultiFieldFESpace([Ycon])
-    #Build Y (resp. X) the trial (resp. test) space of the Multi Field function [y,u]
-    X     = MultiFieldFESpace(vcat(_xedp.spaces, _xcon.spaces))
-    Y     = MultiFieldFESpace(vcat(_yedp.spaces, _ycon.spaces))
-    elseif (Xcon == nothing) ⊻ (Ycon == nothing)
-    throw("Error: Xcon or Ycon are both nothing or must be specified.")
-    else
-    _xedp = typeof(Xpde) <: MultiFieldFESpace ? Xpde : MultiFieldFESpace([Xpde])
-    X = _xedp
-    Y = Ypde
-    end
-
- nvar_pde = Gridap.FESpaces.num_free_dofs(Ypde)
- nvar_con = Ycon == nothing ? 0 : Gridap.FESpaces.num_free_dofs(Ycon)
- nparam   = nvar - (nvar_pde + nvar_con)
+ if Xcon != nothing && Ycon != nothing
+  _xpde = typeof(Xpde) <: MultiFieldFESpace ? Xpde : MultiFieldFESpace([Xpde])
+  _xcon = typeof(Xcon) <: MultiFieldFESpace ? Xcon : MultiFieldFESpace([Xcon])
+  #Handle the case where Ypde or Ycon are single field FE space(s).
+  _ypde = typeof(Ypde) <: MultiFieldFESpace ? Ypde : MultiFieldFESpace([Ypde])
+  _ycon = typeof(Ycon) <: MultiFieldFESpace ? Ycon : MultiFieldFESpace([Ycon])
+  #Build Y (resp. X) the trial (resp. test) space of the Multi Field function [y,u]
+  X     = MultiFieldFESpace(vcat(_xpde.spaces, _xcon.spaces))
+  Y     = MultiFieldFESpace(vcat(_ypde.spaces, _ycon.spaces))
+ elseif (Xcon == nothing) ⊻ (Ycon == nothing)
+  throw("Error: Xcon or Ycon are both nothing or must be specified.")
+ else
+  _xpde = typeof(Xpde) <: MultiFieldFESpace ? Xpde : MultiFieldFESpace([Xpde])
+  X = _xpde
+  Y = Ypde
+ end
 
  return GridapPDENLPModel(meta, Counters(), f, trian, quad, Ypde, Ycon, Xpde, Xcon, Y, X, c, nvar_pde, nvar_con, nparam)
 end
 
 function GridapPDENLPModel(f     :: Function,
-                           trian,
-                           quad,
+                           trian :: Triangulation,
+                           quad  :: CellQuadrature,
                            Ypde  :: FESpace,
                            Ycon  :: Union{FESpace, Nothing},
                            Xpde  :: FESpace,
@@ -400,19 +419,70 @@ end
 show_header(io :: IO, nlp :: GridapPDENLPModel) = println(io, "GridapPDENLPModel")
 
 """
-Apply FEFunction to dofs corresponding to the solution `y` and the control `u`.
+`_split_FEFunction(:: AbstractVector,  :: FESpace, :: Union{FESpace, Nothing})`
+
+Split the vector x into two FEFunction corresponding to the solution `y` and the control `u`.
+Returns nothing for the control `u` if Ycon == nothing.
+
+Do not verify the compatible length.
 """
 function _split_FEFunction(x    :: AbstractVector,
                            Ypde :: FESpace,
-                           Ycon :: Union{FESpace, Nothing})
+                           Ycon :: FESpace)
 
     nvar_pde = Gridap.FESpaces.num_free_dofs(Ypde)
-    nvar_con = Ycon == nothing ? 0 : Gridap.FESpaces.num_free_dofs(Ycon)
+    nvar_con = Gridap.FESpaces.num_free_dofs(Ycon)
 
     yh = FEFunction(Ypde, x[1:nvar_pde])
-    uh = (Ycon != nothing) ? FEFunction(Ycon, x[1+nvar_pde:nvar_pde+nvar_con]) : nothing
+    uh = FEFunction(Ycon, x[1+nvar_pde:nvar_pde+nvar_con])
 
  return yh, uh
+end
+
+function _split_FEFunction(x    :: AbstractVector,
+                           Ypde :: FESpace,
+                           Ycon :: Nothing)
+
+    nvar_pde = Gridap.FESpaces.num_free_dofs(Ypde)
+    yh = FEFunction(Ypde, x[1:nvar_pde])
+
+ return yh, nothing
+end
+
+"""
+`_split_vector(:: AbstractVector,  :: FESpace, :: Union{FESpace, Nothing})`
+
+Split the vector x into three vectors: y, u, k.
+Returns nothing for the control `u` if Ycon == nothing.
+
+Do not verify the compatible length.
+"""
+function _split_vector(x    :: AbstractVector,
+                       Ypde :: FESpace,
+                       Ycon :: FESpace)
+
+    nvar_pde = Gridap.FESpaces.num_free_dofs(Ypde)
+    nvar_con = Gridap.FESpaces.num_free_dofs(Ycon)
+    #nparam   = length(x) - (nvar_pde + nvar_con)
+
+    y = x[1:nvar_pde]
+    u = x[1+nvar_pde:nvar_pde+nvar_con]
+    k = x[nvar_pde+nvar_con+1:length(x)]
+
+ return y, u, k
+end
+
+function _split_vector(x    :: AbstractVector,
+                       Ypde :: FESpace,
+                       Ycon :: Nothing)
+
+    nvar_pde = Gridap.FESpaces.num_free_dofs(Ypde)
+    #nparam   = length(x) - nvar_pde
+
+    y = x[1:nvar_pde]
+    k = x[nvar_pde+1:length(x)]
+
+ return y, [], k
 end
 
 function obj(nlp :: GridapPDENLPModel, x :: AbstractVector)
@@ -584,11 +654,11 @@ end
 
 function cons!(nlp :: GridapPDENLPModel, x :: AbstractVector, c :: AbstractVector)
 
-    #edp_residual = Array{eltype(x),1}(undef, nlp.nvar_pde)
+    #pde_residual = Array{eltype(x),1}(undef, nlp.nvar_pde)
 
     _from_terms_to_residual!(nlp.op, x, nlp, c)
 
-    #c .= edp_residual
+    #c .= pde_residual
 
     return c
 end
@@ -670,9 +740,9 @@ function jac(nlp :: GridapPDENLPModel, x :: AbstractVector{T}) where T <: Abstra
   @lencheck nlp.meta.nvar x
   increment!(nlp, :neval_jac)
 
-  edp_jac = _from_terms_to_jacobian(nlp.op, x, nlp.Y, nlp.Xpde, nlp.Ypde, nlp.Ycon)
+  pde_jac = _from_terms_to_jacobian(nlp.op, x, nlp.Y, nlp.Xpde, nlp.Ypde, nlp.Ycon)
 
-  return edp_jac
+  return pde_jac
 end
 
 function _from_terms_to_jacobian(op   :: AffineFEOperator,
@@ -1056,10 +1126,10 @@ function hprod!(nlp  :: GridapPDENLPModel, x :: AbstractVector, λ :: AbstractVe
   @lencheck nlp.meta.ncon λ
   increment!(nlp, :neval_hprod)
 
-  λ_edp = λ[1:nlp.nvar_pde]
+  λ_pde = λ[1:nlp.nvar_pde]
   λ_con = λ[nlp.nvar_pde + 1 : nlp.meta.ncon]
 
-  _from_terms_to_hprod!(nlp.op, x, λ_edp, v, nlp, Hv, obj_weight)
+  _from_terms_to_hprod!(nlp.op, x, λ_pde, v, nlp, Hv, obj_weight)
 
   return Hv
 end

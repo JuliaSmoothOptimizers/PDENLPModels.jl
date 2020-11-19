@@ -1,11 +1,17 @@
-using ForwardDiff, Gridap, JSOSolvers, LinearAlgebra, NLPModels, Test
-using Main.PDENLPModels
+using BenchmarkTools, ForwardDiff, Gridap, JSOSolvers, Krylov, LinearAlgebra, NLPModels, SparseArrays, Test
+using PDENLPModels
+
+
+FEFunctionType = Union{Gridap.FESpaces.SingleFieldFEFunction, Gridap.MultiField.MultiFieldFEFunction}
+
+using PDENLPModels: _split_vector, _split_FEFunction
+include("unit-test.jl")
 
 #I. Test on GridapPDENLPModel:
 #Elementary tests on an unconstrained problem
 include("test-unconstrained.jl")
 #Elementary tests on a PDE problem (no objective fct and no other constraints)
-include("pde-only-incompressible-NS.jl") #TODO check hprod! here.
+include("pde-only-incompressible-NS.jl")
 #Unconstrained optimization <=> Laplacian equation
 include("test-unconstrained-2.jl")
 
@@ -15,9 +21,8 @@ include("test-unconstrained-2.jl")
 #Optimization problem with PDE constraint:
 
 #Laplacian with Dirichlet boundary conditions
-#include("control-elastic-membrane.jl") #TODO
 #Mixed boundary conditions, and a source term.
-include("poisson-with-Neumann-and-Dirichlet.jl") #TODO check hprod! here.
+include("poisson-with-Neumann-and-Dirichlet.jl")
 
 #The three examples in the paper IMPLEMENTING A SMOOTH EXACT PENALTY FUNCTION FOR EQUALITY-CONSTRAINED NONLINEAR OPTIMIZATION
 include("1d-Burger-example.jl") #TODO check hprod! here + solver

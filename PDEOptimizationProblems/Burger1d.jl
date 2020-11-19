@@ -69,7 +69,7 @@ function Burger1d(;n :: Int = 512, kwargs...)
     @law conv(u,∇u) = (∇u ⋅one(∇u))⊙u
     c(u,v) = v⊙conv(u,∇(u))
     nu = 0.08
-    function res(yu, v) #u is the solution of the PDE and z the control
+    function res(yu, v)
      y, u = yu
      v
 
