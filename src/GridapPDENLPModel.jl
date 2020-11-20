@@ -1,4 +1,4 @@
-"""
+@doc raw"""
 PDENLPModels using Gridap.jl
 
 https://github.com/gridap/Gridap.jl
@@ -12,12 +12,21 @@ s.t.     y solution of a PDE(u,κ)=0
          lcon <= c(y,u,κ) <= ucon
          lvar <= (y,u,κ)  <= uvar
 
+         ```math
+         \begin{aligned}
+         \nabla\cdot\mathbf{E}  &= 4 \pi \rho \\
+         \nabla\cdot\mathbf{B}  &= 0 \\
+         \nabla\times\mathbf{E} &= - \frac{1}{c} \frac{\partial\mathbf{B}}{\partial t} \\
+         \nabla\times\mathbf{B} &= - \frac{1}{c} \left(4 \pi \mathbf{J} + \frac{\partial\mathbf{E}}{\partial t} \right)
+         \end{aligned}
+         ```
+
 The weak formulation is then:
 res((y,u),(v,q)) = ∫ v PDE(u,y,κ) + ∫ q c(y,u,κ)
 
 where the unknown (y,u) is a MultiField see Tutorials 7 and 8 of Gridap.
-https://gridap.github.io/Tutorials/stable/pages/t007_darcy/
-https://gridap.github.io/Tutorials/stable/pages/t008_inc_navier_stokes/
+- https://gridap.github.io/Tutorials/stable/pages/t007_darcy/
+- https://gridap.github.io/Tutorials/stable/pages/t008_inc_navier_stokes/
 
 The set Ω​ is represented here with *trian* and *quad*.
 
@@ -39,22 +48,22 @@ TODO:
 - Missing: constraint ncon with num_free_dofs(Xpde)?
 
 Example:
-i) Unconstrained and no control
- GridapPDENLPModel(x0, f, trian, quad, Ypde, Xpde)
- GridapPDENLPModel(f, trian, quad, Ypde, Xpde)
-ii) Bound constraints
- GridapPDENLPModel(x0, f, trian, quad, Ypde, Xpde, lvar, uvar)
- GridapPDENLPModel(f, trian, quad, Ypde, Xpde, lvar, uvar)
-iii) PDE-Constrained
- GridapPDENLPModel(x0, f, trian, quad, Ypde, Ycon, Xpde, Xcon, c) #assuming lcon=ucon=zeros(ncon)
- GridapPDENLPModel(f, trian, quad, Ypde, Ycon, Xpde, Xcon, c) #assuming lcon=ucon=zeros(ncon)
- GridapPDENLPModel(x0, f, trian, quad, Ypde, Ycon, Xpde, Xcon, c, lcon, ucon)
- GridapPDENLPModel(f, trian, quad, Ypde, Ycon, Xpde, Xcon, c, lcon, ucon)
-iv) PDE-constraint and bounds
- GridapPDENLPModel(x0, f, trian, quad, Ypde, Ycon, Xpde, Xcon, lvar, uvar, c)
- GridapPDENLPModel(f, trian, quad, Ypde, Ycon, Xpde, Xcon, lvar, uvar, c)
- GridapPDENLPModel(x0, f, trian, quad, Ypde, Ycon, Xpde, Xcon, lvar, uvar, c, lcon, ucon)
- GridapPDENLPModel(f, trian, quad, Ypde, Ycon, Xpde, Xcon, lvar, uvar, c, lcon, ucon)
+- Unconstrained and no control
+  GridapPDENLPModel(x0, f, trian, quad, Ypde, Xpde)
+  GridapPDENLPModel(f, trian, quad, Ypde, Xpde)
+- Bound constraints
+  GridapPDENLPModel(x0, f, trian, quad, Ypde, Xpde, lvar, uvar)
+  GridapPDENLPModel(f, trian, quad, Ypde, Xpde, lvar, uvar)
+- PDE-Constrained
+  GridapPDENLPModel(x0, f, trian, quad, Ypde, Ycon, Xpde, Xcon, c) #assuming lcon=ucon=zeros(ncon)
+  GridapPDENLPModel(f, trian, quad, Ypde, Ycon, Xpde, Xcon, c) #assuming lcon=ucon=zeros(ncon)
+  GridapPDENLPModel(x0, f, trian, quad, Ypde, Ycon, Xpde, Xcon, c, lcon, ucon)
+  GridapPDENLPModel(f, trian, quad, Ypde, Ycon, Xpde, Xcon, c, lcon, ucon)
+- PDE-constraint and bounds
+  GridapPDENLPModel(x0, f, trian, quad, Ypde, Ycon, Xpde, Xcon, lvar, uvar, c)
+  GridapPDENLPModel(f, trian, quad, Ypde, Ycon, Xpde, Xcon, lvar, uvar, c)
+  GridapPDENLPModel(x0, f, trian, quad, Ypde, Ycon, Xpde, Xcon, lvar, uvar, c, lcon, ucon)
+  GridapPDENLPModel(f, trian, quad, Ypde, Ycon, Xpde, Xcon, lvar, uvar, c, lcon, ucon)
 
 The following keyword arguments are available to all constructors:
 - `name`: The name of the model (default: "Generic")
