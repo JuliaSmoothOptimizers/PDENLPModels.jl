@@ -28,7 +28,7 @@ module PDEOptimizationProblems
 
 using Gridap
 
-using Main.PDENLPModels
+using PDENLPModels
 
 #Unconstrained problems
 include("penalizedPoisson.jl")

@@ -1,4 +1,6 @@
-using Main.PDEOptimizationProblems, Main.PDENLPModels, Test
+#using Main.PDEOptimizationProblems, Main.PDENLPModels, Test
+using PDENLPModels, Test
+using PDEOptimizationProblems
 
 # Test that every problem can be instantiated.
 for prob in names(PDEOptimizationProblems)
