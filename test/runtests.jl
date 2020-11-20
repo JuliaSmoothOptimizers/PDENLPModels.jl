@@ -25,7 +25,7 @@ include("test-unconstrained-2.jl")
 include("poisson-with-Neumann-and-Dirichlet.jl")
 
 #The three examples in the paper IMPLEMENTING A SMOOTH EXACT PENALTY FUNCTION FOR EQUALITY-CONSTRAINED NONLINEAR OPTIMIZATION
-include("1d-Burger-example.jl") #TODO check hprod! here + solver
+#include("1d-Burger-example.jl") #TODO check hprod! here + solver
 #include("distributed-Poisson-control-with-Dirichlet-bdry.jl") #TODO
 #include("2d-poisson-Boltzman-problem.jl") #TODO
 

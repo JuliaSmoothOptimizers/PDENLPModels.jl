@@ -90,9 +90,9 @@ function _1dBurger_nlp()
     @time _Hx = hess(nlp, sol_gridap)
     @time _cx = cons(nlp, sol_gridap)
 
-    @time _Jx =  Main.PDENLPModels.jac(nlp, sol_gridap);
-    @time _Jx2 =  Main.PDENLPModels.jac(nlp, zeros(nlp.meta.nvar))
-    @time _Jx3 =  Main.PDENLPModels.jac(nlp, ones(nlp.meta.nvar))
+    @time _Jx =  jac(nlp, sol_gridap);
+    @time _Jx2 =  jac(nlp, zeros(nlp.meta.nvar))
+    @time _Jx3 =  jac(nlp, ones(nlp.meta.nvar))
     #Note that the derivative w.r.t. to the control is constant.
     @test norm(_Jx2[:,512:1024] - _Jx3[:,512:1024]) == 0.0
     @test norm(_Jx[:,512:1024] - _Jx3[:,512:1024]) == 0.0
