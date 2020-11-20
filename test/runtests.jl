@@ -22,7 +22,7 @@ include("test-unconstrained-2.jl")
 
 #Laplacian with Dirichlet boundary conditions
 #Mixed boundary conditions, and a source term.
-include("poisson-with-Neumann-and-Dirichlet.jl")
+#include("poisson-with-Neumann-and-Dirichlet.jl")
 
 #The three examples in the paper IMPLEMENTING A SMOOTH EXACT PENALTY FUNCTION FOR EQUALITY-CONSTRAINED NONLINEAR OPTIMIZATION
 #include("1d-Burger-example.jl") #TODO check hprod! here + solver
