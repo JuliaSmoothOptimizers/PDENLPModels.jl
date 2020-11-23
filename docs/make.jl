@@ -70,7 +70,7 @@ makedocs(
 deploydocs(
     repo = "github.com/tmigot/PDENLPModels.jl.git",
     devurl = "dev",
-    versions = [devurl => devurl]
+    versions = ["dev" => "dev"]
 )
 
 #Tanj: to visualize locally
