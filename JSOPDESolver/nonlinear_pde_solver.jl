@@ -66,6 +66,7 @@ end
 
 op = _pdeonlyincompressibleNS()
 
+using LineSearches
 #Gridap way of solving the equation:
 nls = NLSolver(
   show_trace=true, method=:newton, linesearch=BackTracking())
@@ -76,7 +77,7 @@ solver = FESolver(nls)
 #  tol::Float64
 #  max_nliters::Int
 #end
-nls2 = Gridap.Algebra.NewtonRaphsonSolver(ls1, 1e-6, 100)
+nls2 = Gridap.Algebra.NewtonRaphsonSolver(LUSolver(), 1e-6, 100)
 solver2 = FESolver(nls2)
 
 #The first approach is to use Newton method anticipated by Gridap and using
@@ -117,4 +118,36 @@ sol_gridap3 = get_free_values(uph3);
 
 #Another option is to create an NLSModel.
 #https://github.com/JuliaSmoothOptimizers/NLPModels.jl/blob/master/src/NLSModels.jl
-#\TODO
+#using NLPModels
+#nvar = Gridap.FESpaces.num_free_dofs(op.trial)
+#nequ = Gridap.FESpaces.num_free_dofs(op.test)
+#F(x) = Gridap.FESpaces.residual(op, FEFunction(op.trial, x))
+#nls = ADNLSModel(F, zeros(nvar), nequ)
+
+#using NLPModels: increment!
+#import NLPModels: jac_residual
+#function jac_residual(nls :: ADNLSModel, x :: AbstractVector)
+#  @lencheck nls.meta.nvar x
+#  increment!(nls, :neval_jac_residual)
+#  return Gridap.FESpaces.jacobian(op, FEFunction(op.trial, x))
+#end #note that this is a sparse matrix
+
+#However, this is redundant with the GridapPDENLPModel:
+#with trian, quad are nothing...
+#nlp = GridapPDENLPModel(x->0., **, **, op.trial, op.test, op)
+
+#function residual! end
+#function jac_structure_residual! end
+#(rows,cols) = jac_structure_residual!(nls, rows, cols)
+#function jac_coord_residual! end
+#vals = jac_coord_residual!(nls, x, vals)
+#function jprod_residual! end
+#Jv = jprod_residual!(nls, x, v, Jv)
+#function jtprod_residual! end
+#Jtv = jtprod_residual!(nls, x, v, Jtv)
+#function hess_structure_residual! end
+#hess_structure_residual!(nls, rows, cols)
+#function hess_coord_residual! end
+#vals = hess_coord_residual!(nls, x, v, vals)
+#function hprod_residual! end
+#Hiv = hprod_residual!(nls, x, i, v, Hiv)

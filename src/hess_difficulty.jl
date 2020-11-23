@@ -23,8 +23,7 @@ function _from_terms_to_hprod!_wish_it_would_work(op  :: Gridap.FESpaces.FEOpera
  function _cell_lag_t(cell)
       yu  = CellField(nlp.Y, cell)
 
-     _yu  = Gridap.FESpaces.restrict(yu, nlp.trian)
-     _lag = integrate(nlp.f(_yu), nlp.trian, nlp.quad)
+     _lag = _obj_cell_integral(nlp.tnrj, yu, κ)
 
      _dotvalues = Array{Any, 1}(undef, ncells)
      for term in nlp.op.terms
