@@ -1,4 +1,4 @@
-function _test_unconstrained()
+function _test_unconstrained(;udc = false )
     ubis(x) =  x[1]^2+x[2]^2
     f(y,u) = 0.5 * (ubis - u) * (ubis - u) + 0.5 * y * y
     function f(yu) #:: Union{Gridap.MultiField.MultiFieldFEFunction, Gridap.CellData.GenericCellField}
@@ -69,7 +69,7 @@ function _test_unconstrained()
     @test obj(nlp, _t.solution) <= 1/n
     @test norm(_t.solution[nn + 1: nlp.meta.nvar] - solu, Inf) <= sqrt(1/n)
 
-    if false
+    if udc
         @show "derivatives check. This may take approx. 5 minutes."
         #Check derivatives using NLPModels tools:
         #https://github.com/JuliaSmoothOptimizers/NLPModels.jl/blob/master/src/dercheck.jl
@@ -84,4 +84,4 @@ function _test_unconstrained()
     true
 end
 
-@test _test_unconstrained()
+@test _test_unconstrained(udc = use_derivative_check)

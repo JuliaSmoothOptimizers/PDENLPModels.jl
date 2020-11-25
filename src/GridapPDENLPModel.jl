@@ -7,22 +7,22 @@ Journal of Open Source Software, 5(52), 2520.
 
 Find functions (y,u): Y -> ℜⁿ x ℜⁿ and κ ∈ ℜⁿ satisfying
 
-min      ∫_Ω​ f(y,u,κ) dΩ​
-s.t.     y solution of a PDE(u,κ)=0
-         lcon <= c(y,u,κ) <= ucon
-         lvar <= (y,u,κ)  <= uvar
+min      ∫_Ω​ f(κ,y,u) dΩ​
+s.t.     y solution of a PDE(κ,u)=0
+         lcon <= c(κ,y,u) <= ucon
+         lvar <= (κ,y,u)  <= uvar
 
          ```math
          \begin{aligned}
-         \min_{x,y,κ} \ & ∫_Ω​ f(y,u,κ) dΩ​ \\
-         \mbox{ s.t. } & y \mbox{ solution of } PDE(u,κ)=0, \\
-         & lcon <= c(y,u,κ) <= ucon, \\
-         & lvar <= (y,u,κ)  <= uvar.
+         \min_{κ,y,u} \ & ∫_Ω​ f(κ,y,u) dΩ​ \\
+         \mbox{ s.t. } & y \mbox{ solution of } PDE(κ,u)=0, \\
+         & lcon <= c(κ,y,u) <= ucon, \\
+         & lvar <= (κ,y,u)  <= uvar.
          \end{aligned}
          ```
 
 The weak formulation is then:
-res((y,u),(v,q)) = ∫ v PDE(u,y,κ) + ∫ q c(y,u,κ)
+res((y,u),(v,q)) = ∫ v PDE(κ,y,u) + ∫ q c(κ,y,u)
 
 where the unknown (y,u) is a MultiField see [Tutorials 7](https://gridap.github.io/Tutorials/stable/pages/t007_darcy/)
  and [8](https://gridap.github.io/Tutorials/stable/pages/t008_inc_navier_stokes/) of Gridap.
@@ -56,8 +56,8 @@ GridapPDENLPModel(x0, tnrj, Ypde, Xpde, lvar, uvar)
 GridapPDENLPModel(x0, f, trian, quad, Ypde, Xpde, lvar, uvar)
 GridapPDENLPModel(f, trian, quad, Ypde, Xpde, lvar, uvar)
 - PDE-constrained:
-GridapPDENLPModel(x0, tnrj, Ypde, Xpde, c) **new**
-GridapPDENLPModel(Ypde, Xpde, c) **new**
+GridapPDENLPModel(x0, tnrj, Ypde, Xpde, c)
+GridapPDENLPModel(Ypde, Xpde, c)
 GridapPDENLPModel(x0, tnrj, Ypde, Ycon, Xpde, Xcon, c)
 GridapPDENLPModel(x0, f, trian, quad, Ypde, Ycon, Xpde, Xcon, c)
 GridapPDENLPModel(f, trian, quad, Ypde, Ycon, Xpde, Xcon, c)
@@ -151,7 +151,7 @@ function GridapPDENLPModel(x0    :: AbstractVector{T},
  nvar_pde = Gridap.FESpaces.num_free_dofs(Ypde)
  nparam   = length(x0) - nvar_pde
 
- tnrj = nparam > 0 ? MixteEnergyFETerm(f, trian, quad, nparam) : EnergyFETerm(f, trian, quad)
+ tnrj = nparam > 0 ? MixedEnergyFETerm(f, trian, quad, nparam) : EnergyFETerm(f, trian, quad)
 
  return GridapPDENLPModel(x0, tnrj, Ypde, Xpde; name = name)
 end
@@ -207,7 +207,7 @@ function GridapPDENLPModel(x0    :: AbstractVector{T},
  nvar_pde = Gridap.FESpaces.num_free_dofs(Ypde)
  nparam   = length(x0) - nvar_pde
 
- tnrj = nparam > 0 ? MixteEnergyFETerm(f, trian, quad, nparam) : EnergyFETerm(f, trian, quad)
+ tnrj = nparam > 0 ? MixedEnergyFETerm(f, trian, quad, nparam) : EnergyFETerm(f, trian, quad)
 
  return GridapPDENLPModel(x0, tnrj, Ypde, Xpde, lvar, uvar; name = name)
 end
@@ -392,7 +392,7 @@ function GridapPDENLPModel(x0    :: AbstractVector{T},
  nvar_con = Ycon == nothing ? 0 : Gridap.FESpaces.num_free_dofs(Ycon)
  nparam   = nvar - (nvar_pde + nvar_con)
 
- tnrj = nparam > 0 ? MixteEnergyFETerm(f, trian, quad, nparam) : EnergyFETerm(f, trian, quad)
+ tnrj = nparam > 0 ? MixedEnergyFETerm(f, trian, quad, nparam) : EnergyFETerm(f, trian, quad)
 
  return GridapPDENLPModel(x0, tnrj, Ypde, Ycon, Xpde, Xcon, c, lcon, ucon;
                           y0 = y0, name = name, lin = lin)
@@ -569,7 +569,7 @@ function GridapPDENLPModel(x0    :: AbstractVector{T},
  nvar_con = Ycon == nothing ? 0 : Gridap.FESpaces.num_free_dofs(Ycon)
  nparam   = nvar - (nvar_pde + nvar_con)
 
- tnrj = nparam > 0 ? MixteEnergyFETerm(f, trian, quad, nparam) : EnergyFETerm(f, trian, quad)
+ tnrj = nparam > 0 ? MixedEnergyFETerm(f, trian, quad, nparam) : EnergyFETerm(f, trian, quad)
 
  return GridapPDENLPModel(x0, tnrj, Ypde, Ycon, Xpde, Xcon, lvar, uvar,
                           c, lcon, ucon, y0 = y0, name = name, lin = lin)
@@ -608,10 +608,10 @@ function obj(nlp :: GridapPDENLPModel, x :: AbstractVector)
  @lencheck nlp.meta.nvar x
  increment!(nlp, :neval_obj)
 
- yu  = FEFunction(nlp.Y, x)
- κ   = x[nlp.meta.nvar - nlp.nparam+1:nlp.meta.nvar]
+ κ, xyu = x[1 : nlp.nparam], x[nlp.nparam + 1 : nlp.meta.nvar]
+ yu  = FEFunction(nlp.Y, xyu)
 
- int = _obj_integral(nlp.tnrj, yu, κ)
+ int = _obj_integral(nlp.tnrj, κ, yu)
 
  return sum(int)
 end
@@ -621,74 +621,33 @@ function grad!(nlp :: GridapPDENLPModel, x :: AbstractVector, g :: AbstractVecto
     @lencheck nlp.meta.nvar x g
     increment!(nlp, :neval_grad)
 
-    assem  = Gridap.FESpaces.SparseMatrixAssembler(nlp.Y, nlp.X)
-
-    nyu    = nlp.meta.nvar - nlp.nparam
-    xyu, κ = x[1 : nyu], x[nyu + 1 : nlp.meta.nvar]
+    κ, xyu = x[1 : nlp.nparam], x[nlp.nparam + 1 : nlp.meta.nvar]
     yu     = FEFunction(nlp.Y, xyu)
 
-    cell_yu    = Gridap.FESpaces.get_cell_values(yu)
-    cell_id_yu = Gridap.Arrays.IdentityVector(length(cell_yu))
-
-    function _cell_obj_yu(cell_yu)
-         yuh = CellField(nlp.Y, cell_yu)
-        _obj_cell_integral(nlp.tnrj, yuh, κ)
-    end
-
-    #Compute the gradient with AD
-    cell_r_yu = Gridap.Arrays.autodiff_array_gradient(_cell_obj_yu,
-                                                       cell_yu,
-                                                       cell_id_yu)
-    #Put the result in the format expected by Gridap.FESpaces.assemble_matrix
-    vecdata_yu = [[cell_r_yu], [cell_id_yu]]
-    #Assemble the gradient in the "good" space
-    g[1 : nyu] .= Gridap.FESpaces.assemble_vector(assem, vecdata_yu)
-
-    _compute_gradient_k!(g[nyu + 1: nlp.meta.nvar], nlp.tnrj, yu, κ)
-
-    return g
+    return _compute_gradient!(g, nlp.tnrj, κ, yu, nlp.Y, nlp.X)
 end
 
-include("hessian_func.jl")
+function hess_coo(nlp :: GridapPDENLPModel, x :: AbstractVector;
+                  obj_weight :: Real = one(eltype(x)))
 
-function hess_coo(nlp :: GridapPDENLPModel, x :: AbstractVector; obj_weight :: Real = one(eltype(x)))
-
-    nyu    = nlp.meta.nvar - nlp.nparam
-    xyu, κ = x[1 : nyu], x[nyu + 1 : nlp.meta.nvar]
+    κ, xyu = x[1 : nlp.nparam], x[nlp.nparam + 1 : nlp.meta.nvar]
     yu     = FEFunction(nlp.Y, xyu)
 
-    cell_yu    = Gridap.FESpaces.get_cell_values(yu)
-    cell_id_yu = Gridap.Arrays.IdentityVector(length(cell_yu))
+    #(I ,J, V) = _compute_hess_coo(nlp.tnrj, κ, yu, nlp.Y, nlp.X)
 
-    function _cell_obj_yu(cell_yu)
-         yuh = CellField(nlp.Y, cell_yu)
-        _obj_cell_integral(nlp.tnrj, yuh, κ)
-    end
-
-    #Compute the hessian with AD
-    cell_r_yu  = Gridap.Arrays.autodiff_array_hessian(_cell_obj_yu, cell_yu, cell_id_yu)
-    #Assemble the matrix in the "good" space
-    assem      = Gridap.FESpaces.SparseMatrixAssembler(nlp.Y, nlp.X)
-    (I ,J, V) = assemble_hess(assem, cell_r_yu, cell_id_yu)
-
-    #\TODO: Compute the derivative w.r.t. κ
-    #agrad = @closure k -> grad(nlp, vcat(xyu, k))
-    #(I2, J2, V2) = _compute_hessian_k_coo(nlp.tnrj, agrad, κ) #Not sure we really need that? Almost impossible to test separately
-    #We probably need to sort by columns then.
-    #Eventually, has a hess_coo_k ??
-
-    return (I ,J, V)
+    return  _compute_hess_coo(nlp.tnrj, κ, yu, nlp.Y, nlp.X) #(I ,J, V)
 end
 
-function hess(nlp :: GridapPDENLPModel, x :: AbstractVector; obj_weight :: Real = one(eltype(x)))
+function hess(nlp :: GridapPDENLPModel, x :: AbstractVector;
+              obj_weight :: Real = one(eltype(x)))
     @lencheck nlp.meta.nvar x
     increment!(nlp, :neval_hess)
 
 
     (I, J, V) = hess_coo(nlp, x, obj_weight = obj_weight)
 
-    mdofs = Gridap.FESpaces.num_free_dofs(nlp.X)
-    ndofs = Gridap.FESpaces.num_free_dofs(nlp.Y)
+    mdofs = Gridap.FESpaces.num_free_dofs(nlp.X) + nlp.nparam
+    ndofs = Gridap.FESpaces.num_free_dofs(nlp.Y) + nlp.nparam
 
     @assert mdofs == ndofs #otherwise there is an error in the Trial/Test spaces
 
@@ -697,7 +656,10 @@ function hess(nlp :: GridapPDENLPModel, x :: AbstractVector; obj_weight :: Real 
     return hess_yu
 end
 
-function hess_coord!(nlp :: GridapPDENLPModel, x :: AbstractVector, vals :: AbstractVector; obj_weight :: Real = one(eltype(x)))
+function hess_coord!(nlp  :: GridapPDENLPModel,
+                     x    :: AbstractVector,
+                     vals :: AbstractVector;
+                     obj_weight :: Real = one(eltype(x)))
   @lencheck nlp.meta.nvar x
   @lencheck nlp.meta.nnzh vals
   increment!(nlp, :neval_hess)
@@ -713,7 +675,10 @@ function hess_coord!(nlp :: GridapPDENLPModel, x :: AbstractVector, vals :: Abst
   return vals
 end
 
-function hess(nlp :: GridapPDENLPModel, x :: AbstractVector, λ :: AbstractVector; obj_weight :: Real = one(eltype(x)))
+function hess(nlp :: GridapPDENLPModel,
+              x   :: AbstractVector,
+              λ   :: AbstractVector;
+              obj_weight :: Real = one(eltype(x)))
   @lencheck nlp.meta.nvar x
   @lencheck nlp.meta.ncon λ
   increment!(nlp, :neval_hess)
@@ -722,7 +687,9 @@ function hess(nlp :: GridapPDENLPModel, x :: AbstractVector, λ :: AbstractVecto
   return tril(Hx)
 end
 
-function hess_structure!(nlp :: GridapPDENLPModel, rows :: AbstractVector{<: Integer}, cols :: AbstractVector{<: Integer})
+function hess_structure!(nlp :: GridapPDENLPModel,
+                        rows :: AbstractVector{<: Integer},
+                        cols :: AbstractVector{<: Integer})
   n = nlp.meta.nvar
   @lencheck nlp.meta.nnzh rows cols
   I = ((i,j) for i = 1:n, j = 1:n if i ≥ j)
@@ -731,7 +698,11 @@ function hess_structure!(nlp :: GridapPDENLPModel, rows :: AbstractVector{<: Int
   return rows, cols
 end
 
-function hess_coord!(nlp :: GridapPDENLPModel, x :: AbstractVector, λ :: AbstractVector, vals :: AbstractVector; obj_weight :: Real = one(eltype(x)))
+function hess_coord!(nlp  :: GridapPDENLPModel,
+                     x    :: AbstractVector,
+                     λ    :: AbstractVector,
+                     vals :: AbstractVector;
+                     obj_weight :: Real = one(eltype(x)))
   @lencheck nlp.meta.nvar x
   @lencheck nlp.meta.ncon λ
   @lencheck nlp.meta.nnzh vals
@@ -748,7 +719,11 @@ function hess_coord!(nlp :: GridapPDENLPModel, x :: AbstractVector, λ :: Abstra
   return vals
 end
 
-function hprod!(nlp :: GridapPDENLPModel, x :: AbstractVector, v :: AbstractVector, Hv :: AbstractVector; obj_weight :: Real = one(eltype(x)))
+function hprod!(nlp :: GridapPDENLPModel,
+                x   :: AbstractVector,
+                v   :: AbstractVector,
+                Hv  :: AbstractVector;
+                obj_weight :: Real = one(eltype(x)))
   @lencheck nlp.meta.nvar x v Hv
   increment!(nlp, :neval_hprod)
 
@@ -765,7 +740,10 @@ function hprod!(nlp :: GridapPDENLPModel, x :: AbstractVector, v :: AbstractVect
  return Hv
 end
 
-function hess_op!(nlp :: GridapPDENLPModel, x :: AbstractVector, Hv :: AbstractVector; obj_weight::Real=one(eltype(x)))
+function hess_op!(nlp :: GridapPDENLPModel,
+                  x   :: AbstractVector,
+                  Hv  :: AbstractVector;
+                  obj_weight :: Real = one(eltype(x)))
   @lencheck nlp.meta.nvar x Hv
   (rows, cols, vals) = hess_coo(nlp, x, obj_weight = obj_weight)
   prod = @closure v -> coo_sym_prod!(cols, rows, vals, v, Hv)
@@ -795,13 +773,14 @@ function _from_terms_to_residual!(op  :: Gridap.FESpaces.FEOperatorFromTerms,
                                   nlp :: GridapPDENLPModel,
                                   res :: AbstractVector)
 
-    yu = FEFunction(nlp.Y, x)
-    v  = Gridap.FESpaces.get_cell_basis(nlp.Xpde) #nlp.op.test
+    κ, xyu = x[1 : nlp.nparam], x[nlp.nparam + 1 : nlp.meta.nvar]
+    yu     = FEFunction(nlp.Y, xyu)
+    v      = Gridap.FESpaces.get_cell_basis(nlp.Xpde)
 
     w, r = [], []
     for term in op.terms
 
-     w, r = _from_term_to_terms!(term, yu, v, w, r)
+     w, r = _from_term_to_terms!(term, κ, yu, v, w, r)
 
     end
 
@@ -812,15 +791,20 @@ function _from_terms_to_residual!(op  :: Gridap.FESpaces.FEOperatorFromTerms,
 end
 
 function _from_term_to_terms!(term :: Union{Gridap.FESpaces.NonlinearFETermWithAutodiff, Gridap.FESpaces.NonlinearFETerm},
-                              yu   :: Union{Gridap.FESpaces.SingleFieldFEFunction, Gridap.MultiField.MultiFieldFEFunction},
-                              v    :: Union{Gridap.CellData.GenericCellField, Gridap.MultiField.MultiFieldCellField},
+                              κ    :: AbstractVector,
+                              yu   :: FEFunctionType,
+                              v    :: CellFieldType,
                               w    :: AbstractVector,
                               r    :: AbstractVector)
 
  _v  = restrict(v,  term.trian)
  _yu = restrict(yu, term.trian)
 
- cellvals = integrate(term.res(_yu, _v), term.trian, term.quad)
+ if length(κ) > 0
+     cellvals = integrate(term.res(κ, _yu, _v), term.trian, term.quad)
+ else
+     cellvals = integrate(term.res(_yu, _v), term.trian, term.quad)
+ end
  cellids  = Gridap.FESpaces.get_cell_id(term)
 
  Gridap.FESpaces._push_vector_contribution!(w, r, cellvals, cellids)
@@ -829,8 +813,9 @@ function _from_term_to_terms!(term :: Union{Gridap.FESpaces.NonlinearFETermWithA
 end
 
 function _from_term_to_terms!(term :: Gridap.FESpaces.FETerm, #FESource, AffineFETerm
-                              yu   :: Union{Gridap.FESpaces.SingleFieldFEFunction,Gridap.MultiField.MultiFieldFEFunction},
-                              v    :: Union{Gridap.CellData.GenericCellField, Gridap.MultiField.MultiFieldCellField},
+                              κ    :: AbstractVector,
+                              yu   :: FEFunctionType,
+                              v    :: CellFieldType,
                               w    :: AbstractVector,
                               r    :: AbstractVector)
 
@@ -864,10 +849,18 @@ function _from_terms_to_residual!(op  :: AffineFEOperator,
 end
 
 function jac(nlp :: GridapPDENLPModel, x :: AbstractVector{T}) where T <: Number
-  @lencheck nlp.meta.nvar x
+  nvar = nlp.meta.nvar
+  @lencheck nvar x
   increment!(nlp, :neval_jac)
 
   pde_jac = _from_terms_to_jacobian(nlp.op, x, nlp.Y, nlp.Xpde, nlp.Ypde, nlp.Ycon)
+
+  if nlp.nparam > 0
+      κ, xyu = x[1 : nlp.nparam], x[nlp.nparam + 1 : nlp.meta.nvar]
+      ck = @closure k -> cons(nlp, vcat(k, xyu))
+      jac_k = ForwardDiff.jacobian(ck, κ)
+      return hcat(jac_k, pde_jac)
+  end
 
   return pde_jac
 end
@@ -900,13 +893,17 @@ function _from_terms_to_jacobian(op   :: Gridap.FESpaces.FEOperatorFromTerms,
                                  Ypde :: FESpace,
                                  Ycon :: Union{FESpace, Nothing}) where T <: Number
 
+ nvar   = length(x)
+ nyu    = num_free_dofs(Y)
+ nparam = nvar - nyu
  yh, uh = _split_FEFunction(x, Ypde, Ycon)
- yu     = FEFunction(Y, x)
+ κ, xyu = x[1 : nparam], x[nparam + 1 : nvar]
+ yu     = FEFunction(Y, xyu)
 
  dy  = Gridap.FESpaces.get_cell_basis(Ypde)
  du  = Ycon != nothing ? Gridap.FESpaces.get_cell_basis(Ycon) : nothing #use only jac is furnished
  dyu = Gridap.FESpaces.get_cell_basis(Y)
- v   = Gridap.FESpaces.get_cell_basis(Xpde) #nlp.op.test
+ v   = Gridap.FESpaces.get_cell_basis(Xpde)
 
  wu, wy  = [], []
  ru, ry  = [], []
@@ -915,9 +912,8 @@ function _from_terms_to_jacobian(op   :: Gridap.FESpaces.FEOperatorFromTerms,
 
  for term in op.terms
 
-   _jac_from_term_to_terms!(term, yu,  yh, uh,
-                                  dyu, dy, du,
-                                  v,
+   _jac_from_term_to_terms!(term, κ, yu, yh, uh,
+                                  dyu, dy, du, v,
                                   w,  r,  c,
                                   wu, ru, cu,
                                   wy, ry, cy)
@@ -953,13 +949,14 @@ function _get_block_layout(a::AbstractArray)
 end
 
 function _jac_from_term_to_terms!(term  :: Gridap.FESpaces.FETerm,
-                                  yu    :: Union{Gridap.FESpaces.SingleFieldFEFunction,Gridap.MultiField.MultiFieldFEFunction},
-                                  yh    :: Union{Gridap.FESpaces.SingleFieldFEFunction,Gridap.MultiField.MultiFieldFEFunction},
-                                  uh    :: Union{Gridap.FESpaces.SingleFieldFEFunction,Gridap.MultiField.MultiFieldFEFunction,Nothing},
-                                  dyu   :: Union{Gridap.CellData.GenericCellField, Gridap.MultiField.MultiFieldCellField},
-                                  dy    :: Union{Gridap.CellData.GenericCellField, Gridap.MultiField.MultiFieldCellField},
-                                  du    :: Union{Gridap.CellData.GenericCellField, Gridap.MultiField.MultiFieldCellField,Nothing},
-                                  v     :: Union{Gridap.CellData.GenericCellField, Gridap.MultiField.MultiFieldCellField},
+                                  κ     :: AbstractVector,
+                                  yu    :: FEFunctionType,
+                                  yh    :: FEFunctionType,
+                                  uh    :: Union{FEFunctionType,Nothing},
+                                  dyu   :: CellFieldType,
+                                  dy    :: CellFieldType,
+                                  du    :: Union{CellFieldType,Nothing},
+                                  v     :: CellFieldType,
                                   w     :: AbstractVector,
                                   r     :: AbstractVector,
                                   c     :: AbstractVector,
@@ -980,13 +977,14 @@ end
 
 #https://github.com/gridap/Gridap.jl/blob/758a8620756e164ba0e6b83dc8dcbb278015b3d9/src/FESpaces/FETerms.jl#L367
 function _jac_from_term_to_terms!(term  :: Union{Gridap.FESpaces.LinearFETerm, Gridap.FESpaces.AffineFETermFromIntegration},
-                                  yu    :: Union{Gridap.FESpaces.SingleFieldFEFunction,Gridap.MultiField.MultiFieldFEFunction},
-                                  yh    :: Union{Gridap.FESpaces.SingleFieldFEFunction,Gridap.MultiField.MultiFieldFEFunction},
-                                  uh    :: Union{Gridap.FESpaces.SingleFieldFEFunction,Gridap.MultiField.MultiFieldFEFunction,Nothing},
-                                  dyu   :: Union{Gridap.CellData.GenericCellField, Gridap.MultiField.MultiFieldCellField},
-                                  dy    :: Union{Gridap.CellData.GenericCellField, Gridap.MultiField.MultiFieldCellField},
-                                  du    :: Union{Gridap.CellData.GenericCellField, Gridap.MultiField.MultiFieldCellField,Nothing},
-                                  v     :: Union{Gridap.CellData.GenericCellField, Gridap.MultiField.MultiFieldCellField},
+                                  κ     :: AbstractVector,
+                                  yu    :: FEFunctionType,
+                                  yh    :: FEFunctionType,
+                                  uh    :: Union{FEFunctionType,Nothing},
+                                  dyu   :: CellFieldType,
+                                  dy    :: CellFieldType,
+                                  du    :: Union{CellFieldType,Nothing},
+                                  v     :: CellFieldType,
                                   w     :: AbstractVector,
                                   r     :: AbstractVector,
                                   c     :: AbstractVector,
@@ -1008,13 +1006,14 @@ function _jac_from_term_to_terms!(term  :: Union{Gridap.FESpaces.LinearFETerm, G
 end
 
 function _jac_from_term_to_terms!(term  :: Union{Gridap.FESpaces.NonlinearFETermWithAutodiff,Gridap.FESpaces.NonlinearFETerm},
-                                  yu    :: Union{Gridap.FESpaces.SingleFieldFEFunction,Gridap.MultiField.MultiFieldFEFunction},
-                                  yh    :: Union{Gridap.FESpaces.SingleFieldFEFunction,Gridap.MultiField.MultiFieldFEFunction},
-                                  uh    :: Union{Gridap.FESpaces.SingleFieldFEFunction,Gridap.MultiField.MultiFieldFEFunction,Nothing},
-                                  dyu   :: Union{Gridap.CellData.GenericCellField, Gridap.MultiField.MultiFieldCellField},
-                                  dy    :: Union{Gridap.CellData.GenericCellField, Gridap.MultiField.MultiFieldCellField},
-                                  du    :: Union{Gridap.CellData.GenericCellField, Gridap.MultiField.MultiFieldCellField,Nothing},
-                                  v     :: Union{Gridap.CellData.GenericCellField, Gridap.MultiField.MultiFieldCellField},
+                                  κ     :: AbstractVector,
+                                  yu    :: FEFunctionType,
+                                  yh    :: FEFunctionType,
+                                  uh    :: Union{FEFunctionType,Nothing},
+                                  dyu   :: CellFieldType,
+                                  dy    :: CellFieldType,
+                                  du    :: Union{CellFieldType,Nothing},
+                                  v     :: CellFieldType,
                                   w     :: AbstractVector,
                                   r     :: AbstractVector,
                                   c     :: AbstractVector,
@@ -1030,22 +1029,23 @@ function _jac_from_term_to_terms!(term  :: Union{Gridap.FESpaces.NonlinearFETerm
  end
 
  if du != nothing
-     _jac_from_term_to_terms_u!(term, yh, uh, du, v, wu, ru, cu)
+     _jac_from_term_to_terms_u!(term, κ, yh, uh, du, v, wu, ru, cu)
  end
 
- _jac_from_term_to_terms_y!(term, yh, uh, dy, v, wy, ry, cy)
+ _jac_from_term_to_terms_y!(term, κ, yh, uh, dy, v, wy, ry, cy)
 
 end
 
 #https://github.com/gridap/Gridap.jl/blob/758a8620756e164ba0e6b83dc8dcbb278015b3d9/src/FESpaces/FETerms.jl#L332
 function _jac_from_term_to_terms!(term  :: Gridap.FESpaces.FESource,
-                                  yu    :: Union{Gridap.FESpaces.SingleFieldFEFunction,Gridap.MultiField.MultiFieldFEFunction},
-                                  yh    :: Union{Gridap.FESpaces.SingleFieldFEFunction,Gridap.MultiField.MultiFieldFEFunction},
-                                  uh    :: Union{Gridap.FESpaces.SingleFieldFEFunction,Gridap.MultiField.MultiFieldFEFunction,Nothing},
-                                  dyu   :: Union{Gridap.CellData.GenericCellField, Gridap.MultiField.MultiFieldCellField},
-                                  dy    :: Union{Gridap.CellData.GenericCellField, Gridap.MultiField.MultiFieldCellField},
-                                  du    :: Union{Gridap.CellData.GenericCellField, Gridap.MultiField.MultiFieldCellField,Nothing},
-                                  v     :: Union{Gridap.CellData.GenericCellField, Gridap.MultiField.MultiFieldCellField},
+                                  κ     :: AbstractVector,
+                                  yu    :: FEFunctionType,
+                                  yh    :: FEFunctionType,
+                                  uh    :: Union{FEFunctionType,Nothing},
+                                  dyu   :: CellFieldType,
+                                  dy    :: CellFieldType,
+                                  du    :: Union{CellFieldType,Nothing},
+                                  v     :: CellFieldType,
                                   w     :: AbstractVector,
                                   r     :: AbstractVector,
                                   c     :: AbstractVector,
@@ -1060,10 +1060,11 @@ function _jac_from_term_to_terms!(term  :: Gridap.FESpaces.FESource,
 end
 
 function _jac_from_term_to_terms_u!(term :: Union{Gridap.FESpaces.NonlinearFETermWithAutodiff,Gridap.FESpaces.NonlinearFETerm},
-                                    yh   :: Union{Gridap.FESpaces.SingleFieldFEFunction,Gridap.MultiField.MultiFieldFEFunction},
-                                    uh   :: Union{Gridap.FESpaces.SingleFieldFEFunction,Gridap.MultiField.MultiFieldFEFunction},
-                                    du   :: Union{Gridap.CellData.GenericCellField, Gridap.MultiField.MultiFieldCellField},
-                                    v    :: Union{Gridap.CellData.GenericCellField, Gridap.MultiField.MultiFieldCellField},
+                                    κ    :: AbstractVector,
+                                    yh   :: FEFunctionType,
+                                    uh   :: FEFunctionType,
+                                    du   :: CellFieldType,
+                                    v    :: CellFieldType,
                                     w    :: AbstractVector,
                                     r    :: AbstractVector,
                                     c    :: AbstractVector)
@@ -1072,11 +1073,18 @@ function _jac_from_term_to_terms_u!(term :: Union{Gridap.FESpaces.NonlinearFETer
  _yh = restrict(yh, term.trian)
 
  cellids  = Gridap.FESpaces.get_cell_id(term)
-
- function uh_to_cell_residual(uf)
-   _uf = Gridap.FESpaces.restrict(uf, term.trian)
-   integrate(term.res(vcat(_yh, _uf), _v), term.trian, term.quad)
+ if length(κ) > 0
+     function uh_to_cell_residual(uf)
+       _uf = Gridap.FESpaces.restrict(uf, term.trian)
+       integrate(term.res(κ, vcat(_yh, _uf), _v), term.trian, term.quad)
+     end
+ else
+     function uh_to_cell_residual(uf)
+       _uf = Gridap.FESpaces.restrict(uf, term.trian)
+       integrate(term.res(vcat(_yh, _uf), _v), term.trian, term.quad)
+     end
  end
+
  cellvals_u = Gridap.FESpaces.autodiff_cell_jacobian_from_residual(uh_to_cell_residual, uh, cellids)
 
  Gridap.FESpaces._push_matrix_contribution!(w, r, c, cellvals_u, cellids)
@@ -1085,22 +1093,56 @@ function _jac_from_term_to_terms_u!(term :: Union{Gridap.FESpaces.NonlinearFETer
 end
 
 function _jac_from_term_to_terms_y!(term :: Gridap.FESpaces.NonlinearFETermWithAutodiff,
-                                    yh   :: Union{Gridap.FESpaces.SingleFieldFEFunction,Gridap.MultiField.MultiFieldFEFunction},
-                                    uh   :: Union{Gridap.FESpaces.SingleFieldFEFunction,Gridap.MultiField.MultiFieldFEFunction, Nothing},
-                                    dy   :: Union{Gridap.CellData.GenericCellField, Gridap.MultiField.MultiFieldCellField, Nothing},
-                                    v    :: Union{Gridap.CellData.GenericCellField, Gridap.MultiField.MultiFieldCellField},
+                                    κ    :: AbstractVector,
+                                    yh   :: FEFunctionType,
+                                    uh   :: Union{FEFunctionType, Nothing},
+                                    dy   :: Union{CellFieldType, Nothing},
+                                    v    :: CellFieldType,
                                     w    :: AbstractVector,
                                     r    :: AbstractVector,
                                     c    :: AbstractVector)
 
  _v  = restrict(v,  term.trian)
- _uh = (uh == nothing) ? Array{Gridap.CellData.GenericCellField{true,()}}(undef,0) : restrict(uh, term.trian)
+ #_uh = (uh == nothing) ? Array{Gridap.CellData.GenericCellField{true,()}}(undef,0) : restrict(uh, term.trian)
 
  cellids  = Gridap.FESpaces.get_cell_id(term)
-
- function yh_to_cell_residual(yf)
-   _yf = Gridap.FESpaces.restrict(yf, term.trian)
-   integrate(term.res(vcat(_yf,_uh),_v), term.trian, term.quad)
+ #=
+ if length(κ) > 0 && uh != nothing
+     _uh = restrict(uh, term.trian)
+     function yh_to_cell_residual(yf)
+       _yf = Gridap.FESpaces.restrict(yf, term.trian)
+       integrate(term.res(vcat(_yf,_uh), κ, _v), term.trian, term.quad)
+     end
+ elseif length(κ) > 0 #&& uh == nothing
+     function yh_to_cell_residual(yf)
+       _yf = Gridap.FESpaces.restrict(yf, term.trian)
+       integrate(term.res(_yf, κ,_v), term.trian, term.quad)
+     end
+ elseif length(κ) == 0 && uh == nothing
+    function yh_to_cell_residual(yf)
+      _yf = Gridap.FESpaces.restrict(yf, term.trian)
+      integrate(term.res(_yf,_v), term.trian, term.quad)
+    end
+ else #length(κ) == 0 && uh == nothing
+     _uh = restrict(uh, term.trian)
+     function yh_to_cell_residual(yf)
+       _yf = Gridap.FESpaces.restrict(yf, term.trian)
+       integrate(term.res(vcat(_yf,_uh),_v), term.trian, term.quad)
+     end
+ end
+ =#
+ _uh = (uh != nothing) ? restrict(uh, term.trian) : nothing
+ function yh_to_cell_residual(yf) #Tanj: improved solution is to declare the function outside
+     _yf = Gridap.FESpaces.restrict(yf, term.trian)
+     if length(κ) > 0 && uh != nothing
+           return integrate(term.res(κ, vcat(_yf, _uh), _v), term.trian, term.quad)
+     elseif length(κ) > 0 #&& uh == nothing
+           return integrate(term.res(κ, _yf, _v), term.trian, term.quad)
+     elseif length(κ) == 0 && uh == nothing
+          return integrate(term.res(_yf,_v), term.trian, term.quad)
+     else #length(κ) == 0 && uh == nothing
+           return integrate(term.res(vcat(_yf,_uh),_v), term.trian, term.quad)
+     end
  end
 
  cellvals_y = Gridap.FESpaces.autodiff_cell_jacobian_from_residual(yh_to_cell_residual, yh, cellids)
@@ -1111,10 +1153,11 @@ function _jac_from_term_to_terms_y!(term :: Gridap.FESpaces.NonlinearFETermWithA
 end
 
 function _jac_from_term_to_terms_y!(term :: Gridap.FESpaces.NonlinearFETerm,
-                                    yh   :: Union{Gridap.FESpaces.SingleFieldFEFunction,Gridap.MultiField.MultiFieldFEFunction},
-                                    uh   :: Union{Gridap.FESpaces.SingleFieldFEFunction,Gridap.MultiField.MultiFieldFEFunction, Nothing},
-                                    dy   :: Union{Gridap.CellData.GenericCellField, Gridap.MultiField.MultiFieldCellField, Nothing},
-                                    v    :: Union{Gridap.CellData.GenericCellField, Gridap.MultiField.MultiFieldCellField},
+                                    κ    :: AbstractVector,
+                                    yh   :: FEFunctionType,
+                                    uh   :: Union{FEFunctionType, Nothing},
+                                    dy   :: Union{CellFieldType, Nothing},
+                                    v    :: CellFieldType,
                                     w    :: AbstractVector,
                                     r    :: AbstractVector,
                                     c    :: AbstractVector)
@@ -1125,8 +1168,11 @@ function _jac_from_term_to_terms_y!(term :: Gridap.FESpaces.NonlinearFETerm,
  _dy = restrict(dy, term.trian)
 
  cellids  = Gridap.FESpaces.get_cell_id(term)
-
- cellvals_y = integrate(term.jac(vcat(_yh, _uh), _du, _v), term.trian, term.quad)
+ if length(κ) > 0
+     cellvals_y = integrate(term.jac(κ, vcat(_yh, _uh), _du, _v), term.trian, term.quad)
+ else
+     cellvals_y = integrate(term.jac(vcat(_yh, _uh), _du, _v), term.trian, term.quad)
+ end
 
  Gridap.FESpaces._push_matrix_contribution!(w, r, c ,cellvals_y, cellids)
 

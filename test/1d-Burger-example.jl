@@ -1,6 +1,6 @@
 using LineSearches: BackTracking
 
-function _1dBurger_nlp()
+function _1dBurger_nlp(; udc = false)
     n = 512
     domain = (0,1)
     partition = n

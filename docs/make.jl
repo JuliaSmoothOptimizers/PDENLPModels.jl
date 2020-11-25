@@ -4,7 +4,7 @@ if haskey(ENV, "GITHUB_ACTIONS")
     ENV["JULIA_DEBUG"] = "Documenter"
 end
 
-Documenter.post_status(; type="pending", repo="github.com/tmigot/PDENLPModels.jl.git")
+#Documenter.post_status(; type="pending", repo="github.com/tmigot/PDENLPModels.jl.git")
 
 using Literate
 using Printf
@@ -48,7 +48,6 @@ end
 Literate.markdown(joinpath(repo_jsopde,filename), pages_dir;
                   name=tutorial_file, preprocess=preprocess_docs,
                   codefence="```julia" => "```")
-
 # Generate navigation menu entries
 ordered_title = string(i, " ", title)
 path_to_markdown_file = joinpath("pages",string(tutorial_file,".md"))
@@ -56,11 +55,10 @@ push!(pages, (ordered_title=>path_to_markdown_file))
 #END TEMP
 #########################################################################
 
-
 makedocs(
     sitename = "PDENLPModels",
     format = Documenter.HTML(),
-    #modules = [PDENLPModels],
+    modules = [PDENLPModels],
     pages = pages
 )
 
@@ -68,7 +66,8 @@ makedocs(
 # See "Hosting Documentation" and deploydocs() in the Documenter manual
 # for more information.
 deploydocs(
-    repo = "github.com/tmigot/PDENLPModels.jl.git",
+    repo = "github.com/tmigot/PDENLPModels.jl",#.git
+    devbranch = "master",
     devurl = "dev",
     versions = ["dev" => "dev"]
 )
