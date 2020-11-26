@@ -633,9 +633,16 @@ function hess_coo(nlp :: GridapPDENLPModel, x :: AbstractVector;
     κ, xyu = x[1 : nlp.nparam], x[nlp.nparam + 1 : nlp.meta.nvar]
     yu     = FEFunction(nlp.Y, xyu)
 
-    #(I ,J, V) = _compute_hess_coo(nlp.tnrj, κ, yu, nlp.Y, nlp.X)
+    (I2 ,J2, V2) = _compute_hess_coo(nlp.tnrj, κ, yu, nlp.Y, nlp.X)
 
-    return  _compute_hess_coo(nlp.tnrj, κ, yu, nlp.Y, nlp.X) #(I ,J, V)
+    if nlp.nparam > 0
+        (I1, J1, V1) = _compute_hess_k_coo(nlp, nlp.tnrj, κ, xyu)
+        return (vcat(I1, I2),
+                vcat(J1, J2 .+ nlp.nparam),
+                vcat(V1, V2))
+    end
+
+    return (I2 ,J2, V2)
 end
 
 function hess(nlp :: GridapPDENLPModel, x :: AbstractVector;
@@ -1073,16 +1080,13 @@ function _jac_from_term_to_terms_u!(term :: Union{Gridap.FESpaces.NonlinearFETer
  _yh = restrict(yh, term.trian)
 
  cellids  = Gridap.FESpaces.get_cell_id(term)
- if length(κ) > 0
-     function uh_to_cell_residual(uf)
-       _uf = Gridap.FESpaces.restrict(uf, term.trian)
-       integrate(term.res(κ, vcat(_yh, _uf), _v), term.trian, term.quad)
-     end
- else
-     function uh_to_cell_residual(uf)
-       _uf = Gridap.FESpaces.restrict(uf, term.trian)
-       integrate(term.res(vcat(_yh, _uf), _v), term.trian, term.quad)
-     end
+ function uh_to_cell_residual(uf)
+   _uf = Gridap.FESpaces.restrict(uf, term.trian)
+   if length(κ) > 0
+     return integrate(term.res(κ, vcat(_yh, _uf), _v), term.trian, term.quad)
+   else
+     return integrate(term.res(vcat(_yh, _uf), _v), term.trian, term.quad)
+   end
  end
 
  cellvals_u = Gridap.FESpaces.autodiff_cell_jacobian_from_residual(uh_to_cell_residual, uh, cellids)

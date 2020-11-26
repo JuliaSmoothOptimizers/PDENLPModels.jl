@@ -15,6 +15,10 @@ Xcon = TestFESpace(reffe=:Lagrangian, order=1, valuetype=Float64,
                        conformity=:H1, model=model)
 Ycon = TrialFESpace(Xcon)
 Y = MultiFieldFESpace([Ypde, Ycon])
+X = MultiFieldFESpace([Xpde, Xcon])
+
+nY = num_free_dofs(Y)
+nYpde = num_free_dofs(Ypde)
 
 
 @testset "Constructors for GridapPDENLPModel" begin
@@ -151,7 +155,7 @@ y,u,k = _split_vector(x0, Ypde, nothing)
     f2(k,yu) = f1(yu) + f0(k)
     f2s(k,y) = f1s(y) + f0(k)
     #Test MultiField yu
-    x1   = zeros(Gridap.FESpaces.num_free_dofs(Y))
+    x1   = zeros(nY)
     yu1  = FEFunction(Y, x1)
     cel1 = Gridap.FESpaces.get_cell_values(yu1)
     yuh1 = CellField(Y, cel1)
@@ -165,14 +169,27 @@ y,u,k = _split_vector(x0, Ypde, nothing)
     @test _obj_integral(tnrj, [], yu1) == 0.
     @test _obj_cell_integral(tnrj, [], yuh1) == 0.
     @test _compute_gradient_k( tnrj, [], yu1) == []
+    g = similar(x1)
+    _compute_gradient!(g, tnrj, [], yu1, Y, X)
+    @test g== zeros(nY)
+    @test _compute_hess_coo(tnrj, [], yu1, Y, X) == findnz(spzeros(nY, nY))
     @test _obj_integral(tnrj, [], yu2) == 0.
     @test _obj_cell_integral(tnrj, ones(2), yuh2) == 0.
-    @test _compute_gradient_k( tnrj, ones(2), yu2) == zeros(2)
+    @test _compute_gradient_k(tnrj, ones(2), yu2) == zeros(2)
+    g = similar(vcat(ones(2),x2))
+    _compute_gradient!(g, tnrj, ones(2), yu2, Ypde, Xpde)
+    @test g == zeros(2 + num_free_dofs(Ypde))
+    @test _compute_hess_coo(tnrj, ones(2), yu2, Ypde, Xpde) == findnz(spzeros(nYpde, nYpde))
 
     tnrj = NoFETerm(f0)
     @test _obj_integral(tnrj, ones(2), yu1) == 2.
     @test _obj_cell_integral(tnrj, ones(2), yuh1) == 2.
-    @test _compute_gradient_k( tnrj, ones(2), yu1) == 2*ones(2)
+    @test _compute_gradient_k(tnrj, ones(2), yu1) == 2*ones(2)
+    g = similar(vcat(ones(2),x1))
+    _compute_gradient!(g, tnrj, ones(2), yu1, Y, X)
+    @test g[1:2] == 2 * ones(2)
+    @test g[3:nY+2] == zeros(nY)
+    _H = _compute_hess_coo(tnrj, ones(2), yu1, Y, X)
     @test _obj_integral(tnrj, ones(2), yu2) == 2.
     @test _obj_cell_integral(tnrj, ones(2), yuh2) == 2.
 
@@ -182,20 +199,33 @@ y,u,k = _split_vector(x0, Ypde, nothing)
     tnrj = MixedEnergyFETerm(f2, trian, quad, 3)
     @test sum(_obj_integral(tnrj, ones(3), yu1)) == 3.
     @test _obj_cell_integral(tnrj, ones(3), yuh1) == 0.75 * ones(4)
-    @test _compute_gradient_k( tnrj, ones(3), yu1) == 2*ones(3)
+    @test _compute_gradient_k(tnrj, ones(3), yu1) == 2*ones(3)
+    g = similar(vcat(ones(3),x1))
+    _compute_gradient!(g, tnrj, ones(3), yu1, Y, X)
+    @test g[1:3] == 2*ones(3)
+    _H = _compute_hess_coo(tnrj, ones(3), yu1, Y, X)
     tnrj = MixedEnergyFETerm(f2s, trian, quad, 3)
     @test typeof(sum(_obj_integral(tnrj, ones(3), yu2))) <: Number
     @test typeof(sum(_obj_cell_integral(tnrj, ones(3), yuh2))) <: Number
-    @test _compute_gradient_k( tnrj, ones(3), yu2) == 2*ones(3)
+    @test _compute_gradient_k(tnrj, ones(3), yu2) == 2*ones(3)
+    g = similar(vcat(ones(3),x2))
+    _compute_gradient!(g, tnrj, ones(3), yu2, Ypde, Xpde)
+    @test g[1:3] == 2*ones(3)
+    _H = _compute_hess_coo(tnrj, ones(3), yu2, Ypde, Xpde)
 
     @test_throws DimensionError _obj_cell_integral(tnrj, ones(2), yuh1)
     @test_throws DimensionError _obj_integral(tnrj, ones(2), yu1)
-    @test_throws DimensionError _compute_gradient_k( tnrj, ones(2), yu1)
+    @test_throws DimensionError _compute_gradient_k(tnrj, ones(2), yu1)
 
     tnrj = EnergyFETerm(f1, trian, quad)
     @test sum(_obj_integral(tnrj, [], yu1)) == 0.
     @test sum(_obj_cell_integral(tnrj, [], yuh1)) == 0.
-    @test _compute_gradient_k( tnrj, [], yu1) == []
+    @test _compute_gradient_k(tnrj, [], yu1) == []
+    g = similar(x1)
+    _compute_gradient!(g, tnrj, [], yu1, Y, X)
+    @test length(g) == nY
+    _H = _compute_hess_coo(tnrj, [], yu1, Y, X)
+
     tnrj = EnergyFETerm(f1s, trian, quad)
     @test typeof(sum(_obj_integral(tnrj, [], yu2))) <: Number
     typeof(sum(_obj_cell_integral(tnrj, [], yuh2))) <: Number
@@ -204,6 +234,5 @@ y,u,k = _split_vector(x0, Ypde, nothing)
     @test_throws DimensionError _obj_integral(tnrj, ones(2), yu2)
     @test_throws DimensionError _obj_cell_integral(tnrj, ones(2), yuh1)
     @test_throws DimensionError _obj_cell_integral(tnrj, ones(2), yuh2)
-    g = similar(ones(2))
-    @test_throws DimensionError _compute_gradient_k( tnrj, ones(2), yu2)
+    @test_throws DimensionError _compute_gradient_k(tnrj, ones(2), yu2)
 end

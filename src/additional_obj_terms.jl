@@ -9,7 +9,7 @@ x is a vector of GenericCellField, for instance resulting from
 `yuh = CellField(Y, cell_yu)`.
 
 See also: MixedEnergyFETerm, EnergyFETerm, NoFETerm, \\_obj\\_integral,
-\\_compute\\_gradient\\_k!
+\\_compute\\_gradient\\_k, \\_compute\\_hess\\_coo, \\_compute\\_hess\\_k\\_coo
 """
 function _obj_cell_integral end
 
@@ -19,7 +19,8 @@ Return the integral of the objective function
 `_obj_integral(:: AbstractEnergyTerm, :: FEFunctionType, :: AbstractVector)`
 
 See also: MixedEnergyFETerm, EnergyFETerm, NoFETerm,
-\\_obj\\_cell\\_integral, \\_compute\\_gradient\\_k!
+\\_obj\\_cell\\_integral, \\_compute\\_gradient\\_k, \\_compute\\_hess\\_coo,
+\\_compute\\_hess\\_k\\_coo
 """
 function _obj_integral end
 
@@ -29,19 +30,39 @@ Return the derivative of the objective function w.r.t. κ.
 `_compute_gradient_k(:: AbstractEnergyTerm, :: FEFunctionType, :: AbstractVector)`
 
 See also: MixedEnergyFETerm, EnergyFETerm, NoFETerm, \\_obj\\_integral,
-\\_obj\\_cell\\_integral
+\\_obj\\_cell\\_integral, \\_compute\\_hess\\_coo, \\_compute\\_hess\\_k\\_coo
 """
 function _compute_gradient_k end
 
 """
-Return the derivative (jacobian) of the given function w.r.t. κ in coo format.
+Return the gradient of the objective function and set it in place.
 
-`_compute_hessian_k_coo(:: AbstractEnergyTerm, :: Function, :: AbstractVector)`
+`_compute_gradient!(:: AbstractVector, :: EnergyFETerm, :: AbstractVector, :: FEFunctionType, :: FESpace, :: FESpace)`
 
 See also: MixedEnergyFETerm, EnergyFETerm, NoFETerm, \\_obj\\_integral,
-\\_obj\\_cell\\_integral, \\_compute\\_gradient\\_k!
+\\_obj\\_cell\\_integral, \\_compute\\_hess\\_coo, \\_compute\\_hess\\_k\\_coo
 """
-function _compute_hessian_k_coo end
+function _compute_gradient! end
+
+"""
+Return the hessian w.r.t. yu of the objective function in coo format.
+
+`_compute_hess_coo(:: AbstractEnergyTerm, :: AbstractVector, :: FEFunctionType, :: FESpace, :: FESpace)`
+
+See also: MixedEnergyFETerm, EnergyFETerm, NoFETerm, \\_obj\\_integral,
+\\_obj\\_cell\\_integral, \\_compute\\_gradient\\_k, \\_compute\\_hess\\_k\\_coo
+"""
+function _compute_hess_coo end
+
+"""
+Return the hessian w.r.t. κ of the objective function in coo format.
+
+`_compute_hess_k_coo(:: AbstractNLPModel, :: AbstractEnergyTerm, :: AbstractVector, :: AbstractVector)`
+
+See also: MixedEnergyFETerm, EnergyFETerm, NoFETerm, \\_obj\\_integral,
+\\_obj\\_cell\\_integral, \\_compute\\_gradient\\_k, \\_compute\\_hess\\_coo
+"""
+function _compute_hess_k_coo end
 
 @doc raw"""
 FETerm modeling the objective function of the optimization problem.
@@ -115,10 +136,10 @@ function _compute_gradient!(g    :: AbstractVector,
 end
 
 function _compute_gradient_k(term :: EnergyFETerm,
-                             κ    :: AbstractVector,
-                             yu   :: FEFunctionType)
+                             κ    :: AbstractVector{T},
+                             yu   :: FEFunctionType) where T
   @lencheck 0 κ
-  return []
+  return T[]
 end
 
 function _compute_hess_coo(tnrj :: EnergyFETerm,
@@ -145,11 +166,12 @@ function _compute_hess_coo(tnrj :: EnergyFETerm,
     return (I ,J, V)
 end
 
-function _compute_hessian_k_coo(term  :: EnergyFETerm,
-                                κ     :: AbstractVector,
-                                agrad :: Function)
- @lencheck 0 κ
- return ([],[],[])
+function _compute_hess_k_coo(nlp  :: AbstractNLPModel,
+                             term :: EnergyFETerm,
+                             κ    :: AbstractVector{T},
+                             xyu  :: AbstractVector{T}) where T
+    @lencheck 0 κ
+    return (Int[], Int[], T[])
 end
 
 @doc raw"""
@@ -205,7 +227,7 @@ function _obj_cell_integral(term :: MixedEnergyFETerm,
 end
 
 function _compute_gradient!(g    :: AbstractVector,
-                            tnrj :: MixedEnergyFETerm,
+                            term :: MixedEnergyFETerm,
                             κ    :: AbstractVector,
                             yu   :: FEFunctionType,
                             Y    :: FESpace,
@@ -219,7 +241,7 @@ function _compute_gradient!(g    :: AbstractVector,
 
     function _cell_obj_yu(cell)
          yuh = CellField(Y, cell)
-        _obj_cell_integral(tnrj, κ, yuh)
+        _obj_cell_integral(term, κ, yuh)
     end
 
     #Compute the gradient with AD
@@ -232,9 +254,34 @@ function _compute_gradient!(g    :: AbstractVector,
     assem  = Gridap.FESpaces.SparseMatrixAssembler(Y, X)
     g[term.nparam + 1 : term.nparam + nyu] .= Gridap.FESpaces.assemble_vector(assem, vecdata_yu)
 
-    g[1 : term.nparam] .= _compute_gradient_k(tnrj, κ, yu)
+    g[1 : term.nparam] .= _compute_gradient_k(term, κ, yu)
 
  return g
+end
+
+function _temp(term :: MixedEnergyFETerm,
+                            κ    :: AbstractVector,
+                            yu   :: FEFunctionType,
+                            Y    :: FESpace,
+                            X    :: FESpace)
+
+    cell_yu    = Gridap.FESpaces.get_cell_values(yu)
+    cell_id_yu = Gridap.Arrays.IdentityVector(length(cell_yu))
+
+    function _cell_obj_yu(cell)
+         yuh = CellField(Y, cell)
+        Main.PDENLPModels._obj_cell_integral(term, κ, yuh)
+    end
+
+    #Compute the gradient with AD
+    cell_r_yu = Gridap.Arrays.autodiff_array_gradient(_cell_obj_yu,
+                                                       cell_yu,
+                                                       cell_id_yu)
+    #Put the result in the format expected by Gridap.FESpaces.assemble_matrix
+    vecdata_yu = [[cell_r_yu], [cell_id_yu]]
+    #Assemble the gradient in the "good" space
+    assem  = Gridap.FESpaces.SparseMatrixAssembler(Y, X)
+    return Gridap.FESpaces.assemble_vector(assem, vecdata_yu)
 end
 
 function _compute_gradient_k(term :: MixedEnergyFETerm,
@@ -245,7 +292,7 @@ function _compute_gradient_k(term :: MixedEnergyFETerm,
   return ForwardDiff.gradient(intf, κ)
 end
 
-function _compute_hess_coo(tnrj :: MixedEnergyFETerm,
+function _compute_hess_coo(term :: MixedEnergyFETerm,
                            κ    :: AbstractVector,
                            yu   :: FEFunctionType,
                            Y    :: FESpace,
@@ -256,7 +303,7 @@ function _compute_hess_coo(tnrj :: MixedEnergyFETerm,
 
     function _cell_obj_yu(cell)
          yuh = CellField(Y, cell)
-        _obj_cell_integral(tnrj, κ, yuh)
+        _obj_cell_integral(term, κ, yuh)
     end
 
     #Compute the hessian with AD
@@ -265,32 +312,25 @@ function _compute_hess_coo(tnrj :: MixedEnergyFETerm,
     assem      = Gridap.FESpaces.SparseMatrixAssembler(Y, X)
     (I, J, V) = assemble_hess(assem, cell_r_yu, cell_id_yu)
 
-    @warn "Not finished"
-    #\TODO: Compute the derivative w.r.t. κ
-    #agrad = @closure k -> grad(nlp, vcat(k, xyu))
-    #(I2, J2, V2) = _compute_hessian_k_coo(nlp.tnrj, agrad, κ) #Not sure we really need that? Almost impossible to test separately
-    #We probably need to sort by columns then.
-    #Eventually, has a hess_coo_k ??
-
-    return (I .+ tnrj.nparam, J .+ tnrj.nparam, V)
+    return  (I, J, V)
 end
 
-function _compute_hessian_k_coo(term  :: MixedEnergyFETerm,
-                                agrad :: Function,
-                                κ     :: AbstractVector)
- @lencheck term.nparam κ
- #Take J-I as we transpose
- (J,I,V) = findnz(ForwardDiff.jacobian(agrad, κ))
- return (I,J,V)
-end
+function _compute_hess_k_coo(nlp  :: AbstractNLPModel,
+                             term :: MixedEnergyFETerm,
+                             κ    :: AbstractVector,
+                             xyu  :: AbstractVector)
+    #This works:
+    yu     = FEFunction(nlp.Y, xyu)
+    gk = @closure k -> Main.PDENLPModels._compute_gradient_k(nlp.tnrj, k, yu)
+    @show ForwardDiff.jacobian(gk, ones(2))
+    ggk = @closure k -> Main.PDENLPModels._temp(nlp.tnrj, k, yu, nlp.Y, nlp.X)
+    @show ForwardDiff.jacobian(ggk, ones(2))
 
-function _compute_hessian_k_coo(term  :: MixedEnergyFETerm,
-                                κ     :: AbstractVector,
-                                yu    :: FEFunctionType)
- @lencheck term.nparam κ
- fk = @closure k -> term.f(k, yu)
- (I, J, V) = findnz(sparse(LowerTriangular(ForwardDiff.hessian(fk, κ))))
- return (I,J,V)
+    #Compute the derivative w.r.t. κ
+    gk = @closure k -> grad(nlp, vcat(k, xyu))
+    (I, J, V) = findnz(sparse(LowerTriangular(ForwardDiff.jacobian(gk, κ))))
+
+    return (I, J, V)
 end
 
 @doc raw"""
@@ -349,22 +389,21 @@ function _compute_gradient_k(term :: NoFETerm,
   return ForwardDiff.gradient(term.f, κ)
 end
 
-function _compute_hess_coo(tnrj :: NoFETerm,
-                           κ    :: AbstractVector,
+function _compute_hess_coo(term :: NoFETerm,
+                           κ    :: AbstractVector{T},
                            yu   :: FEFunctionType,
                            Y    :: FESpace,
-                           X    :: FESpace)
-    nyu = num_free_dofs(Y)
-    #Compute the derivative w.r.t. κ
-    (I, J, V) = _compute_hessian_k_coo(tnrj, κ, yu)
-
-    return (I, J, V)
+                           X    :: FESpace) where T
+    return (Int[], Int[], T[])
 end
 
-function _compute_hessian_k_coo(term  :: NoFETerm,
-                                κ     :: AbstractVector,
-                                yu    :: FEFunctionType)
+function _compute_hess_k_coo(nlp  :: AbstractNLPModel,
+                             term :: NoFETerm,
+                             κ    :: AbstractVector,
+                             xyu  :: AbstractVector)
 
- (I, J, V) = findnz(sparse(LowerTriangular(ForwardDiff.hessian(term.f, κ))))
- return (I,J,V)
+    #Compute the derivative w.r.t. κ
+    (I, J, V) = findnz(sparse(LowerTriangular(ForwardDiff.hessian(term.f, κ))))
+
+    return (I, J, V)
 end

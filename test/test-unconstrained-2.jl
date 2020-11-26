@@ -56,7 +56,7 @@ function _test_unconstrained2(;udc = false)
     @time _Hxv = hprod(nlp, x1, v);
     @test norm(Hxv - _Hxv) <= sqrt(eps(Float64))
 
-    if nlp.meta.nvar <= 150
+    if udc
         #Check derivatives using NLPModels tools:
         #https://github.com/JuliaSmoothOptimizers/NLPModels.jl/blob/master/src/dercheck.jl
         @test gradient_check(nlp) == Dict{Int64,Float64}()

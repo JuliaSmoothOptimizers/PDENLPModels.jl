@@ -70,7 +70,7 @@ function _test_unconstrained(;udc = false )
     @test norm(_t.solution[nn + 1: nlp.meta.nvar] - solu, Inf) <= sqrt(1/n)
 
     if udc
-        @show "derivatives check. This may take approx. 5 minutes."
+        println("derivatives check. This may take approx. 5 minutes.")
         #Check derivatives using NLPModels tools:
         #https://github.com/JuliaSmoothOptimizers/NLPModels.jl/blob/master/src/dercheck.jl
         @test gradient_check(nlp) == Dict{Int64,Float64}()
