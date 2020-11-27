@@ -14,7 +14,7 @@ julia:
 notifications:
   email: false
 
-#codecov: true
+codecov: true
 coveralls: true
 
 ## uncomment the following lines to allow failures on nightly julia

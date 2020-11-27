@@ -1,7 +1,7 @@
 include("header.jl")
 
 function _pdeonlyincompressibleNS()
-    n = 3
+    n = 5
     domain = (0,1,0,1)
     partition = (n,n)
     model = CartesianDiscreteModel(domain,partition)
@@ -69,7 +69,7 @@ op = _pdeonlyincompressibleNS()
 using LineSearches
 #Gridap way of solving the equation:
 nls = NLSolver(
-  show_trace=true, method=:newton, linesearch=BackTracking())
+  show_trace=false, method=:newton, linesearch=BackTracking())
 solver = FESolver(nls)
 
 #struct NewtonRaphsonSolver <:NonlinearSolver
@@ -83,10 +83,13 @@ solver2 = FESolver(nls2)
 #The first approach is to use Newton method anticipated by Gridap and using
 #Krylov.jl to solve the linear problem.
 #NLSolver(ls::LinearSolver;kwargs...)
-ls  = KrylovSolver(cgls; itmax = 4000, verbose = false)
-nls_krylov = NLSolver(ls, show_trace=true)
+ls  = KrylovSolver(cgls; itmax = 10000, verbose = false)
+nls_krylov = NLSolver(ls, show_trace=false)
 @test nls_krylov.ls == ls
 solver_krylov = FESolver(nls_krylov)
+
+nls_krylov2 = Gridap.Algebra.NewtonRaphsonSolver(ls, 1e-6, 100)
+solver_krylov2 = FESolver(nls_krylov2)
 
 #Another version is to surcharge:
 #solve!(x::AbstractVector,nls::NewNonlinearSolverType,op::NonlinearOperator,cache::Nothing)
@@ -103,15 +106,20 @@ sol_gridap1 = get_free_values(uph1);
 sol_gridap2 = get_free_values(uph2);
 @time uph3 = solve(solver_krylov,op)
 sol_gridap3 = get_free_values(uph3);
+@time uph4 = solve(solver_krylov2,op)
+sol_gridap4 = get_free_values(uph4);
 
-@test size(Gridap.FESpaces.jacobian(op, uph1)) == (76,76)
+nUg = num_free_dofs(op.trial)
+@test size(Gridap.FESpaces.jacobian(op, uph1)) == (nUg, nUg)
 
 @show norm(Gridap.FESpaces.residual(op, uph1),Inf)
 @show norm(Gridap.FESpaces.residual(op, uph2),Inf)
 @show norm(Gridap.FESpaces.residual(op, uph3),Inf)
+@show norm(Gridap.FESpaces.residual(op, uph4),Inf)
 
 @show norm(sol_gridap1 - sol_gridap2, Inf)
 @show norm(sol_gridap1 - sol_gridap3, Inf)
+@show norm(sol_gridap1 - sol_gridap4, Inf)
 
 #solve(FESolver, op): set 0 as initial guess and call:
 #solve!(x,nls,op): abstract function

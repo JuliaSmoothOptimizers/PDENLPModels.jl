@@ -11,7 +11,7 @@
 ###############################################################################
 
 function _poissonwithparameteroptim(;udc = false)
-    n = 10
+    n = 5
     domain = (0,1,0,1)
     partition = (n,n)
     model = CartesianDiscreteModel(domain,partition)
@@ -43,7 +43,8 @@ function _poissonwithparameteroptim(;udc = false)
 
     nUg = num_free_dofs(Ug)
     x0  = zeros(nUg + 1)
-    nlp = GridapPDENLPModel(x0, nrj, Ug, V0, op)
+    xs  = rand(nUg + 1)
+    nlp = GridapPDENLPModel(xs, nrj, Ug, V0, op)
 
     @test nlp.nparam == 1
     x1 = vcat(1., rand(nUg))

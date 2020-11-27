@@ -65,6 +65,81 @@ See also: MixedEnergyFETerm, EnergyFETerm, NoFETerm, \\_obj\\_integral,
 function _compute_hess_k_coo end
 
 @doc raw"""
+FETerm modeling the objective function when there are no intregral objective.
+
+```math
+\begin{equation}
+ f(\kappa)
+\end{equation}
+ ```
+
+Constructors:
+
+  `NoFETerm()`
+
+  `NoFETerm(:: Function)`
+
+See also: MixedEnergyFETerm, EnergyFETerm, \_obj\_cell\_integral,
+\_obj\_integral, \_compute\_gradient\_k!
+"""
+struct NoFETerm <: AbstractEnergyTerm
+    # For the objective function
+    f      :: Function
+end
+
+function NoFETerm()
+ return NoFETerm(x -> 0.)
+end
+
+_obj_integral(term :: NoFETerm, κ :: AbstractVector, x :: FEFunctionType) = term.f(κ)
+_obj_cell_integral(term :: NoFETerm, κ :: AbstractVector, yuh :: CellFieldType) = term.f(κ)
+
+function _compute_gradient!(g    :: AbstractVector,
+                            tnrj :: NoFETerm,
+                            κ    :: AbstractVector,
+                            yu   :: FEFunctionType,
+                            Y    :: FESpace,
+                            X    :: FESpace)
+    nparam = length(κ)
+    nyu    = num_free_dofs(Y)
+    nvar   = nparam + nyu
+    @lencheck nvar g
+
+    #Assemble the gradient in the "good" space
+    g[nparam + 1 : nvar] .= zeros(nyu)
+
+    g[1 : nparam] .= _compute_gradient_k(tnrj, κ, yu)
+
+ return g
+end
+
+
+function _compute_gradient_k(term :: NoFETerm,
+                             κ    :: AbstractVector,
+                             yu   :: FEFunctionType)
+  return ForwardDiff.gradient(term.f, κ)
+end
+
+function _compute_hess_coo(term :: NoFETerm,
+                           κ    :: AbstractVector{T},
+                           yu   :: FEFunctionType,
+                           Y    :: FESpace,
+                           X    :: FESpace) where T
+    return (Int[], Int[], T[])
+end
+
+function _compute_hess_k_coo(nlp  :: AbstractNLPModel,
+                             term :: NoFETerm,
+                             κ    :: AbstractVector,
+                             xyu  :: AbstractVector)
+
+    #Compute the derivative w.r.t. κ
+    (I, J, V) = findnz(sparse(LowerTriangular(ForwardDiff.hessian(term.f, κ))))
+
+    return (I, J, V)
+end
+
+@doc raw"""
 FETerm modeling the objective function of the optimization problem.
 
 ```math
@@ -334,76 +409,66 @@ function _compute_hess_k_coo(nlp  :: AbstractNLPModel,
 end
 
 @doc raw"""
-FETerm modeling the objective function when there are no intregral objective.
+FETerm modeling the objective function of the optimization problem with
+functional and discrete unknowns, describe as a norm and a regularizer.
 
 ```math
 \begin{equation}
- f(\kappa)
+\frac{1}{2}\|Fyu(y,u)\|^2_{L^2_\Omega} + \lambda\int_{\Omega} lyu(y,u) d\Omega
+ + \frac{1}{2}\|Fk(κ)\|^2 + \mu lk(κ)
 \end{equation}
- ```
+```
+where Ω is described by:
+ - trian :: Triangulation
+ - quad  :: CellQuadrature
 
-Constructors:
+Constructor:
 
-  `NoFETerm()`
+`ResidualEnergyFETerm(:: Function, :: Triangulation, :: CellQuadrature, :: Function, :: Int)`
 
-  `NoFETerm(:: Function)`
-
-See also: MixedEnergyFETerm, EnergyFETerm, \_obj\_cell\_integral,
-\_obj\_integral, \_compute\_gradient\_k!
+See also: EnergyFETerm, NoFETerm, MixedEnergyFETerm
 """
-struct NoFETerm <: AbstractEnergyTerm
-    # For the objective function
-    f      :: Function
+struct ResidualEnergyFETerm <: AbstractEnergyTerm
+    Fyu      :: Function
+    #lyu      :: Function #regularizer
+    #λ        :: Real
+    trian    :: Triangulation
+    quad     :: CellQuadrature
+    Fk       :: Function
+    #lk       :: Function #regularizer
+    #μ        :: Real
+
+    nparam   :: Int #number of discrete unkonwns.
+
+    #?counters :: NLSCounters #init at NLSCounters()
+
+    function ResidualEnergyFETerm(Fyu   :: Function,
+                                  trian :: Triangulation,
+                                  quad  :: CellQuadrature,
+                                  Fk    :: Function,
+                                  n     :: Int)
+        @assert n > 0
+        return new(Fyu, trian, quad, Fk, n)
+    end
 end
 
-function NoFETerm()
- return NoFETerm(x -> 0.)
-end
+#TODO: this is specific to ResidualEnergyFETerm
+function _jac_residual_yu end
+function _jac_residual_k end
+function _jprod_residual_yu end
+function _jprod_residual_k end
+function _jtprod_residual_yu end
+function _jtprod_residual_k end
+function hess_residual end
 
-_obj_integral(term :: NoFETerm, κ :: AbstractVector, x :: FEFunctionType) = term.f(κ)
-_obj_cell_integral(term :: NoFETerm, κ :: AbstractVector, yuh :: CellFieldType) = term.f(κ)
+function _obj_cell_integral end
 
-function _compute_gradient!(g    :: AbstractVector,
-                            tnrj :: NoFETerm,
-                            κ    :: AbstractVector,
-                            yu   :: FEFunctionType,
-                            Y    :: FESpace,
-                            X    :: FESpace)
-    nparam = length(κ)
-    nyu    = num_free_dofs(Y)
-    nvar   = nparam + nyu
-    @lencheck nvar g
+function _obj_integral end
 
-    #Assemble the gradient in the "good" space
-    g[nparam + 1 : nvar] .= zeros(nyu)
+function _compute_gradient_k end
 
-    g[1 : nparam] .= _compute_gradient_k(tnrj, κ, yu)
+function _compute_gradient! end
 
- return g
-end
+function _compute_hess_coo end
 
-
-function _compute_gradient_k(term :: NoFETerm,
-                             κ    :: AbstractVector,
-                             yu   :: FEFunctionType)
-  return ForwardDiff.gradient(term.f, κ)
-end
-
-function _compute_hess_coo(term :: NoFETerm,
-                           κ    :: AbstractVector{T},
-                           yu   :: FEFunctionType,
-                           Y    :: FESpace,
-                           X    :: FESpace) where T
-    return (Int[], Int[], T[])
-end
-
-function _compute_hess_k_coo(nlp  :: AbstractNLPModel,
-                             term :: NoFETerm,
-                             κ    :: AbstractVector,
-                             xyu  :: AbstractVector)
-
-    #Compute the derivative w.r.t. κ
-    (I, J, V) = findnz(sparse(LowerTriangular(ForwardDiff.hessian(term.f, κ))))
-
-    return (I, J, V)
-end
+function _compute_hess_k_coo end
