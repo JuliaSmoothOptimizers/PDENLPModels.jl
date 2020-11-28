@@ -1,3 +1,12 @@
+#See https://github.com/gridap/Gridap.jl/blob/765b01a5ca7ca108548e8e99556de776348a9c3b/src/Algebra/SparseMatrices.jl#L50
+function allocate_coo_vectors_IJ(::Type{M},n::Integer) where M
+  return (zeros(Int,n), zeros(Int,n))
+end
+
+function allocate_coo_vectors_IJ(::Type{M},n::Integer) where {Tv,Ti,M<:AbstractSparseMatrix{Tv,Ti}}
+  return (zeros(Ti,n), zeros(Ti,n))
+end
+
 """
 These functions:
 https://github.com/gridap/Gridap.jl/blob/758a8620756e164ba0e6b83dc8dcbb278015b3d9/src/FESpaces/SparseMatrixAssemblers.jl#L463
@@ -25,7 +34,7 @@ end
 
 function count_hess_nnz_coo(a          :: Gridap.FESpaces.GenericSparseMatrixAssembler,
                             cell_r_yu  :: T,
-                            cell_id_yu :: Gridap.Arrays.IdentityVector{Int64}) where T <: AbstractArray
+                            cell_id_yu :: Gridap.Arrays.IdentityVector{I}) where {T <: AbstractArray, I <: Int}
 
   cellmat_rc  = cell_r_yu
   cellidsrows = cell_id_yu
@@ -35,6 +44,8 @@ function count_hess_nnz_coo(a          :: Gridap.FESpaces.GenericSparseMatrixAss
   cell_cols   = Gridap.FESpaces.get_cell_dofs(a.trial, cellidscols)
   rows_cache  = Gridap.FESpaces.array_cache(cell_rows)
   cols_cache  = Gridap.FESpaces.array_cache(cell_cols)
+
+  #In the unconstrained case: cellmat = cell_r_yu
   cellmat_r   = Gridap.FESpaces.attach_constraints_cols(a.trial, cellmat_rc, cellidscols)
   cellmat     = Gridap.FESpaces.attach_constraints_rows(a.test,  cellmat_r,  cellidsrows)
 
@@ -44,6 +55,31 @@ function count_hess_nnz_coo(a          :: Gridap.FESpaces.GenericSparseMatrixAss
   Is  = Gridap.FESpaces._get_block_layout(mat)
   n   = _count_hess_entries(a.matrix_type, rows_cache, cols_cache,
                             cell_rows, cell_cols, a.strategy, Is)
+
+  n
+end
+
+function count_hess_nnz_coo_short(a          :: Gridap.FESpaces.GenericSparseMatrixAssembler,
+                                  cell_id_yu :: Gridap.Arrays.IdentityVector{I}) where I
+
+
+  #cellmat_rc  = cell_r_yu
+  cellidsrows = cell_id_yu
+  cellidscols = cell_id_yu
+
+  cell_rows   = Gridap.FESpaces.get_cell_dofs(a.test, cellidsrows)
+  cell_cols   = Gridap.FESpaces.get_cell_dofs(a.trial, cellidscols)
+  rows_cache  = Gridap.FESpaces.array_cache(cell_rows)
+  cols_cache  = Gridap.FESpaces.array_cache(cell_cols)
+
+  #In the unconstrained case: cellmat = cell_r_yu
+  #cellmat_r   = Gridap.FESpaces.attach_constraints_cols(a.trial, cellmat_rc, cellidscols)
+  #cellmat     = Gridap.FESpaces.attach_constraints_rows(a.test,  cellmat_r,  cellidsrows)
+
+  #mat = first(cellmat)
+  #Is  = Gridap.FESpaces._get_block_layout(mat) #Is = nothing if cellmat is a matrix
+  n   = _count_hess_entries(a.matrix_type, rows_cache, cols_cache,
+                            cell_rows, cell_cols, a.strategy, nothing)
 
   n
 end
@@ -144,6 +180,71 @@ _fill_matrix_at_cell! may have a specific specialization
             @inbounds I[n] = _gidrow
             @inbounds J[n] = _gidcol
             @inbounds V[n] = vals[i,j]
+          end
+        end
+      end
+    end
+  end
+  n
+end
+
+function struct_hess_coo_numeric!(I          :: Array{Ii,1},
+                                  J          :: Array{Ii,1},
+                                  a          :: Gridap.FESpaces.GenericSparseMatrixAssembler,
+                                  cell_id_yu :: Gridap.Arrays.IdentityVector{Int64}) where {Ii <: Int, Vi <: AbstractFloat}
+    nini = 0
+
+    cellidsrows = cell_id_yu
+    cellidscols = cell_id_yu
+
+    cell_rows  = Gridap.FESpaces.get_cell_dofs(a.test,cellidsrows)
+    cell_cols  = Gridap.FESpaces.get_cell_dofs(a.trial,cellidscols)
+    rows_cache = Gridap.FESpaces.array_cache(cell_rows)
+    cols_cache = Gridap.FESpaces.array_cache(cell_cols)
+    nini = _struct_hess!(a.matrix_type, nini, I, J,
+                                      rows_cache, cols_cache,
+                                      cell_rows, cell_cols,
+                                      a.strategy)
+
+  nini
+end
+
+@noinline function _struct_hess!(a    :: Type{M},
+                                 nini :: Int,
+                                 I    :: Array{Ii,1},
+                                 J    :: Array{Ii,1},
+                                 rows_cache, cols_cache,
+                                 cell_rows,cell_cols,
+                                 strategy) where {M, Ii <: Int}
+
+  n = nini
+  for cell in 1:length(cell_cols)
+    rows = getindex!(rows_cache, cell_rows, cell)
+    cols = getindex!(cols_cache, cell_cols, cell)
+    n = _struct_hess_at_cell!(M, n, I, J, rows, cols, strategy)
+  end
+  n
+end
+
+"""
+https://github.com/gridap/Gridap.jl/blob/758a8620756e164ba0e6b83dc8dcbb278015b3d9/src/FESpaces/SparseMatrixAssemblers.jl#L463
+_fill_matrix_at_cell! may have a specific specialization
+"""
+@inline function _struct_hess_at_cell!(::Type{M},nini,
+                                      I          :: Array{Ii,1},
+                                      J          :: Array{Ii,1},
+                                      rows,cols,strategy) where {M, Ii <: Int}
+  n = nini
+  for (j, gidcol) in enumerate(cols)
+    if gidcol > 0 && Gridap.FESpaces.col_mask(strategy, gidcol)
+      _gidcol = Gridap.FESpaces.col_map(strategy, gidcol)
+      for (i, gidrow) in enumerate(rows)
+        if gidrow > 0 && Gridap.FESpaces.row_mask(strategy, gidrow)
+          _gidrow = Gridap.FESpaces.row_map(strategy, gidrow)
+          if Gridap.FESpaces.is_entry_stored(M, _gidrow, _gidcol) && (_gidrow >= _gidcol)
+            n += 1
+            @inbounds I[n] = _gidrow
+            @inbounds J[n] = _gidcol
           end
         end
       end

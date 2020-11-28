@@ -20,7 +20,7 @@ The export connected implemented functions are
 * [x] `hess` For the objective function: computes the hessian cell by cell with autodiff, but construct only the lower triangular in sparse format.
 * [ ] `hess_coord!` **TODO** (following `hess_structure!`)
 * [ ] `hess_structure!` **TODO**
-* [x] `hprod!` for the objective function and the Lagrangian. For the objective function: call the hessian in coo format and then use `coo_sym_prod`.
+* [x] `hprod!` For the objective function: call the hessian in coo format and then use `coo_sym_prod`.
 * [x] `hess_op!` see `hprod!`
 * [x] `hess_op` uses `hess_op!`
 

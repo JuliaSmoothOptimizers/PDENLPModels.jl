@@ -236,9 +236,9 @@ function _compute_hess_coo(tnrj :: EnergyFETerm,
     cell_r_yu  = Gridap.Arrays.autodiff_array_hessian(_cell_obj_yu, cell_yu, cell_id_yu)
     #Assemble the matrix in the "good" space
     assem      = Gridap.FESpaces.SparseMatrixAssembler(Y, X)
-    (I ,J, V) = assemble_hess(assem, cell_r_yu, cell_id_yu)
+    (I, J, V) = assemble_hess(assem, cell_r_yu, cell_id_yu)
 
-    return (I ,J, V)
+    return (I, J, V)
 end
 
 function _compute_hess_k_coo(nlp  :: AbstractNLPModel,

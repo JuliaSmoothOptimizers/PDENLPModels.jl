@@ -1,7 +1,7 @@
 using BenchmarkTools, ForwardDiff, Gridap, LinearAlgebra, Printf, SparseArrays, Test
 
 #JSO
-using JSOSolvers, Krylov, NLPModels
+using JSOSolvers, Krylov, NLPModels, NLPModelsIpopt
 
 #PDENLPModels
 using PDENLPModels
@@ -28,6 +28,6 @@ include("pde-only-incompressible-NS.jl")
 #include("poisson-with-Neumann-and-Dirichlet.jl") #Peut être décommenter
 #include("1d-Burger-example.jl") #Peut être décommenter
 
-#IV. Mixte optimization problem with PDE-constraints
+#IV. Mixed optimization problem with PDE-constraints
 #Objective only on the parameter
 include("poisson-with-parameter-optim.jl")

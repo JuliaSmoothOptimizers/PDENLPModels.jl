@@ -637,24 +637,91 @@ function hess_coo(nlp :: GridapPDENLPModel, x :: AbstractVector;
 
     if nlp.nparam > 0
         (I1, J1, V1) = _compute_hess_k_coo(nlp, nlp.tnrj, κ, xyu)
-        return (vcat(I1, I2),
-                vcat(J1, J2 .+ nlp.nparam),
-                vcat(V1, V2))
+        if obj_weight == one(eltype(x))
+          return (vcat(I1, I2),
+                  vcat(J1, J2 .+ nlp.nparam),
+                  vcat(V1, V2))
+        else
+          return (vcat(I1, I2),
+                  vcat(J1, J2 .+ nlp.nparam),
+                  vcat(obj_weight * V1, obj_weight * V2))
+        end
     end
 
-    return (I2 ,J2, V2)
+    if  obj_weight == one(eltype(x))
+      return (I2 ,J2, V2)
+    else
+      return (I2 ,J2, obj_weight * V2)
+    end
+
+    nothing #you are not supposed to be there
 end
 
-function hess(nlp :: GridapPDENLPModel, x :: AbstractVector;
-              obj_weight :: Real = one(eltype(x)))
+"""
+`hess_structure` returns the sparsity pattern of the Lagrangian Hessian in sparse coordinate format,
+and
+`hess_obj_structure` is only for the objective function hessian.
+"""
+function hess_yu_obj_structure(nlp :: GridapPDENLPModel)
+
+  a = Gridap.FESpaces.SparseMatrixAssembler(nlp.Y, nlp.X)
+  ncells = num_cells(nlp.tnrj.trian)
+  cell_id_yu = Gridap.Arrays.IdentityVector(ncells)
+
+  #Tanj: simplify count_hess_nnz_coo(a, cell_r_yu, cell_id_yu)
+  #Is is never used here.
+  cellidsrows = cell_id_yu
+  cellidscols = cell_id_yu
+
+  cell_rows   = Gridap.FESpaces.get_cell_dofs(a.test, cellidsrows)
+  cell_cols   = Gridap.FESpaces.get_cell_dofs(a.trial, cellidscols)
+  rows_cache  = Gridap.FESpaces.array_cache(cell_rows)
+  cols_cache  = Gridap.FESpaces.array_cache(cell_cols)
+
+  n   = _count_hess_entries(a.matrix_type, rows_cache, cols_cache,
+                            cell_rows, cell_cols, a.strategy, nothing)
+
+  I, J = allocate_coo_vectors_IJ(Gridap.FESpaces.get_matrix_type(a), n)
+
+  nini = struct_hess_coo_numeric!(I, J, a, cell_id_yu)
+
+  @assert n == nini
+
+  (I, J)
+end
+
+function hess_k_obj_structure(nlp :: GridapPDENLPModel)
+    n, p = nlp.meta.nvar, nlp.nparam
+    I = ((i,j) for i = 1:n, j = 1:p if i ≥ j)
+    rows .= getindex.(I, 1)
+    cols .= getindex.(I, 2)
+    return rows, cols
+end
+
+function hess_obj_structure(nlp :: GridapPDENLPModel)
+ if nlp.nparam != 0
+     (I1, J1, V1) = hess_k_obj_structure(nlp)
+     (I2, J2, V2) = hess_yu_obj_structure(nlp)
+     return (vcat(I1, I2), vcat(J1, J2), vcat(V1, V2))
+ end
+ return hess_yu_obj_structure(nlp)
+end
+
+function hess(nlp :: GridapPDENLPModel, x :: AbstractVector{T};
+              obj_weight :: Real = one(T)) where T
     @lencheck nlp.meta.nvar x
     increment!(nlp, :neval_hess)
 
-
-    (I, J, V) = hess_coo(nlp, x, obj_weight = obj_weight)
-
     mdofs = Gridap.FESpaces.num_free_dofs(nlp.X) + nlp.nparam
     ndofs = Gridap.FESpaces.num_free_dofs(nlp.Y) + nlp.nparam
+
+    if obj_weight == zero(T)
+        (I, J) = hess_obj_structure(nlp)
+        V      = zeros(T, length(J))
+        return sparse(I, J, V, mdofs, ndofs)
+    end
+
+    (I, J, V) = hess_coo(nlp, x, obj_weight = obj_weight)
 
     @assert mdofs == ndofs #otherwise there is an error in the Trial/Test spaces
 
