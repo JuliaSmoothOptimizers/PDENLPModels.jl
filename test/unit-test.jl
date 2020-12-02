@@ -77,6 +77,10 @@ nYpde = num_free_dofs(Ypde)
     nlp = GridapPDENLPModel(x0, NTf, Ypde, Xpde, cter)
     nlp = GridapPDENLPModel(x0, EFT, Ypde, Xpde, cter)
     nlp = GridapPDENLPModel(x0, MEFT, Ypde, Xpde, cter)
+    nlp = GridapPDENLPModel(x0, NT,Ypde, Xpde, lvar, uvar, cter)
+    nlp = GridapPDENLPModel(x0, NTf, Ypde, Xpde, lvar, uvar, cter)
+    nlp = GridapPDENLPModel(x0, EFT, Ypde, Xpde, lvar, uvar, cter)
+    nlp = GridapPDENLPModel(x0, MEFT, Ypde, Xpde, lvar, uvar, cter)
     nlp = GridapPDENLPModel(x0, NT, Ypde, Ycon, Xpde, Xcon, cter, lcon, ucon, y0 = y0)
     nlp = GridapPDENLPModel(x0, NTf, Ypde, Ycon, Xpde, Xcon, cter, lcon, ucon, y0 = y0)
     nlp = GridapPDENLPModel(x0, EFT, Ypde, Ycon, Xpde, Xcon, cter, lcon, ucon, y0 = y0)
@@ -123,6 +127,11 @@ nYpde = num_free_dofs(Ypde)
     @test_throws DimensionError GridapPDENLPModel(badx0, f, trian, quad, Ypde, Ycon, Xpde, Xcon, caff, lcon, ucon, y0 = y0)
     @test_throws DimensionError GridapPDENLPModel(badx0, f, trian, quad, Ypde, Ycon, Xpde, Xcon, lvar, uvar, caff)
     @test_throws DimensionError GridapPDENLPModel(badx0, f, trian, quad, Ypde, Ycon, Xpde, Xcon, lvar, uvar, caff, lcon, ucon, y0 = y0)
+    
+    @test_throws ErrorException("Error: Xcon or Ycon are both nothing or must be specified.") GridapPDENLPModel(x0, NT, Ypde, Ycon, Xpde, nothing, cter)
+    @test_throws ErrorException("Error: Xcon or Ycon are both nothing or must be specified.") GridapPDENLPModel(x0, NT, Ypde, nothing, Xpde, Xcon, cter)
+    @test_throws ErrorException("Error: Xcon or Ycon are both nothing or must be specified.") GridapPDENLPModel(x0, NT, Ypde, Ycon, Xpde, nothing, lvar, uvar, cter)
+    @test_throws ErrorException("Error: Xcon or Ycon are both nothing or must be specified.") GridapPDENLPModel(x0, NT, Ypde, nothing, Xpde, Xcon, lvar, uvar, cter)
 end
 
 #Test util_functions.jl

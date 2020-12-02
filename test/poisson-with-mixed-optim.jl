@@ -39,13 +39,14 @@ t_Ω = FETerm(res, trian, quad)
 op = FEOperator(Ug, V0, t_Ω)
 
 function fk(k, y)
- #un(x) = 1.
- #k1f = interpolate(k[1], V0)
- #k2f = interpolate(k[2], V0)
- #0.5 * (sol - y) * (sol - y) + 0.5 * (k1f - 1.) * (k1f - 1.)
- 0.5 * (sol - y) * (sol - y) + 0.5 * dot(k .- 1.,  k .- 1.)
+ 0.5 * (sol - y) * (sol - y) + 0.5 * (k[1] - 1.) * (k[1] - 1.) + 0.5 * (k[2] - 1.) * (k[2] - 1.)
 end
-nrj = MixedEnergyFETerm(fk, trian, quad, 2) #length(k)=2
+Vp = TestFESpace(
+  reffe=:Lagrangian, order=1, valuetype=Float64,
+  conformity=:H1, model=model)
+Large = MultiFieldFESpace(repeat([Vp], 2))
+#nrj = MixedEnergyFETerm(fk, trian, quad, 2, Large) #length(k)=2
+nrj = MixedEnergyFETerm(fk, trian, quad, 2)
 
 nUg = num_free_dofs(Ug)
 x0  = zeros(nUg + 2) #zeros(nUg + 2)
@@ -60,10 +61,6 @@ x1 = vcat(1., 1., rand(nUg))
 @test grad(nlp, x0)[1:2] ≈ - ones(2) atol = 1e-14
 @test grad(nlp, x1)[1:2] ≈ zeros(2)  atol = 1e-14
 
-@warn "However, computing the hessian doesn't compile:"
-try
-    hess(nlp, x0)
-    @test true
-catch
-    @test false
-end
+hess(nlp, x0)
+
+hessian_test_functions(nlp)

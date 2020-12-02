@@ -31,3 +31,5 @@ include("pde-only-incompressible-NS.jl")
 #IV. Mixed optimization problem with PDE-constraints
 #Objective only on the parameter
 include("poisson-with-parameter-optim.jl")
+#Mixed objectives with no intertwined terms
+include("poisson-with-mixed-optim.jl")

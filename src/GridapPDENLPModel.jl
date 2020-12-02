@@ -30,47 +30,82 @@ where the unknown (y,u) is a MultiField see [Tutorials 7](https://gridap.github.
 The set Ω​ is represented here with *trian* and *quad*.
 
 TODO:
-[ ] time evolution pde problems.
-[ ] Handle the case where g and H are given
-[ ] Handle several terms in the objective function (via an FEOperator)?
-[ ] Be more explicit on the different types of FETerm in  _from_term_to_terms!
-[ ] Could we control the Dirichlet boundary condition? (like classical control of heat equations)
-[ ] Clean the tests.
-[ ] Missing: constraint ncon with num_free_dofs(Xpde)?
+[ ] time evolution pde problems.   
+[ ] Handle the case where g and H are given.   
+[ ] Handle several terms in the objective function (via an FEOperator)?   
+[ ] Be more explicit on the different types of FETerm in  _from_term_to_terms!   
+[ ] Could we control the Dirichlet boundary condition? (like classical control of heat equations)   
+[ ] Clean the tests.   
+[ ] Missing: constraint ncon with num_free_dofs(Xpde)?   
 
 Main constructor:
 
-`GridapPDENLPModel(:: NLPModelMeta, :: Counters, :: AbstractEnergyTerm,
-                   :: FESpace, :: Union{FESpace,Nothing},
-                   :: FESpace, :: Union{FESpace,Nothing},
-                   :: FESpace, :: Union{FESpace,Nothing},
-                   :: Union{FEOperator, Nothing},  :: Int, :: Int, :: Int)`
+`GridapPDENLPModel(:: NLPModelMeta, :: Counters, :: AbstractEnergyTerm, :: FESpace, :: Union{FESpace,Nothing}, :: FESpace, :: Union{FESpace,Nothing}, :: FESpace, :: Union{FESpace,Nothing}, :: Union{FEOperator, Nothing}, :: Int, :: Int, :: Int)`
 
 Additional constructors:
 - Unconstrained and no control
-GridapPDENLPModel(x0, tnrj, Ypde, Xpde)
-GridapPDENLPModel(x0, f, trian, quad, Ypde, Xpde)
-GridapPDENLPModel(f, trian, quad, Ypde, Xpde)
-- Bound constraints:
-GridapPDENLPModel(x0, tnrj, Ypde, Xpde, lvar, uvar)
-GridapPDENLPModel(x0, f, trian, quad, Ypde, Xpde, lvar, uvar)
-GridapPDENLPModel(f, trian, quad, Ypde, Xpde, lvar, uvar)
-- PDE-constrained:
-GridapPDENLPModel(x0, tnrj, Ypde, Xpde, c)
-GridapPDENLPModel(Ypde, Xpde, c)
-GridapPDENLPModel(x0, tnrj, Ypde, Ycon, Xpde, Xcon, c)
-GridapPDENLPModel(x0, f, trian, quad, Ypde, Ycon, Xpde, Xcon, c)
-GridapPDENLPModel(f, trian, quad, Ypde, Ycon, Xpde, Xcon, c)
-GridapPDENLPModel(x0, tnrj, Ypde, Ycon, Xpde, Xcon, c, lcon, ucon)
-GridapPDENLPModel(x0, f, trian, quad, Ypde, Ycon, Xpde, Xcon, c, lcon, ucon)
-GridapPDENLPModel(f, trian, quad, Ypde, Ycon, Xpde, Xcon, c, lcon, ucon)
-- PDE-constrained and bounds:
-GridapPDENLPModel(x0, tnrj, Ypde, Ycon, Xpde, Xcon, lvar, uvar, c)
-GridapPDENLPModel(x0, f, trian, quad, Ypde, Ycon, Xpde, Xcon, lvar, uvar, c)
-GridapPDENLPModel(f, trian, quad, Ypde, Ycon, Xpde, Xcon, lvar, uvar, c)
-GridapPDENLPModel(x0, tnrj, Ypde, Ycon, Xpde, Xcon, lvar, uvar, c, lcon, ucon)
-GridapPDENLPModel(x0, f, trian, quad, Ypde, Ycon, Xpde, Xcon, lvar, uvar, c, lcon, ucon)
-GridapPDENLPModel(f, trian, quad, Ypde, Ycon, Xpde, Xcon, lvar, uvar, c, lcon, ucon)
+ GridapPDENLPModel(x0, tnrj, Ypde, Xpde)   
+ GridapPDENLPModel(x0, f, trian, quad, Ypde, Xpde)   
+ GridapPDENLPModel(f, trian, quad, Ypde, Xpde)   
+- Bound constraints:   
+ GridapPDENLPModel(x0, tnrj, Ypde, Xpde, lvar, uvar)   
+ GridapPDENLPModel(x0, f, trian, quad, Ypde, Xpde, lvar, uvar)   
+ GridapPDENLPModel(f, trian, quad, Ypde, Xpde, lvar, uvar)   
+- PDE-constrained:   
+ GridapPDENLPModel(x0, tnrj, Ypde, Xpde, c)   
+ GridapPDENLPModel(Ypde, Xpde, c)   
+ GridapPDENLPModel(x0, tnrj, Ypde, Ycon, Xpde, Xcon, c)   
+ GridapPDENLPModel(x0, f, trian, quad, Ypde, Ycon, Xpde, Xcon, c)   
+ GridapPDENLPModel(f, trian, quad, Ypde, Ycon, Xpde, Xcon, c)   
+ GridapPDENLPModel(x0, tnrj, Ypde, Ycon, Xpde, Xcon, c, lcon, ucon)   
+ GridapPDENLPModel(x0, f, trian, quad, Ypde, Ycon, Xpde, Xcon, c, lcon, ucon)   
+ GridapPDENLPModel(f, trian, quad, Ypde, Ycon, Xpde, Xcon, c, lcon, ucon)   
+- PDE-constrained and bounds:   
+ GridapPDENLPModel(x0, tnrj, Ypde, Xpde, lvar, uvar, c)
+ GridapPDENLPModel(x0, tnrj, Ypde, Ycon, Xpde, Xcon, lvar, uvar, c)   
+ GridapPDENLPModel(x0, f, trian, quad, Ypde, Ycon, Xpde, Xcon, lvar, uvar, c)   
+ GridapPDENLPModel(f, trian, quad, Ypde, Ycon, Xpde, Xcon, lvar, uvar, c)   
+ GridapPDENLPModel(x0, tnrj, Ypde, Ycon, Xpde, Xcon, lvar, uvar, c, lcon, ucon)   
+ GridapPDENLPModel(x0, f, trian, quad, Ypde, Ycon, Xpde, Xcon, lvar, uvar, c, lcon, ucon)   
+ GridapPDENLPModel(f, trian, quad, Ypde, Ycon, Xpde, Xcon, lvar, uvar, c, lcon, ucon)   
+
+**Future constructors**:
+- Functional bounds: in this case |lvar|=|uvar|=nparam
+ GridapPDENLPModel(x0, tnrj, Ypde, Xpde, lfunc, ufunc)   
+ GridapPDENLPModel(x0, f, trian, quad, Ypde, Xpde, lfunc, ufunc)   
+ GridapPDENLPModel(f, trian, quad, Ypde, Xpde, lfunc, ufunc)
+ GridapPDENLPModel(x0, tnrj, Ypde, Xpde, lvar, uvar, lfunc, ufunc)   
+ GridapPDENLPModel(x0, f, trian, quad, Ypde, Xpde, lvar, uvar, lfunc, ufunc)   
+ GridapPDENLPModel(f, trian, quad, Ypde, Xpde, lvar, uvar, lfunc, ufunc) 
+ GridapPDENLPModel(x0, tnrj, Ypde, Xpde, lvar, uvar, lfunc, ufunc, c)
+ GridapPDENLPModel(x0, tnrj, Ypde, Ycon, Xpde, Xcon, lvar, uvar, lfunc, ufunc, c)   
+ GridapPDENLPModel(x0, f, trian, quad, Ypde, Ycon, Xpde, Xcon, lvar, uvar, lfunc, ufunc, c)   
+ GridapPDENLPModel(f, trian, quad, Ypde, Ycon, Xpde, Xcon, lvar, uvar, lfunc, ufunc, c)   
+ GridapPDENLPModel(x0, tnrj, Ypde, Ycon, Xpde, Xcon, lvar, uvar, lfunc, ufunc, c, lcon, ucon)   
+ GridapPDENLPModel(x0, f, trian, quad, Ypde, Ycon, Xpde, Xcon, lvar, uvar, lfunc, ufunc, c, lcon, ucon)   
+ GridapPDENLPModel(f, trian, quad, Ypde, Ycon, Xpde, Xcon, lvar, uvar, lfunc, ufunc, c, lcon, ucon)     
+- Discrete constraints (ck, lckon, uckon) only for problems with nparam > 0 (hence only if x0 given or tnrj)
+ GridapPDENLPModel(x0, tnrj, Ypde, Xpde, ck, lckon, uckon)   
+ GridapPDENLPModel(x0, f, trian, quad, Ypde, Xpde, ck, lckon, uckon) 
+ GridapPDENLPModel(x0, tnrj, Ypde, Xpde, c, ck, lckon, uckon) 
+ GridapPDENLPModel(x0, tnrj, Ypde, Ycon, Xpde, Xcon, c, ck, lckon, uckon)   
+ GridapPDENLPModel(x0, f, trian, quad, Ypde, Ycon, Xpde, Xcon, c, ck, lckon, uckon)
+ GridapPDENLPModel(x0, tnrj, Ypde, Ycon, Xpde, Xcon, c, lcon, ucon, ck, lckon, uckon)   
+ GridapPDENLPModel(x0, f, trian, quad, Ypde, Ycon, Xpde, Xcon, c, lcon, ucon, ck, lckon, uckon)  
+ GridapPDENLPModel(x0, tnrj, Ypde, Xpde, lvar, uvar, c, ck, lckon, uckon)
+ GridapPDENLPModel(x0, tnrj, Ypde, Ycon, Xpde, Xcon, lvar, uvar, c, ck, lckon, uckon)   
+ GridapPDENLPModel(x0, f, trian, quad, Ypde, Ycon, Xpde, Xcon, lvar, uvar, c, ck, lckon, uckon) 
+ GridapPDENLPModel(x0, tnrj, Ypde, Ycon, Xpde, Xcon, lvar, uvar, c, lcon, ucon, ck, lckon, uckon)   
+ GridapPDENLPModel(x0, f, trian, quad, Ypde, Ycon, Xpde, Xcon, lvar, uvar, c, lcon, ucon, ck, lckon, uckon) 
+ GridapPDENLPModel(x0, tnrj, Ypde, Xpde, lfunc, ufunc, ck, lckon, uckon)   
+ GridapPDENLPModel(x0, f, trian, quad, Ypde, Xpde, lfunc, ufunc, ck, lckon, uckon) 
+ GridapPDENLPModel(x0, tnrj, Ypde, Xpde, lvar, uvar, lfunc, ufunc, ck, lckon, uckon)   
+ GridapPDENLPModel(x0, f, trian, quad, Ypde, Xpde, lvar, uvar, lfunc, ufunc, ck, lckon, uckon)
+ GridapPDENLPModel(x0, tnrj, Ypde, Xpde, lvar, uvar, lfunc, ufunc, c, ck, lckon, uckon)
+ GridapPDENLPModel(x0, tnrj, Ypde, Ycon, Xpde, Xcon, lvar, uvar, lfunc, ufunc, c, ck, lckon, uckon)   
+ GridapPDENLPModel(x0, f, trian, quad, Ypde, Ycon, Xpde, Xcon, lvar, uvar, lfunc, ufunc, c, ck, lckon, uckon)
+ GridapPDENLPModel(x0, tnrj, Ypde, Ycon, Xpde, Xcon, lvar, uvar, lfunc, ufunc, c, lcon, ucon, ck, lckon, uckon)   
+ GridapPDENLPModel(x0, f, trian, quad, Ypde, Ycon, Xpde, Xcon, lvar, uvar, lfunc, ufunc, c, lcon, ucon, ck, lckon, uckon)
 
 The following keyword arguments are available to all constructors:
 - `name`: The name of the model (default: "Generic")
@@ -361,7 +396,7 @@ function GridapPDENLPModel(x0    :: AbstractVector{T},
   X     = MultiFieldFESpace(vcat(_xpde.spaces, _xcon.spaces))
   Y     = MultiFieldFESpace(vcat(_ypde.spaces, _ycon.spaces))
  elseif (Xcon == nothing) ⊻ (Ycon == nothing)
-  throw("Error: Xcon or Ycon are both nothing or must be specified.")
+  throw(ErrorException("Error: Xcon or Ycon are both nothing or must be specified."))
  else
   _xpde = typeof(Xpde) <: MultiFieldFESpace ? Xpde : MultiFieldFESpace([Xpde])
   X = _xpde
@@ -417,6 +452,20 @@ function GridapPDENLPModel(f     :: Function,
 
  return GridapPDENLPModel(x0, f, trian, quad, Ypde, Ycon, Xpde, Xcon,
                           c, lcon, ucon; y0 = y0, name = name, lin = lin)
+end
+
+function GridapPDENLPModel(x0    :: AbstractVector{T},
+                           tnrj  :: AbstractEnergyTerm,
+                           Ypde  :: FESpace,
+                           Xpde  :: FESpace,
+                           lvar  :: AbstractVector{T},
+                           uvar  :: AbstractVector{T},
+                           c     :: FEOperator;
+                           name  :: String = "Generic",
+                           lin   :: AbstractVector{<: Integer} = Int[]) where T <: Number
+
+ return return GridapPDENLPModel(x0, tnrj, Ypde, nothing, Xpde, nothing, lvar, uvar,
+                                 c; name = name, lin = lin)
 end
 
 function GridapPDENLPModel(x0    :: AbstractVector{T},
@@ -536,7 +585,7 @@ function GridapPDENLPModel(x0    :: AbstractVector{T},
   X     = MultiFieldFESpace(vcat(_xpde.spaces, _xcon.spaces))
   Y     = MultiFieldFESpace(vcat(_ypde.spaces, _ycon.spaces))
  elseif (Xcon == nothing) ⊻ (Ycon == nothing)
-  throw("Error: Xcon or Ycon are both nothing or must be specified.")
+  throw(ErrorException("Error: Xcon or Ycon are both nothing or must be specified."))
  else
   _xpde = typeof(Xpde) <: MultiFieldFESpace ? Xpde : MultiFieldFESpace([Xpde])
   X = _xpde
@@ -601,8 +650,6 @@ end
 
 show_header(io :: IO, nlp :: GridapPDENLPModel) = println(io, "GridapPDENLPModel")
 
-include("util_functions.jl")
-
 function obj(nlp :: GridapPDENLPModel, x :: AbstractVector)
 
  @lencheck nlp.meta.nvar x
@@ -627,7 +674,8 @@ function grad!(nlp :: GridapPDENLPModel, x :: AbstractVector, g :: AbstractVecto
     return _compute_gradient!(g, nlp.tnrj, κ, yu, nlp.Y, nlp.X)
 end
 
-function hess_coo(nlp :: GridapPDENLPModel, x :: AbstractVector;
+function hess_coo(nlp :: GridapPDENLPModel, 
+                  x   :: AbstractVector;
                   obj_weight :: Real = one(eltype(x)))
 
     κ, xyu = x[1 : nlp.nparam], x[nlp.nparam + 1 : nlp.meta.nvar]
@@ -650,15 +698,14 @@ function hess_coo(nlp :: GridapPDENLPModel, x :: AbstractVector;
 
     if  obj_weight == one(eltype(x))
       return (I2 ,J2, V2)
-    else
-      return (I2 ,J2, obj_weight * V2)
     end
 
-    nothing #you are not supposed to be there
+    return (I2 ,J2, obj_weight * V2)
 end
 
 """
-`hess_structure` returns the sparsity pattern of the Lagrangian Hessian in sparse coordinate format,
+`hess_structure` returns the sparsity pattern of the Lagrangian Hessian 
+in sparse coordinate format,
 and
 `hess_obj_structure` is only for the objective function hessian.
 """
@@ -669,7 +716,7 @@ function hess_yu_obj_structure(nlp :: GridapPDENLPModel)
   cell_id_yu = Gridap.Arrays.IdentityVector(ncells)
 
   #Tanj: simplify count_hess_nnz_coo(a, cell_r_yu, cell_id_yu)
-  #Is is never used here.
+  #`Is` is never used here.
   cellidsrows = cell_id_yu
   cellidscols = cell_id_yu
 
@@ -685,30 +732,84 @@ function hess_yu_obj_structure(nlp :: GridapPDENLPModel)
 
   nini = struct_hess_coo_numeric!(I, J, a, cell_id_yu)
 
-  @assert n == nini
+  if n != nini
+      @warn "hess_obj_structure!: Size of vals and number of assignements didn't match"
+  end
 
   (I, J)
 end
 
+function hess_yu_obj_structure!(nlp    :: GridapPDENLPModel, 
+                                rows   :: AbstractVector, 
+                                cols   :: AbstractVector;
+                                nfirst :: Int = 0) 
+
+  a = Gridap.FESpaces.SparseMatrixAssembler(nlp.Y, nlp.X)
+  ncells = num_cells(nlp.tnrj.trian)
+  cell_id_yu = Gridap.Arrays.IdentityVector(ncells)
+
+  nini = struct_hess_coo_numeric!(rows, cols, a, cell_id_yu, nfirst = nfirst)
+
+  return nini
+end
+
 function hess_k_obj_structure(nlp :: GridapPDENLPModel)
+    
     n, p = nlp.meta.nvar, nlp.nparam
-    I = ((i,j) for i = 1:n, j = 1:p if i ≥ j)
-    rows .= getindex.(I, 1)
-    cols .= getindex.(I, 2)
+    I = ((i,j) for i = 1:n, j = 1:p if j ≤ i)
+    rows = getindex.(I, 1)[:]
+    cols = getindex.(I, 2)[:]
+    
     return rows, cols
 end
 
+function hess_k_obj_structure!(nlp :: GridapPDENLPModel, 
+                               rows :: AbstractVector, 
+                               cols :: AbstractVector) 
+    
+    n, p = nlp.meta.nvar, nlp.nparam
+    nnz_hess_k = Int(p * (p + 1) / 2) + (n - p) * p
+    I = ((i,j) for i = 1:n, j = 1:p if j ≤ i)
+    rows[1:nnz_hess_k] .= getindex.(I, 1)[:]
+    cols[1:nnz_hess_k] .= getindex.(I, 2)[:]
+    
+    return nnz_hess_k
+end
+
+
+
 function hess_obj_structure(nlp :: GridapPDENLPModel)
+    
  if nlp.nparam != 0
-     (I1, J1, V1) = hess_k_obj_structure(nlp)
-     (I2, J2, V2) = hess_yu_obj_structure(nlp)
-     return (vcat(I1, I2), vcat(J1, J2), vcat(V1, V2))
+     (I1, J1) = hess_k_obj_structure(nlp)
+     (I2, J2) = hess_yu_obj_structure(nlp)
+     return (vcat(I1, I2), vcat(J1, J2 .+ nlp.nparam))
  end
+ 
  return hess_yu_obj_structure(nlp)
 end
 
-function hess(nlp :: GridapPDENLPModel, x :: AbstractVector{T};
+function hess_obj_structure!(nlp  :: GridapPDENLPModel, 
+                             rows :: AbstractVector, 
+                             cols :: AbstractVector) 
+ nvals = length(rows)
+ @lencheck nvals cols
+ 
+ nini = hess_k_obj_structure!(nlp, rows, cols)
+ @warn "We also need to translate the cols indices here!"
+ nini = hess_yu_obj_structure!(nlp, rows, cols, nfirst = nini)
+ 
+ if nvals != nini
+     @warn "hess_obj_structure!: Size of vals and number of assignements didn't match"
+ end
+ 
+ return (rows, cols)
+end
+
+function hess(nlp :: GridapPDENLPModel, 
+              x   :: AbstractVector{T};
               obj_weight :: Real = one(T)) where T
+              
     @lencheck nlp.meta.nvar x
     increment!(nlp, :neval_hess)
 
@@ -730,65 +831,59 @@ function hess(nlp :: GridapPDENLPModel, x :: AbstractVector{T};
     return hess_yu
 end
 
+function hess_coord(nlp :: GridapPDENLPModel, x :: AbstractVector; obj_weight::Real=one(eltype(x)))
+  @lencheck nlp.meta.nvar x
+  
+  #The issue here is that there is no meta specific for the obj only
+  #vals = Vector{eltype(x)}(undef, nlp.meta.nnzh)
+  
+  a           = Gridap.FESpaces.SparseMatrixAssembler(nlp.Y, nlp.X)
+  ncells      = num_cells(nlp.tnrj.trian)
+  cell_id_yu  = Gridap.Arrays.IdentityVector(ncells)
+  nnz_hess_yu = count_hess_nnz_coo_short(a, cell_id_yu)
+  #add the nnz w.r.t. k; by default it is:
+  nnz_hess_k = Int(nlp.nparam * (nlp.nparam + 1) / 2) + (nlp.meta.nvar - nlp.nparam) * nlp.nparam
+  nnzh =  nnz_hess_yu + nnz_hess_k
+  vals = Vector{eltype(x)}(undef, nnzh)
+  
+  return hess_coord!(nlp, x, vals; obj_weight=obj_weight)
+end
+
 function hess_coord!(nlp  :: GridapPDENLPModel,
                      x    :: AbstractVector,
                      vals :: AbstractVector;
                      obj_weight :: Real = one(eltype(x)))
   @lencheck nlp.meta.nvar x
-  @lencheck nlp.meta.nnzh vals
-  increment!(nlp, :neval_hess)
-  ℓ(x) = obj_weight * obj(nlp, x)
-  Hx = ForwardDiff.hessian(ℓ, x)
-  k = 1
-  for j = 1 : nlp.meta.nvar
-    for i = j : nlp.meta.nvar
-      vals[k] = Hx[i, j]
-      k += 1
-    end
+  #@lencheck nlp.meta.nnzh vals #we trust the length of vals
+  #increment!(nlp, :neval_hess)
+  
+  a          = Gridap.FESpaces.SparseMatrixAssembler(nlp.Y, nlp.X)
+  ncells     = num_cells(nlp.tnrj.trian)
+  cell_id_yu = Gridap.Arrays.IdentityVector(ncells)
+  
+  κ, xyu = x[1 : nlp.nparam], x[nlp.nparam + 1 : nlp.meta.nvar]
+  yu     = FEFunction(nlp.Y, xyu)
+  
+  nvals  = length(vals)
+  
+  #Right now V1 cannot be computed separately
+  nnz_hess_k = Int(nlp.nparam * (nlp.nparam + 1) / 2) + (nlp.meta.nvar - nlp.nparam) * nlp.nparam
+  vals[1:nnz_hess_k] .= _compute_hess_k_vals(nlp, nlp.tnrj, κ, xyu)
+  
+  cell_yu    = Gridap.FESpaces.get_cell_values(yu)
+
+  function _cell_obj_yu(cell)
+       yuh = CellField(nlp.Y, cell)
+      _obj_cell_integral(nlp.tnrj, κ, yuh)
   end
-  return vals
-end
 
-function hess(nlp :: GridapPDENLPModel,
-              x   :: AbstractVector,
-              λ   :: AbstractVector;
-              obj_weight :: Real = one(eltype(x)))
-  @lencheck nlp.meta.nvar x
-  @lencheck nlp.meta.ncon λ
-  increment!(nlp, :neval_hess)
-  ℓ(x) = obj_weight * obj(nlp, x) + dot(cons(nlp, x), λ)
-  Hx = ForwardDiff.hessian(ℓ, x)
-  return tril(Hx)
-end
-
-function hess_structure!(nlp :: GridapPDENLPModel,
-                        rows :: AbstractVector{<: Integer},
-                        cols :: AbstractVector{<: Integer})
-  n = nlp.meta.nvar
-  @lencheck nlp.meta.nnzh rows cols
-  I = ((i,j) for i = 1:n, j = 1:n if i ≥ j)
-  rows .= getindex.(I, 1)
-  cols .= getindex.(I, 2)
-  return rows, cols
-end
-
-function hess_coord!(nlp  :: GridapPDENLPModel,
-                     x    :: AbstractVector,
-                     λ    :: AbstractVector,
-                     vals :: AbstractVector;
-                     obj_weight :: Real = one(eltype(x)))
-  @lencheck nlp.meta.nvar x
-  @lencheck nlp.meta.ncon λ
-  @lencheck nlp.meta.nnzh vals
-  increment!(nlp, :neval_hess)
-  ℓ(x) = obj_weight * obj(nlp, x) + dot(cons(nlp, x), λ)
-  Hx = ForwardDiff.hessian(ℓ, x)
-  k = 1
-  for j = 1 : nlp.meta.nvar
-    for i = j : nlp.meta.nvar
-      vals[k] = Hx[i, j]
-      k += 1
-    end
+  #Compute the hessian with AD
+  cell_r_yu  = Gridap.Arrays.autodiff_array_hessian(_cell_obj_yu, cell_yu, cell_id_yu)
+  #length(nini) + length(V1) should be length(vals)
+  nini = vals_hess_coo_numeric!(vals, a, cell_r_yu, cell_id_yu, nfirst = nnz_hess_k)
+  
+  if nvals != nini
+      @warn "hess_coord!: Size of vals and number of assignements didn't match"
   end
   return vals
 end
@@ -825,10 +920,56 @@ function hess_op!(nlp :: GridapPDENLPModel,
                                    true, true, prod, prod, prod)
 end
 
-function hess_op(nlp :: GridapPDENLPModel, x :: AbstractVector; obj_weight::Real=one(eltype(x)))
+function hess_op(nlp :: GridapPDENLPModel, 
+                 x   :: AbstractVector; 
+                 obj_weight :: Real = one(eltype(x)))
   @lencheck nlp.meta.nvar x
   Hv = similar(x)
-  return hess_op!(nlp, x, Hv)
+  return hess_op!(nlp, x, Hv, obj_weight = obj_weight)
+end
+
+function hess(nlp :: GridapPDENLPModel,
+              x   :: AbstractVector,
+              λ   :: AbstractVector;
+              obj_weight :: Real = one(eltype(x)))
+  @lencheck nlp.meta.nvar x
+  @lencheck nlp.meta.ncon λ
+  increment!(nlp, :neval_hess)
+  ℓ(x) = obj_weight * obj(nlp, x) + dot(cons(nlp, x), λ)
+  Hx = ForwardDiff.hessian(ℓ, x)
+  return tril(Hx)
+end
+
+function hess_structure!(nlp :: GridapPDENLPModel,
+                        rows :: AbstractVector{<: Integer},
+                        cols :: AbstractVector{<: Integer})
+  n = nlp.meta.nvar
+  @lencheck nlp.meta.nnzh rows cols
+  I = ((i,j) for i = 1:n, j = 1:n if i ≥ j) 
+  rows .= getindex.(I, 1)[:]
+  cols .= getindex.(I, 2)[:]
+  return rows, cols
+end
+
+function hess_coord!(nlp  :: GridapPDENLPModel,
+                     x    :: AbstractVector,
+                     λ    :: AbstractVector,
+                     vals :: AbstractVector;
+                     obj_weight :: Real = one(eltype(x)))
+  @lencheck nlp.meta.nvar x
+  @lencheck nlp.meta.ncon λ
+  @lencheck nlp.meta.nnzh vals
+  increment!(nlp, :neval_hess)
+  ℓ(x) = obj_weight * obj(nlp, x) + dot(cons(nlp, x), λ)
+  Hx = ForwardDiff.hessian(ℓ, x)
+  k = 1
+  for j = 1 : nlp.meta.nvar
+    for i = j : nlp.meta.nvar
+      vals[k] = Hx[i, j]
+      k += 1
+    end
+  end
+  return vals
 end
 
 function cons!(nlp :: GridapPDENLPModel, x :: AbstractVector, c :: AbstractVector)
