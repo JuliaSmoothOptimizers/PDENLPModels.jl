@@ -742,13 +742,14 @@ end
 function hess_yu_obj_structure!(nlp    :: GridapPDENLPModel, 
                                 rows   :: AbstractVector, 
                                 cols   :: AbstractVector;
-                                nfirst :: Int = 0) 
+                                nfirst :: Int = 0,
+                                cols_translate :: Int = 0) 
 
   a = Gridap.FESpaces.SparseMatrixAssembler(nlp.Y, nlp.X)
   ncells = num_cells(nlp.tnrj.trian)
   cell_id_yu = Gridap.Arrays.IdentityVector(ncells)
 
-  nini = struct_hess_coo_numeric!(rows, cols, a, cell_id_yu, nfirst = nfirst)
+  nini = struct_hess_coo_numeric!(rows, cols, a, cell_id_yu, nfirst = nfirst, cols_translate = nlp.nparam)
 
   return nini
 end
@@ -796,8 +797,7 @@ function hess_obj_structure!(nlp  :: GridapPDENLPModel,
  @lencheck nvals cols
  
  nini = hess_k_obj_structure!(nlp, rows, cols)
- @warn "We also need to translate the cols indices here!"
- nini = hess_yu_obj_structure!(nlp, rows, cols, nfirst = nini)
+ nini = hess_yu_obj_structure!(nlp, rows, cols, nfirst = nini, cols_translate = nlp.nparam)
  
  if nvals != nini
      @warn "hess_obj_structure!: Size of vals and number of assignements didn't match"

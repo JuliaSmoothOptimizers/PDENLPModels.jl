@@ -89,7 +89,7 @@ function hessian_test_functions(nlp :: GridapPDENLPModel; udc = false, tol = 1e-
  hess_obj_structure!(nlp, inI, inJ)
  hess_coord!(nlp, xr, inV)
  @test inI == sI1
- #@test inJ == sJ1
+ @test inJ == sJ1
  @test inV == sV
  
  _Hxz  = hprod(nlp, nlp.meta.x0, zeros(nlp.meta.nvar))
