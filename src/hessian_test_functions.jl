@@ -37,7 +37,12 @@ function hessian_test_functions(nlp :: GridapPDENLPModel; udc = false, tol = 1e-
 
  nnz_hess_yu = count_hess_nnz_coo_short(a, cell_id_yu)
  #add the nnz w.r.t. k; by default it is:
- nnz_hess_k = Int(nlp.nparam * (nlp.nparam + 1) / 2) + (n - nlp.nparam) * nlp.nparam
+ #nnz_hess_k = Int(nlp.nparam * (nlp.nparam + 1) / 2) + (n - nlp.nparam) * nlp.nparam
+ if typeof(nlp.tnrj) <: MixedEnergyFETerm && nlp.tnrj.inde
+    nnz_hess_k = Int(nlp.nparam * (nlp.nparam + 1) / 2)
+ else
+    nnz_hess_k = Int(nlp.nparam * (nlp.nparam + 1) / 2) + (nlp.meta.nvar - nlp.nparam) * nlp.nparam
+ end
  nnz_hess = nnz_hess_yu + nnz_hess_k
  @test nnzh >= nnz_hess_yu
 

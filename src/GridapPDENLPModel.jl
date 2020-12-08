@@ -126,14 +126,14 @@ Notes:
  - If lcon and ucon are not given, they are assumed zeros.
  - If the type can't be deduced from the argument, it is Float64.
 """
-mutable struct GridapPDENLPModel <: AbstractNLPModel
+mutable struct GridapPDENLPModel{NRJ <: AbstractEnergyTerm} <: AbstractNLPModel
 
   meta     :: NLPModelMeta
 
   counters :: Counters
 
   # For the objective function
-  tnrj     :: AbstractEnergyTerm
+  tnrj     :: NRJ
 
   #Gridap discretization
   Ypde     :: FESpace #TrialFESpace for the solution of the PDE
@@ -153,10 +153,10 @@ mutable struct GridapPDENLPModel <: AbstractNLPModel
 end
 
 function GridapPDENLPModel(x0    :: AbstractVector{T},
-                           tnrj  :: AbstractEnergyTerm,
+                           tnrj  :: NRJ,
                            Ypde  :: FESpace,
                            Xpde  :: FESpace;
-                           name  :: String = "Generic") where T <: Number
+                           name  :: String = "Generic") where {T <: Number, NRJ <: AbstractEnergyTerm}
 
  nvar = length(x0)
  nnzh = nvar * (nvar + 1) / 2
@@ -171,8 +171,8 @@ function GridapPDENLPModel(x0    :: AbstractVector{T},
  meta = NLPModelMeta(nvar, x0=x0, nnzh=nnzh,
                      minimize=true, islp=false, name=name)
 
- return GridapPDENLPModel(meta, Counters(), tnrj, Ypde, nothing, Xpde, nothing,
-                          Y, X, nothing, nvar_pde, nvar_con, nparam)
+ return GridapPDENLPModel{NRJ}(meta, Counters(), tnrj, Ypde, nothing, Xpde, nothing,
+                               Y, X, nothing, nvar_pde, nvar_con, nparam)
 end
 
 function GridapPDENLPModel(x0    :: AbstractVector{T},
@@ -756,7 +756,12 @@ end
 
 function hess_k_obj_structure(nlp :: GridapPDENLPModel)
     
-    n, p = nlp.meta.nvar, nlp.nparam
+    p = nlp.nparam
+    if typeof(nlp.tnrj) <: MixedEnergyFETerm && nlp.tnrj.inde
+       n = nlp.nparam
+    else
+       n = nlp.meta.nvar
+    end
     I = ((i,j) for i = 1:n, j = 1:p if j ≤ i)
     rows = getindex.(I, 1)[:]
     cols = getindex.(I, 2)[:]
@@ -768,7 +773,12 @@ function hess_k_obj_structure!(nlp :: GridapPDENLPModel,
                                rows :: AbstractVector, 
                                cols :: AbstractVector) 
     
-    n, p = nlp.meta.nvar, nlp.nparam
+    p = nlp.nparam
+    if typeof(nlp.tnrj) <: MixedEnergyFETerm && nlp.tnrj.inde
+       n = nlp.nparam
+    else
+       n = nlp.meta.nvar
+    end
     nnz_hess_k = Int(p * (p + 1) / 2) + (n - p) * p
     I = ((i,j) for i = 1:n, j = 1:p if j ≤ i)
     rows[1:nnz_hess_k] .= getindex.(I, 1)[:]
@@ -842,7 +852,11 @@ function hess_coord(nlp :: GridapPDENLPModel, x :: AbstractVector; obj_weight::R
   cell_id_yu  = Gridap.Arrays.IdentityVector(ncells)
   nnz_hess_yu = count_hess_nnz_coo_short(a, cell_id_yu)
   #add the nnz w.r.t. k; by default it is:
-  nnz_hess_k = Int(nlp.nparam * (nlp.nparam + 1) / 2) + (nlp.meta.nvar - nlp.nparam) * nlp.nparam
+  if typeof(nlp.tnrj) <: MixedEnergyFETerm && nlp.tnrj.inde
+     nnz_hess_k = Int(nlp.nparam * (nlp.nparam + 1) / 2)
+  else
+     nnz_hess_k = Int(nlp.nparam * (nlp.nparam + 1) / 2) + (nlp.meta.nvar - nlp.nparam) * nlp.nparam
+  end
   nnzh =  nnz_hess_yu + nnz_hess_k
   vals = Vector{eltype(x)}(undef, nnzh)
   
@@ -867,7 +881,11 @@ function hess_coord!(nlp  :: GridapPDENLPModel,
   nvals  = length(vals)
   
   #Right now V1 cannot be computed separately
-  nnz_hess_k = Int(nlp.nparam * (nlp.nparam + 1) / 2) + (nlp.meta.nvar - nlp.nparam) * nlp.nparam
+  if typeof(nlp.tnrj) <: MixedEnergyFETerm && nlp.tnrj.inde
+     nnz_hess_k = Int(nlp.nparam * (nlp.nparam + 1) / 2)
+  else
+     nnz_hess_k = Int(nlp.nparam * (nlp.nparam + 1) / 2) + (nlp.meta.nvar - nlp.nparam) * nlp.nparam
+  end
   vals[1:nnz_hess_k] .= _compute_hess_k_vals(nlp, nlp.tnrj, κ, xyu)
   
   cell_yu    = Gridap.FESpaces.get_cell_values(yu)

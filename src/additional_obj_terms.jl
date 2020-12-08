@@ -541,7 +541,10 @@ end
     #Compute the derivative w.r.t. κ
     #(I, J, V) = findnz(sparse(LowerTriangular(Hkk)))
     n, p = nlp.meta.nvar, nlp.nparam
-    It = ((i,j) for i = 1:n, j = 1:p if j ≤ i)
+    #It = ((i,j) for i = 1:n, j = 1:p if j ≤ i)
+    #I = getindex.(It, 1)[:]
+    #J = getindex.(It, 2)[:]
+    It = ((i,j) for i = 1:p, j = 1:p if j ≤ i)
     I = getindex.(It, 1)[:]
     J = getindex.(It, 2)[:]
     V = _compute_hess_k_vals(nlp, term, κ, xyu)
@@ -554,7 +557,7 @@ function _compute_hess_k_vals(nlp  :: AbstractNLPModel,
                               κ    :: AbstractVector{T},
                               xyu  :: AbstractVector{T}) where T
                               
-    nnz = Int(nlp.nparam * (nlp.nparam + 1) / 2) + (nlp.meta.nvar - nlp.nparam) * nlp.nparam
+    nnz = Int(nlp.nparam * (nlp.nparam + 1) / 2)# + (nlp.meta.nvar - nlp.nparam) * nlp.nparam
     yu  = FEFunction(nlp.Y, xyu)
     
     gk  = @closure k -> _compute_gradient_k(nlp.tnrj, k, yu)

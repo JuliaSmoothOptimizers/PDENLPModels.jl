@@ -61,6 +61,8 @@ x1 = vcat(1., 1., rand(nUg))
 @test grad(nlp, x0)[1:2] ≈ - ones(2) atol = 1e-14
 @test grad(nlp, x1)[1:2] ≈ zeros(2)  atol = 1e-14
 
-hess(nlp, x0)
+_Hx = hess(nlp, x0)
 
-hessian_test_functions(nlp)
+@test Matrix(_Hx[1:2,1:2]) ≈ diagm(0=>ones(2)) atol=1e-14
+
+#hessian_test_functions(nlp)
