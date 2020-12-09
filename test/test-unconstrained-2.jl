@@ -89,7 +89,7 @@ function _test_unconstrained2(;udc = false)
 
     @time _tron = tron(nlp, x = copy(x1), rtol = 0.0, atol = 1/n, max_time = 120.)
 
-    @test norm(_tron.solution - sol, Inf) <= 1/n
+    @test norm(_tron.solution - sol, Inf) <= 2/n
     @time _fxtron  = obj(nlp, _tron.solution)
     @time _ngxtron = norm(grad(nlp, _tron.solution))
 

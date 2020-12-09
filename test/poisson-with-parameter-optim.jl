@@ -81,6 +81,8 @@ function _poissonwithparameteroptim(;udc = false)
         #H_errs = hessian_check(nlp) #slow
         #@test H_errs[0] == Dict{Int, Dict{Tuple{Int,Int}, Float64}}()
     end
+    
+    @test hessian_test_functions(nlp)
 
     true
 end

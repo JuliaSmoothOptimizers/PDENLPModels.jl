@@ -686,11 +686,11 @@ function hess_coo(nlp :: GridapPDENLPModel,
     if nlp.nparam > 0
         (I1, J1, V1) = _compute_hess_k_coo(nlp, nlp.tnrj, κ, xyu)
         if obj_weight == one(eltype(x))
-          return (vcat(I1, I2),
+          return (vcat(I1, I2 .+ nlp.nparam),
                   vcat(J1, J2 .+ nlp.nparam),
                   vcat(V1, V2))
         else
-          return (vcat(I1, I2),
+          return (vcat(I1, I2 .+ nlp.nparam),
                   vcat(J1, J2 .+ nlp.nparam),
                   vcat(obj_weight * V1, obj_weight * V2))
         end
@@ -703,13 +703,13 @@ function hess_coo(nlp :: GridapPDENLPModel,
     return (I2 ,J2, obj_weight * V2)
 end
 
-"""
-`hess_structure` returns the sparsity pattern of the Lagrangian Hessian 
-in sparse coordinate format,
-and
-`hess_obj_structure` is only for the objective function hessian.
-"""
 function hess_yu_obj_structure(nlp :: GridapPDENLPModel)
+    
+  # Special case as nlp.tnrj has no field trian.    
+  if typeof(nlp.tnrj) <: NoFETerm
+     T = eltype(nlp.meta.nvar)
+     return (T[], T[])
+  end
 
   a = Gridap.FESpaces.SparseMatrixAssembler(nlp.Y, nlp.X)
   ncells = num_cells(nlp.tnrj.trian)
@@ -742,14 +742,18 @@ end
 function hess_yu_obj_structure!(nlp    :: GridapPDENLPModel, 
                                 rows   :: AbstractVector, 
                                 cols   :: AbstractVector;
-                                nfirst :: Int = 0,
-                                cols_translate :: Int = 0) 
+                                nfirst :: Int = 0) 
+
+  # Special case as nlp.tnrj has no field trian.    
+  if typeof(nlp.tnrj) <: NoFETerm
+     return nfirst
+  end
 
   a = Gridap.FESpaces.SparseMatrixAssembler(nlp.Y, nlp.X)
   ncells = num_cells(nlp.tnrj.trian)
   cell_id_yu = Gridap.Arrays.IdentityVector(ncells)
 
-  nini = struct_hess_coo_numeric!(rows, cols, a, cell_id_yu, nfirst = nfirst, cols_translate = nlp.nparam)
+  nini = struct_hess_coo_numeric!(rows, cols, a, cell_id_yu, nfirst = nfirst, cols_translate = nlp.nparam, rows_translate = nlp.nparam)
 
   return nini
 end
@@ -757,7 +761,7 @@ end
 function hess_k_obj_structure(nlp :: GridapPDENLPModel)
     
     p = nlp.nparam
-    if typeof(nlp.tnrj) <: MixedEnergyFETerm && nlp.tnrj.inde
+    if (typeof(nlp.tnrj) <: MixedEnergyFETerm && nlp.tnrj.inde) || typeof(nlp.tnrj) <: NoFETerm
        n = nlp.nparam
     else
        n = nlp.meta.nvar
@@ -769,12 +773,12 @@ function hess_k_obj_structure(nlp :: GridapPDENLPModel)
     return rows, cols
 end
 
-function hess_k_obj_structure!(nlp :: GridapPDENLPModel, 
+function hess_k_obj_structure!(nlp  :: GridapPDENLPModel, 
                                rows :: AbstractVector, 
                                cols :: AbstractVector) 
     
     p = nlp.nparam
-    if typeof(nlp.tnrj) <: MixedEnergyFETerm && nlp.tnrj.inde
+    if (typeof(nlp.tnrj) <: MixedEnergyFETerm && nlp.tnrj.inde) || typeof(nlp.tnrj) <: NoFETerm
        n = nlp.nparam
     else
        n = nlp.meta.nvar
@@ -787,14 +791,18 @@ function hess_k_obj_structure!(nlp :: GridapPDENLPModel,
     return nnz_hess_k
 end
 
-
-
+"""
+`hess_structure` returns the sparsity pattern of the Lagrangian Hessian 
+in sparse coordinate format,
+and
+`hess_obj_structure` is only for the objective function hessian.
+"""
 function hess_obj_structure(nlp :: GridapPDENLPModel)
     
  if nlp.nparam != 0
      (I1, J1) = hess_k_obj_structure(nlp)
      (I2, J2) = hess_yu_obj_structure(nlp)
-     return (vcat(I1, I2), vcat(J1, J2 .+ nlp.nparam))
+     return (vcat(I1, I2 .+ nlp.nparam), vcat(J1, J2 .+ nlp.nparam))
  end
  
  return hess_yu_obj_structure(nlp)
@@ -805,9 +813,9 @@ function hess_obj_structure!(nlp  :: GridapPDENLPModel,
                              cols :: AbstractVector) 
  nvals = length(rows)
  @lencheck nvals cols
- 
+
  nini = hess_k_obj_structure!(nlp, rows, cols)
- nini = hess_yu_obj_structure!(nlp, rows, cols, nfirst = nini, cols_translate = nlp.nparam)
+ nini = hess_yu_obj_structure!(nlp, rows, cols, nfirst = nini)
  
  if nvals != nini
      @warn "hess_obj_structure!: Size of vals and number of assignements didn't match"
@@ -847,16 +855,23 @@ function hess_coord(nlp :: GridapPDENLPModel, x :: AbstractVector; obj_weight::R
   #The issue here is that there is no meta specific for the obj only
   #vals = Vector{eltype(x)}(undef, nlp.meta.nnzh)
   
-  a           = Gridap.FESpaces.SparseMatrixAssembler(nlp.Y, nlp.X)
-  ncells      = num_cells(nlp.tnrj.trian)
-  cell_id_yu  = Gridap.Arrays.IdentityVector(ncells)
-  nnz_hess_yu = count_hess_nnz_coo_short(a, cell_id_yu)
+  # Special case as nlp.tnrj has no field trian.    
+  if typeof(nlp.tnrj) <: NoFETerm
+      nnz_hess_yu = 0
+  else
+      a           = Gridap.FESpaces.SparseMatrixAssembler(nlp.Y, nlp.X)
+      ncells      = num_cells(nlp.tnrj.trian)
+      cell_id_yu  = Gridap.Arrays.IdentityVector(ncells)
+      nnz_hess_yu = count_hess_nnz_coo_short(a, cell_id_yu)
+  end
+
   #add the nnz w.r.t. k; by default it is:
-  if typeof(nlp.tnrj) <: MixedEnergyFETerm && nlp.tnrj.inde
+  if (typeof(nlp.tnrj) <: MixedEnergyFETerm && nlp.tnrj.inde) || typeof(nlp.tnrj) <: NoFETerm
      nnz_hess_k = Int(nlp.nparam * (nlp.nparam + 1) / 2)
   else
      nnz_hess_k = Int(nlp.nparam * (nlp.nparam + 1) / 2) + (nlp.meta.nvar - nlp.nparam) * nlp.nparam
   end
+  
   nnzh =  nnz_hess_yu + nnz_hess_k
   vals = Vector{eltype(x)}(undef, nnzh)
   
@@ -871,34 +886,36 @@ function hess_coord!(nlp  :: GridapPDENLPModel,
   #@lencheck nlp.meta.nnzh vals #we trust the length of vals
   #increment!(nlp, :neval_hess)
   
-  a          = Gridap.FESpaces.SparseMatrixAssembler(nlp.Y, nlp.X)
-  ncells     = num_cells(nlp.tnrj.trian)
-  cell_id_yu = Gridap.Arrays.IdentityVector(ncells)
-  
   κ, xyu = x[1 : nlp.nparam], x[nlp.nparam + 1 : nlp.meta.nvar]
   yu     = FEFunction(nlp.Y, xyu)
   
   nvals  = length(vals)
   
   #Right now V1 cannot be computed separately
-  if typeof(nlp.tnrj) <: MixedEnergyFETerm && nlp.tnrj.inde
+  if (typeof(nlp.tnrj) <: MixedEnergyFETerm && nlp.tnrj.inde) || typeof(nlp.tnrj) <: NoFETerm
      nnz_hess_k = Int(nlp.nparam * (nlp.nparam + 1) / 2)
   else
      nnz_hess_k = Int(nlp.nparam * (nlp.nparam + 1) / 2) + (nlp.meta.nvar - nlp.nparam) * nlp.nparam
   end
+  nini = nnz_hess_k
   vals[1:nnz_hess_k] .= _compute_hess_k_vals(nlp, nlp.tnrj, κ, xyu)
   
-  cell_yu    = Gridap.FESpaces.get_cell_values(yu)
+  if typeof(nlp.tnrj) != NoFETerm
+      a          = Gridap.FESpaces.SparseMatrixAssembler(nlp.Y, nlp.X)
+      ncells     = num_cells(nlp.tnrj.trian)
+      cell_id_yu = Gridap.Arrays.IdentityVector(ncells)
+      cell_yu    = Gridap.FESpaces.get_cell_values(yu)
 
-  function _cell_obj_yu(cell)
-       yuh = CellField(nlp.Y, cell)
-      _obj_cell_integral(nlp.tnrj, κ, yuh)
+      function _cell_obj_yu(cell)
+           yuh = CellField(nlp.Y, cell)
+          _obj_cell_integral(nlp.tnrj, κ, yuh)
+      end
+
+      #Compute the hessian with AD
+      cell_r_yu  = Gridap.Arrays.autodiff_array_hessian(_cell_obj_yu, cell_yu, cell_id_yu)
+      #length(nini) + length(V1) should be length(vals)
+      nini = vals_hess_coo_numeric!(vals, a, cell_r_yu, cell_id_yu, nfirst = nini)
   end
-
-  #Compute the hessian with AD
-  cell_r_yu  = Gridap.Arrays.autodiff_array_hessian(_cell_obj_yu, cell_yu, cell_id_yu)
-  #length(nini) + length(V1) should be length(vals)
-  nini = vals_hess_coo_numeric!(vals, a, cell_r_yu, cell_id_yu, nfirst = nnz_hess_k)
   
   if nvals != nini
       @warn "hess_coord!: Size of vals and number of assignements didn't match"

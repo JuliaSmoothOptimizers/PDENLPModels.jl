@@ -31,14 +31,18 @@ function hessian_test_functions(nlp :: GridapPDENLPModel; udc = false, tol = 1e-
  nnzh = nlp.meta.nnzh #Lagrangian function
  #Why not an nnzh for the Hessian of the objective function?
 
- a = Gridap.FESpaces.SparseMatrixAssembler(nlp.Y, nlp.X)
- ncells = num_cells(nlp.tnrj.trian)
- cell_id_yu = Gridap.Arrays.IdentityVector(ncells)
+ if typeof(nlp.tnrj) <: Union{EnergyFETerm, MixedEnergyFETerm}
+     a = Gridap.FESpaces.SparseMatrixAssembler(nlp.Y, nlp.X)
+     ncells = num_cells(nlp.tnrj.trian)
+     cell_id_yu = Gridap.Arrays.IdentityVector(ncells)
 
- nnz_hess_yu = count_hess_nnz_coo_short(a, cell_id_yu)
+     nnz_hess_yu = count_hess_nnz_coo_short(a, cell_id_yu)
+ else
+     nnz_hess_yu = 0
+ end
  #add the nnz w.r.t. k; by default it is:
  #nnz_hess_k = Int(nlp.nparam * (nlp.nparam + 1) / 2) + (n - nlp.nparam) * nlp.nparam
- if typeof(nlp.tnrj) <: MixedEnergyFETerm && nlp.tnrj.inde
+ if (typeof(nlp.tnrj) <: MixedEnergyFETerm && nlp.tnrj.inde) || typeof(nlp.tnrj) <: NoFETerm
     nnz_hess_k = Int(nlp.nparam * (nlp.nparam + 1) / 2)
  else
     nnz_hess_k = Int(nlp.nparam * (nlp.nparam + 1) / 2) + (nlp.meta.nvar - nlp.nparam) * nlp.nparam
@@ -101,8 +105,8 @@ function hessian_test_functions(nlp :: GridapPDENLPModel; udc = false, tol = 1e-
  _Hxv  = hprod(nlp, nlp.meta.x0, ones(nlp.meta.nvar), obj_weight = .5)
  _Hxvr = hprod(nlp, xr, ones(nlp.meta.nvar), obj_weight = 1.)
  @test _Hxz == zeros(nlp.meta.nvar)
- @test _Hxv ≈ 0.5 * Symmetric(H1,:L) * ones(nlp.meta.nvar) atol=tol #Problem here too!!!
- @test _Hxvr ≈ Symmetric(Hr,:L) * ones(nlp.meta.nvar)      atol=tol #Problem here too!!!
+ @test _Hxv ≈ 0.5 * Symmetric(H1,:L) * ones(nlp.meta.nvar) atol=tol
+ @test _Hxvr ≈ Symmetric(Hr,:L) * ones(nlp.meta.nvar)      atol=tol
  
  hop1 = hess_op(nlp, nlp.meta.x0, obj_weight = .5)
  hopr = hess_op(nlp, xr, obj_weight = 1.)

@@ -65,4 +65,20 @@ _Hx = hess(nlp, x0)
 
 @test Matrix(_Hx[1:2,1:2]) ≈ diagm(0=>ones(2)) atol=1e-14
 
-#hessian_test_functions(nlp)
+#We compare the NLP with a related one.
+function fk2(y)
+ 0.5 * (sol - y) * (sol - y)
+end
+nrj2 = EnergyFETerm(fk2, trian, quad)
+nlp2 = GridapPDENLPModel(zeros(16), nrj2, Ug, V0, op)
+
+κ, xyu = nlp2.meta.x0[1 : nlp2.nparam], nlp2.meta.x0[nlp2.nparam + 1 : nlp2.meta.nvar]
+yu     = FEFunction(nlp.Y, xyu)
+(_I,_J,_V) = Main.PDENLPModels._compute_hess_coo(nlp.tnrj, zeros(2), yu, nlp.Y, nlp.X)
+_HH = hess(nlp2, zeros(16))
+(I2,J2,V2) = hess_coo(nlp2, zeros(16))
+
+@test (I2,J2,V2) == (_I,_J,_V)
+@test _HH == hess(nlp, nlp.meta.x0)[3:18,3:18]
+
+@test hessian_test_functions(nlp)
