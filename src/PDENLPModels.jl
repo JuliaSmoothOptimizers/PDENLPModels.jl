@@ -20,6 +20,8 @@ include("hessian_func.jl")
 include("additional_obj_terms.jl")
 #Set of practical functions: _split_FEFunction, _split_vector
 include("util_functions.jl")
+#Additional functions for the jacobian:
+include("jacobian_func.jl")
 
 export AbstractEnergyTerm, EnergyFETerm, MixedEnergyFETerm, NoFETerm
 
@@ -34,6 +36,7 @@ export hess_old, hess_coo, hess_obj_structure, hess_obj_structure!
 
 using Test
 include("hessian_test_functions.jl")
-export hessian_test_functions
+include("jacobian_test_functions.jl")
+export hessian_test_functions, jacobian_test_functions
 
 end #end of module

@@ -71,7 +71,8 @@ function hessian_test_functions(nlp :: GridapPDENLPModel; udc = false, tol = 1e-
  (sI1, sJ1, sV1) = hess_coo(nlp, nlp.meta.x0, obj_weight = 0.5)
  (sIr, sJr, sVr) = hess_coo(nlp, xr, obj_weight = 0.9)
  (sI, sJ) = hess_obj_structure(nlp)
- sV = hess_coord(nlp, nlp.meta.x0)
+ sV   = hess_coord(nlp, nlp.meta.x0)
+ sVr2 = hess_coord(nlp, xr)
  @test sI1 == sIr && sI1 == sI0
  @test sJ1 == sJr && sJ1 == sJ0
  @test sI == sI1  && sJ  == sJ1
@@ -83,13 +84,13 @@ function hessian_test_functions(nlp :: GridapPDENLPModel; udc = false, tol = 1e-
  @test length(V1) <= length(sV1)
  @test length(Vr) <= length(sVr)
  @test sV * 0.5 == sV1
- @test sV * 0.9 == sVr
+ @test sVr2 * 0.9 == sVr
 
  H1bis = sparse(sI1, sJ1, sV1, nlp.meta.nvar, nlp.meta.nvar)
  Hrbis = sparse(sIr, sJr, sVr, nlp.meta.nvar, nlp.meta.nvar)
 
- @test H1bis == 0.5*H1
- @test Hrbis == 0.9*Hr
+ @test H1bis ≈ 0.5*H1  atol=tol
+ @test Hrbis ≈ 0.9*Hr  atol=tol
 
  @test_throws DimensionError hess(nlp, vcat(nlp.meta.x0, 1.))
  #hess_coo doesn't verify the size, but ignores x entries after nlp.meta.nvar.
@@ -99,7 +100,7 @@ function hessian_test_functions(nlp :: GridapPDENLPModel; udc = false, tol = 1e-
  hess_coord!(nlp, xr, inV)
  @test inI == sI1
  @test inJ == sJ1
- @test inV == sV
+ @test inV == sVr2
  
  _Hxz  = hprod(nlp, nlp.meta.x0, zeros(nlp.meta.nvar))
  _Hxv  = hprod(nlp, nlp.meta.x0, ones(nlp.meta.nvar), obj_weight = .5)

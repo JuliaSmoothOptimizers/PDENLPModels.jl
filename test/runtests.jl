@@ -33,3 +33,5 @@ include("pde-only-incompressible-NS.jl")
 include("poisson-with-parameter-optim.jl")
 #Mixed objectives with no intertwined terms
 include("poisson-with-mixed-optim.jl")
+#Mixed objectives with intertwined terms
+include("poisson-with-true-mixed-optim.jl")
