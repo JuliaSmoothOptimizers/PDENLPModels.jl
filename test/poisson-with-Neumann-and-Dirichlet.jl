@@ -70,9 +70,10 @@ function _poissonwithNeumannandDirichlet(;udc = false)
     Ycon = TrialFESpace(Xcon)
 
     Y = MultiFieldFESpace([Ypde, Ycon])
+    xin = zeros(Gridap.FESpaces.num_free_dofs(Y))
     op = FEOperator(Y, V0, topt_Ω, topt_Γ) #or #op = FEOperator(Ug, V0, topt_Ω, topt_Γ)
 
-    @time nlp = GridapPDENLPModel(f, trian, quad, Ypde, Ycon, Xpde, Xcon, op)
+    @time nlp = GridapPDENLPModel(xin, f, trian, quad, Ypde, Ycon, Xpde, Xcon, op)
 
     ######
     # 2nd test: we create a GridapPDENLPModel with affine operator
@@ -82,7 +83,7 @@ function _poissonwithNeumannandDirichlet(;udc = false)
     @test size(get_matrix(op_affine)) == (num_free_dofs(Xpde), num_free_dofs(Y))
     @test length(get_vector(op_affine)) == num_free_dofs(Xpde)
 
-    nlp_affine = GridapPDENLPModel(f, trian, quad, Ypde, Ycon, Xpde, Xcon, op_affine)
+    nlp_affine = GridapPDENLPModel(xin, f, trian, quad, Ypde, Ycon, Xpde, Xcon, op_affine)
     ################################################################################
     # Check solution
 

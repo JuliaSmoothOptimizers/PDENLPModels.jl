@@ -6,7 +6,7 @@ using JSOSolvers, Krylov, NLPModels, NLPModelsIpopt
 #PDENLPModels
 using PDENLPModels
 using PDENLPModels: FEFunctionType, _split_vector, _split_FEFunction,
-                         _obj_integral, _obj_cell_integral, _compute_gradient_k, _compute_gradient!, _compute_hess_coo
+                    _obj_integral, _obj_cell_integral, _compute_gradient_k, _compute_gradient!, _compute_hess_coo
 
 use_derivative_check = false #set true to derivative_check (this is slow)
 
@@ -34,4 +34,4 @@ include("poisson-with-parameter-optim.jl")
 #Mixed objectives with no intertwined terms
 include("poisson-with-mixed-optim.jl")
 #Mixed objectives with intertwined terms
-include("poisson-with-true-mixed-optim.jl")
+include("poisson-with-true-mixed-optim.jl") #TODO check the hessian computation

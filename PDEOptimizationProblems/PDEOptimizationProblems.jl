@@ -17,11 +17,15 @@
 #https://github.com/gridap/Gridap.jl/blob/master/test/GridapTests/StokesTaylorHoodTests.jl
 #
 #Maybe this is better, but I prefer having comments on each link (for now)
-#path = dirname(@__FILE__)
-#files = filter(x->x[end-2:end] == ".jl", readdir(path))
-#for file in files
-#  if (file == "PDEOptimizationProblems.jl"); continue; end
-#  include(file)
+#=
+path = dirname(@__FILE__)
+files = filter(x -> x[end-2:end] == ".jl", readdir(path))
+for file in files
+  if file ≠ "OptimizationProblems.jl"
+    include(file)
+  end
+end
+=#
 #end
 ###############################################################################
 module PDEOptimizationProblems
