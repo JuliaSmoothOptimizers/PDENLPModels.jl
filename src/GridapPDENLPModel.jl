@@ -152,6 +152,7 @@ mutable struct GridapPDENLPModel{NRJ <: AbstractEnergyTerm} <: AbstractNLPModel
 
 end
 
+include("bounds_function.jl")
 include("additional_constructors.jl")
 
 show_header(io :: IO, nlp :: GridapPDENLPModel) = println(io, "GridapPDENLPModel")

@@ -245,3 +245,79 @@ y,u,k = _split_vector(x0, Ypde, nothing)
     @test_throws DimensionError _obj_cell_integral(tnrj, ones(2), yuh2)
     @test_throws DimensionError _compute_gradient_k(tnrj, ones(2), yu2)
 end
+
+@testset "Functions used to create bounds in constructors" begin
+    #Domain
+    domain = (-1,1,-1,1)
+    n = 2
+    partition = (n,n)
+    model = CartesianDiscreteModel(domain,partition)
+
+    #Definition of the spaces:
+    Xpde = TestFESpace(reffe=:Lagrangian, conformity=:H1, valuetype=Float64, model=model, order=2, dirichlet_tags="boundary")
+
+    y0(x) = 0.0
+    Ypde    = TrialFESpace(Xpde, y0)
+
+    Xcon = TestFESpace(
+            reffe=:Lagrangian, order=1, valuetype=Float64,
+            conformity=:H1, model=model)
+    Ycon = TrialFESpace(Xcon)
+    Y = MultiFieldFESpace([Ypde, Ycon])
+
+    #Integration machinery
+    trian = Triangulation(model)
+    degree = 1
+    quad = CellQuadrature(trian,degree)
+
+    for T in (Float16, Float32, Float64)
+        #Example 0:
+        lvar, uvar = bounds_functions_to_vectors(Y, Ycon, Ypde, trian, -T(Inf) * ones(T, 9), 
+                                                                        T(Inf) * ones(T, 9), 
+                                                                       -T(Inf) * ones(T, 9), 
+                                                                        T(Inf) * ones(T, 9))
+        @test lvar == -Inf * ones(18)
+        @test uvar ==  Inf * ones(18)
+        @test eltype(lvar) == T
+        @test eltype(uvar) == T
+
+        #Example 0bis:
+        lvar, uvar = bounds_functions_to_vectors(Y, nothing, Ypde, trian, -T(Inf) * ones(T, 9), 
+                                                                           T(Inf) * ones(T, 9), 
+                                                                           nothing, 
+                                                                           nothing)
+        @test lvar == -Inf * ones(9)
+        @test uvar ==  Inf * ones(9)
+        @test eltype(lvar) == T
+        @test eltype(uvar) == T
+
+        #Example 1:
+        umin(x) = T(x[1]+x[2])
+        umax(x) = T(x[1]^2+x[2]^2)
+        lvar, uvar = bounds_functions_to_vectors(Y, Ycon, Ypde, trian, -T(Inf) * ones(T, 9), T(Inf) * ones(T, 9), umin, umax)
+        @test lvar == vcat(-T(Inf) * ones(T, 9), [-1.0, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 1.0, 1.0])
+        @test uvar == vcat( T(Inf) * ones(T, 9), 0.5 * ones(T, 9))
+        @test eltype(lvar) == T
+        @test eltype(uvar) == T
+
+        #Example 1bis:
+        umin(x) = T(x[1]+x[2])
+        umax(x) = T(x[1]^2+x[2]^2)
+        lvar, uvar = bounds_functions_to_vectors(Y, nothing, Ypde, trian, umin, umax, nothing, nothing)
+        @test lvar == [1.0, 0.0, 0.0, 1.0, 1.0, -1.0, 0.0, 0.0, 1.0]
+        @test uvar == 0.5 * ones(T, 9)
+        @test eltype(lvar) == T
+        @test eltype(uvar) == T
+
+        #Example 2:
+        umin(x) = [T(x[1]+x[2])]
+        umax(x) = [T(x[1]^2+x[2]^2)]
+        lvar, uvar = bounds_functions_to_vectors(Y, Ycon, Ypde, trian, umin, umax, umin, umax)
+        @test lvar == [1.0, 0.0, 0.0, 1.0, 1.0, -1.0, 0.0, 0.0, 1.0, -1.0, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 1.0, 1.0]
+        @test uvar == 0.5 * ones(T, 18)
+        @test eltype(lvar) == T
+        @test eltype(uvar) == T
+
+    end
+
+end
