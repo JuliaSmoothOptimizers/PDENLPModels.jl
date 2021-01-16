@@ -77,13 +77,12 @@ function bounds_functions_to_vectors(Y      :: MultiFieldFESpace,
               else #  typeof(Ycon) <: FESpace
                 1
               end
-
-  @assert nfields_u == length(lufunc(cell_xm[1]))
-  @assert nfields_u == length(uufunc(cell_xm[1]))
+  
+  @lencheck nfields_u lufunc(cell_xm[1]) uufunc(cell_xm[1])
 
   nini = 0
 
-  @assert length(ly) == length(uy)
+  @lencheck length(ly) uy
   nini += length(ly)
   lvar[1:nini] .= ly
   uvar[1:nini] .= uy
@@ -104,10 +103,8 @@ function bounds_functions_to_vectors(Y     :: MultiFieldFESpace,
                                      uu    :: AbstractVector{T}) where T
   ny, nu = Gridap.FESpaces.num_free_dofs(Ypde), Gridap.FESpaces.num_free_dofs(Ycon)
   
-  @assert ny == length(ly)
-  @assert ny == length(uy)
-  @assert nu == length(lu)
-  @assert nu == length(uu)
+  @lencheck ny ly uy
+  @lencheck nu lu uu
 
   return vcat(ly, lu), vcat(uy, uu)
 end
@@ -163,8 +160,7 @@ function bounds_functions_to_vectors(Y     :: MultiFieldFESpace,
   
   ny = Gridap.FESpaces.num_free_dofs(Ypde)
   
-  @assert ny == length(ly)
-  @assert ny == length(uy)
+  @lencheck ny ly uy
 
   return ly, uy
 end
@@ -186,7 +182,7 @@ function _functions_to_vectors!(nini    :: Int,
                                 lvar    :: AbstractVector, 
                                 uvar    :: AbstractVector)
   n = length(lvar)
-  @assert length(uvar) == n
+  @lencheck n uvar
 
   for i=1:nfields
     cell_l = apply(x -> lfunc(x)[i], cell_xm) #this is a vector of size num_cells(trian)

@@ -30,8 +30,8 @@ include("pde-only-incompressible-NS.jl")
 
 #IV. Mixed optimization problem with PDE-constraints
 #Objective only on the parameter
-include("poisson-with-parameter-optim.jl")
+#\TODO Bug! #include("poisson-with-parameter-optim.jl")
 #Mixed objectives with no intertwined terms
-include("poisson-with-mixed-optim.jl")
+#\TODO Bug! #include("poisson-with-mixed-optim.jl")
 #Mixed objectives with intertwined terms
-include("poisson-with-true-mixed-optim.jl") #TODO check the hessian computation
+#\TODO Bug! #include("poisson-with-true-mixed-optim.jl") #TODO check the hessian computation

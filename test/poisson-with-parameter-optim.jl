@@ -33,7 +33,8 @@ function _poissonwithparameteroptim(;udc = false)
     f(x) = (2*pi^2) * sin(2*pi*x[1]) * x[2]
 
     function res(k, y, v)
-     k[1] * ∇(v)⊙∇(y) - v*f
+     k1(x) = k[1]
+     k1 * ∇(v)⊙∇(y) - v*f
     end
     t_Ω = FETerm(res, trian, quad)
     op = FEOperator(Ug, V0, t_Ω)
