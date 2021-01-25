@@ -5,7 +5,7 @@ export bounds_functions_to_vectors
 
 Return the bounds `lvar` and `uvar`.
 """
-function bounds_functions_to_vectors(Y      :: MultiFieldFESpace, 
+function bounds_functions_to_vectors(Y      :: FESpace, #Y      :: MultiFieldFESpace, 
                                      Ycon   :: FESpace, 
                                      Ypde   :: FESpace, 
                                      trian  :: Triangulation, 
@@ -21,12 +21,12 @@ function bounds_functions_to_vectors(Y      :: MultiFieldFESpace,
   cell_xm = apply(midpoint, cell_xs) #this is a vector of size num_cells(trian)
 
   nfields_y = if typeof(Ypde) <: MultiFieldFESpace 
-                Gridap.MultiField.num_fields(Y)
+                Gridap.MultiField.num_fields(Ypde) #Gridap.MultiField.num_fields(Y)
               else #  typeof(Ypde) <: FESpace
                 1
               end
   nfields_u = if typeof(Ycon) <: MultiFieldFESpace 
-                Gridap.MultiField.num_fields(Y)
+                Gridap.MultiField.num_fields(Ycon) #Gridap.MultiField.num_fields(Y)
               else #  typeof(Ycon) <: FESpace
                 1
               end
@@ -52,7 +52,7 @@ function bounds_functions_to_vectors(Y      :: MultiFieldFESpace,
   return lvar, uvar
 end
 
-function bounds_functions_to_vectors(Y      :: MultiFieldFESpace, 
+function bounds_functions_to_vectors(Y      :: FESpace, #Y      :: MultiFieldFESpace, 
                                      Ycon   :: FESpace, 
                                      Ypde   :: FESpace, 
                                      trian  :: Triangulation, 
@@ -73,7 +73,7 @@ function bounds_functions_to_vectors(Y      :: MultiFieldFESpace,
   cell_xm = apply(midpoint, cell_xs) #this is a vector of size num_cells(trian)
 
   nfields_u = if typeof(Ycon) <: MultiFieldFESpace 
-                Gridap.MultiField.num_fields(Y)
+                Gridap.MultiField.num_fields(Ycon) #Gridap.MultiField.num_fields(Y)
               else #  typeof(Ycon) <: FESpace
                 1
               end
@@ -93,7 +93,7 @@ function bounds_functions_to_vectors(Y      :: MultiFieldFESpace,
   return lvar, uvar
 end
 
-function bounds_functions_to_vectors(Y     :: MultiFieldFESpace, 
+function bounds_functions_to_vectors(Y      :: FESpace, #Y      :: MultiFieldFESpace, 
                                      Ycon  :: FESpace, 
                                      Ypde  :: FESpace, 
                                      trian :: Triangulation, 
@@ -109,7 +109,7 @@ function bounds_functions_to_vectors(Y     :: MultiFieldFESpace,
   return vcat(ly, lu), vcat(uy, uu)
 end
 
-function bounds_functions_to_vectors(Y      :: MultiFieldFESpace, 
+function bounds_functions_to_vectors(Y      :: FESpace, #Y      :: MultiFieldFESpace, 
                                      Ycon   :: Nothing, 
                                      Ypde   :: FESpace, 
                                      trian  :: Triangulation, 
@@ -125,7 +125,7 @@ function bounds_functions_to_vectors(Y      :: MultiFieldFESpace,
   cell_xm = apply(midpoint, cell_xs) #this is a vector of size num_cells(trian)
 
   nfields_y = if typeof(Ypde) <: MultiFieldFESpace 
-                Gridap.MultiField.num_fields(Y)
+                Gridap.MultiField.num_fields(Ypde) #Gridap.MultiField.num_fields(Y)
               else #  typeof(Ypde) <: FESpace
                 1
               end
@@ -149,7 +149,7 @@ function bounds_functions_to_vectors(Y      :: MultiFieldFESpace,
   return lvar, uvar
 end
 
-function bounds_functions_to_vectors(Y     :: MultiFieldFESpace, 
+function bounds_functions_to_vectors(Y     :: FESpace, #Y      :: MultiFieldFESpace, 
                                      Ycon  :: Nothing, 
                                      Ypde  :: FESpace, 
                                      trian :: Triangulation, 

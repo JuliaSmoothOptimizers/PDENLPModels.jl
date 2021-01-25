@@ -14,7 +14,7 @@
 function _test_unconstrained2(;udc = false)
     w(x)=1
     function f(yu) #:: Union{Gridap.MultiField.MultiFieldFEFunction, Gridap.CellData.GenericCellField}
-        y = yu[1]
+        y = yu
 
         0.5 * ∇(y)⊙∇(y) - w * y
     end

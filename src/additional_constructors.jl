@@ -9,10 +9,10 @@ function GridapPDENLPModel(x0    :: AbstractVector{T},
   nvar = length(x0)
   nnzh = nvar * (nvar + 1) / 2
 
-  _xpde = typeof(Xpde) <: MultiFieldFESpace ? Xpde : MultiFieldFESpace([Xpde])
-  X = _xpde
-  _ypde = typeof(Ypde) <: MultiFieldFESpace ? Ypde : MultiFieldFESpace([Ypde])
-  Y = _ypde
+  #_xpde = typeof(Xpde) <: MultiFieldFESpace ? Xpde : MultiFieldFESpace([Xpde])
+  X = Xpde #_xpde
+  #_ypde = typeof(Ypde) <: MultiFieldFESpace ? Ypde : MultiFieldFESpace([Ypde])
+  Y = Ypde #_ypde
   nvar_pde = Gridap.FESpaces.num_free_dofs(Ypde)
   nvar_con = 0
   nparam   = nvar - (nvar_pde + nvar_con)
@@ -61,9 +61,13 @@ function GridapPDENLPModel(x0    :: AbstractVector{T},
                            uvar  :: AbstractVector =   T(Inf) * ones(T, length(x0)), #Union{AbstractVector, Function}
                            name  :: String = "Generic",
                            lin   :: AbstractVector{<: Integer} = Int[]) where {T, NRJ <: AbstractEnergyTerm}
+  
+  npde  = Gridap.FESpaces.num_free_dofs(Ypde)
+  ndisc = length(x0) - npde
 
   return return GridapPDENLPModel(x0, tnrj, Ypde, nothing, Xpde, nothing, c;
-                                  lvary = lvar, uvary = uvar, 
+                                  lvary = lvar[1:npde], uvary = uvar[1:npde], 
+                                  lvark = lvar[npde+1:npde+ndisc], uvark = uvar[npde+1:npde+ndisc], 
                                   name = name, lin = lin)
 end
 
@@ -78,6 +82,8 @@ function GridapPDENLPModel(x0    :: AbstractVector{T},
                            uvary :: AbstractVector =   T(Inf) * ones(T, Gridap.FESpaces.num_free_dofs(Ypde)), #Union{AbstractVector, Function}
                            lvaru :: AbstractVector = - T(Inf) * ones(T, isnothing(Ycon) ? 0 : Gridap.FESpaces.num_free_dofs(Ycon)), #Union{AbstractVector, Function}
                            uvaru :: AbstractVector =   T(Inf) * ones(T, isnothing(Ycon) ? 0 : Gridap.FESpaces.num_free_dofs(Ycon)), #Union{AbstractVector, Function}
+                           lvark :: AbstractVector = - T(Inf) * ones(T, max(length(x0) - Gridap.FESpaces.num_free_dofs(Ypde) - (isnothing(Ycon) ? 0 : Gridap.FESpaces.num_free_dofs(Ycon)),0)),
+                           uvark :: AbstractVector =   T(Inf) * ones(T, max(length(x0) - Gridap.FESpaces.num_free_dofs(Ypde) - (isnothing(Ycon) ? 0 : Gridap.FESpaces.num_free_dofs(Ycon)),0)),
                            lcon  :: AbstractVector = zeros(T, Gridap.FESpaces.num_free_dofs(Ypde)),
                            ucon  :: AbstractVector = zeros(T, Gridap.FESpaces.num_free_dofs(Ypde)),
                            y0    :: AbstractVector = zeros(T, Gridap.FESpaces.num_free_dofs(Ypde)),
@@ -106,15 +112,16 @@ function GridapPDENLPModel(x0    :: AbstractVector{T},
     throw(ErrorException("Error: Xcon or Ycon are both nothing or must be specified."))
   else
     _xpde = typeof(Xpde) <: MultiFieldFESpace ? Xpde : MultiFieldFESpace([Xpde])
-    X = _xpde
+    X = Xpde #_xpde
     _ypde = typeof(Ypde) <: MultiFieldFESpace ? Ypde : MultiFieldFESpace([Ypde])
-    Y = _ypde
+    Y = Ypde #_ypde
   end
 
   if NRJ == NoFETerm && typeof(lvary) <: AbstractVector && typeof(uvary) <: AbstractVector
-    lvar, uvar = vcat(lvary, lvaru), vcat(uvary, uvaru)
+    lvar, uvar = vcat(lvary, lvaru, lvark), vcat(uvary, uvaru, uvark)
   elseif NRJ != NoFETerm
-    lvar, uvar = bounds_functions_to_vectors(Y, Ycon, Ypde, tnrj.trian, lvary, uvary, lvaru, uvaru)
+    fun_lvar, fun_uvar = bounds_functions_to_vectors(Y, Ycon, Ypde, tnrj.trian, lvary, uvary, lvaru, uvaru)
+    lvar, uvar = vcat(fun_lvar, lvark), vcat(fun_uvar, uvark)
   else #NRJ == FETerm and 
     #NotImplemented: NoFETerm and functional bounds
     @warn "GridapPDENLPModel: NotImplemented NoFETerm and functional bounds, ignores the functional bounds"
@@ -157,6 +164,8 @@ function GridapPDENLPModel(x0    :: AbstractVector{T},
                            uvary :: AbstractVector =   T(Inf) * ones(T, Gridap.FESpaces.num_free_dofs(Ypde)), #Union{AbstractVector, Function}
                            lvaru :: AbstractVector = - T(Inf) * ones(T, isnothing(Ycon) ? 0 : Gridap.FESpaces.num_free_dofs(Ycon)), #Union{AbstractVector, Function}
                            uvaru :: AbstractVector =   T(Inf) * ones(T, isnothing(Ycon) ? 0 : Gridap.FESpaces.num_free_dofs(Ycon)), #Union{AbstractVector, Function}
+                           lvark :: AbstractVector = - T(Inf) * ones(T, max(length(x0) - Gridap.FESpaces.num_free_dofs(Ypde) - (isnothing(Ycon) ? 0 : Gridap.FESpaces.num_free_dofs(Ycon)),0)),
+                           uvark :: AbstractVector =   T(Inf) * ones(T, max(length(x0) - Gridap.FESpaces.num_free_dofs(Ypde) - (isnothing(Ycon) ? 0 : Gridap.FESpaces.num_free_dofs(Ycon)),0)),
                            lcon  :: AbstractVector = zeros(T, Gridap.FESpaces.num_free_dofs(Ypde)),
                            ucon  :: AbstractVector = zeros(T, Gridap.FESpaces.num_free_dofs(Ypde)),
                            y0    :: AbstractVector = zeros(T, Gridap.FESpaces.num_free_dofs(Ypde)),
