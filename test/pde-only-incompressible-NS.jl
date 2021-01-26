@@ -65,8 +65,9 @@ function _pdeonlyincompressibleNS(;udc = false)
 
     ndofs = Gridap.FESpaces.num_free_dofs(Y)
     xin   = zeros(ndofs)
-    Ycon, Xcon = nothing, nothing
-    @time nlp = GridapPDENLPModel(xin, x->0.0, trian, quad, Y, Ycon, X, Xcon, op)
+    #Ycon, Xcon = nothing, nothing
+    #@time nlp = GridapPDENLPModel(xin, x->0.0, trian, quad, Y, Ycon, X, Xcon, op)
+    @time nlp = GridapPDENLPModel(xin, x->0.0, trian, quad, Y, X, op)
 
     @time fx = obj(nlp, xin)
     @test fx == 0.0

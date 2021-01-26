@@ -15,6 +15,30 @@ const FEFunctionType = Union{Gridap.FESpaces.SingleFieldFEFunction,
 const CellFieldType  = Union{Gridap.MultiField.MultiFieldCellField,
                              Gridap.CellData.GenericCellField}
 
+"""
+Useful structure to avoid putting nothing
+"""
+struct VoidFESpace <: FESpace end
+
+import Gridap.FESpaces.num_free_dofs
+
+num_free_dofs(:: VoidFESpace) = 0
+
+struct VoidMultiFieldFESpace <: FESpace #MultiFieldFESpace
+    spaces
+  
+    function VoidMultiFieldFESpace() return new([]) end
+end
+
+import Gridap.MultiField.num_fields
+
+num_fields(:: VoidMultiFieldFESpace) = 0
+
+_fespace_to_multifieldfespace(Y :: MultiFieldFESpace) = Y
+_fespace_to_multifieldfespace(Y :: VoidMultiFieldFESpace) = Y
+_fespace_to_multifieldfespace(:: VoidFESpace) = VoidMultiFieldFESpace()
+_fespace_to_multifieldfespace(Y :: FESpace) = MultiFieldFESpace([Y])
+
 #Additional modeling structures for the objective function.
 include("hessian_func.jl")
 include("additional_obj_terms.jl")

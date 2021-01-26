@@ -34,7 +34,7 @@ function allocate_coo_jac!(op   :: Gridap.FESpaces.FEOperatorFromTerms,
                            Y    :: FESpace,
                            Xpde :: FESpace,
                            Ypde :: FESpace,
-                           Ycon :: Union{FESpace, Nothing},
+                           Ycon :: FESpace,
                            rows,
                            cols;
                            nfirst = 0,
@@ -60,7 +60,7 @@ function allocate_coo_jac!(op   :: Gridap.FESpaces.FEOperatorFromTerms,
     nini = fill_jac_coo_symbolic!(rows, cols, assem_y, (ry, cy), n = nini)
     cols[nfirst + 1: nfirst + ny] .+= nparam
     
-    if Ycon != nothing
+    if Ycon != VoidFESpace()
         assem_u = Gridap.FESpaces.SparseMatrixAssembler(Ycon, Xpde)
         nu = count_nnz_coo_short(assem_u, (ru, cu))
         nini = fill_jac_coo_symbolic!(rows, cols, assem_u, (ru, cu), n = nini)
@@ -113,7 +113,7 @@ function count_nnz_jac(op   :: Gridap.FESpaces.FEOperatorFromTerms,
                        Y    :: FESpace,
                        Xpde :: FESpace,
                        Ypde :: FESpace,
-                       Ycon :: Union{FESpace, Nothing}) where T
+                       Ycon :: FESpace) where T
 
     ru, ry  = [], []
     cu, cy  = [], []
@@ -128,7 +128,7 @@ function count_nnz_jac(op   :: Gridap.FESpaces.FEOperatorFromTerms,
     end
     
     nini = 0
-    if Ycon != nothing
+    if Ycon != VoidFESpace()
         assem_u = Gridap.FESpaces.SparseMatrixAssembler(Ycon, Xpde)
         nini += count_nnz_coo_short(assem_u, (ru, cu))
     else
@@ -148,7 +148,7 @@ function count_nnz_jac(op   :: AffineFEOperator,
                        Y    :: FESpace,
                        Xpde :: FESpace,
                        Ypde :: FESpace,
-                       Ycon :: Union{FESpace, Nothing}) where T
+                       Ycon :: FESpace)
    return nnz(get_matrix(op))
 end
                    
@@ -157,7 +157,7 @@ function _from_terms_to_jacobian(op   :: AffineFEOperator,
                                  Y    :: FESpace,
                                  Xpde :: FESpace,
                                  Ypde :: FESpace,
-                                 Ycon :: Union{FESpace, Nothing}) where T <: Number
+                                 Ycon :: FESpace) where T <: Number
 
  return get_matrix(op)
 end
@@ -167,7 +167,7 @@ function _from_terms_to_jacobian_vals!(op   :: AffineFEOperator,
                                        Y    :: FESpace,
                                        Xpde :: FESpace,
                                        Ypde :: FESpace,
-                                       Ycon :: Union{FESpace, Nothing},
+                                       Ycon :: FESpace,
                                        vals :: AbstractVector{T};
                                        nfirst :: Int = 0) where T <: Number
  nini = length(get_matrix(op).nzval)
@@ -191,7 +191,7 @@ function _from_terms_to_jacobian(op   :: Gridap.FESpaces.FEOperatorFromTerms,
                                  Y    :: FESpace,
                                  Xpde :: FESpace,
                                  Ypde :: FESpace,
-                                 Ycon :: Union{FESpace, Nothing}) where T <: Number
+                                 Ycon :: FESpace) where T <: Number
 
  nvar   = length(x)
  nyu    = num_free_dofs(Y)
@@ -201,7 +201,7 @@ function _from_terms_to_jacobian(op   :: Gridap.FESpaces.FEOperatorFromTerms,
  yu     = FEFunction(Y, xyu)
 
  dy  = Gridap.FESpaces.get_cell_basis(Ypde)
- du  = Ycon != nothing ? Gridap.FESpaces.get_cell_basis(Ycon) : nothing #use only jac is furnished
+ du  = Ycon != VoidFESpace() ? Gridap.FESpaces.get_cell_basis(Ycon) : nothing #use only jac is furnished
  dyu = Gridap.FESpaces.get_cell_basis(Y)
  v   = Gridap.FESpaces.get_cell_basis(Xpde)
 
@@ -220,7 +220,7 @@ function _from_terms_to_jacobian(op   :: Gridap.FESpaces.FEOperatorFromTerms,
 
  end
 
- if Ycon != nothing
+ if Ycon != VoidFESpace()
      assem_u = Gridap.FESpaces.SparseMatrixAssembler(Ycon, Xpde)
      Au      = Gridap.FESpaces.assemble_matrix(assem_u, (wu, ru, cu))
  else
@@ -245,7 +245,7 @@ function _from_terms_to_jacobian_vals!(op   :: Gridap.FESpaces.FEOperatorFromTer
                                        Y    :: FESpace,
                                        Xpde :: FESpace,
                                        Ypde :: FESpace,
-                                       Ycon :: Union{FESpace, Nothing},
+                                       Ycon :: FESpace,
                                        vals :: AbstractVector{T};
                                        nfirst :: Int = 0) where T <: Number
 
@@ -257,7 +257,7 @@ function _from_terms_to_jacobian_vals!(op   :: Gridap.FESpaces.FEOperatorFromTer
  yu     = FEFunction(Y, xyu)
 
  dy  = Gridap.FESpaces.get_cell_basis(Ypde)
- du  = Ycon != nothing ? Gridap.FESpaces.get_cell_basis(Ycon) : nothing #use only jac is furnished
+ du  = Ycon != VoidFESpace() ? Gridap.FESpaces.get_cell_basis(Ycon) : nothing #use only jac is furnished
  dyu = Gridap.FESpaces.get_cell_basis(Y)
  v   = Gridap.FESpaces.get_cell_basis(Xpde)
 
@@ -277,7 +277,7 @@ function _from_terms_to_jacobian_vals!(op   :: Gridap.FESpaces.FEOperatorFromTer
  end
  nini = nfirst
 
- if Ycon != nothing
+ if Ycon != VoidFESpace()
      assem_u = Gridap.FESpaces.SparseMatrixAssembler(Ycon, Xpde)
      nini   = assemble_jac_vals!(vals, assem_u, (wu, ru, cu), n = nini)
  else

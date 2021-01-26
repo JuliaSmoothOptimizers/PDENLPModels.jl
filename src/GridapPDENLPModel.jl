@@ -137,9 +137,9 @@ mutable struct GridapPDENLPModel{NRJ <: AbstractEnergyTerm} <: AbstractNLPModel
 
   #Gridap discretization
   Ypde     :: FESpace #TrialFESpace for the solution of the PDE
-  Ycon     :: Union{FESpace, Nothing} #TrialFESpace for the parameter
+  Ycon     :: FESpace #TrialFESpace for the parameter
   Xpde     :: FESpace #TestFESpace for the solution of the PDE
-  Xcon     :: Union{FESpace, Nothing} #TestFESpace for the parameter
+  Xcon     :: FESpace #TestFESpace for the parameter
 
   Y        :: FESpace #concatenated TrialFESpace
   X        :: FESpace #concatenated TestFESpace

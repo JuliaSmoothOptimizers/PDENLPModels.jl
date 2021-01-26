@@ -32,7 +32,6 @@ function _test_unconstrained2(;udc = false)
 
     Ypde = U
     Xpde = V0
-    Ycon, Xcon = nothing, nothing
 
     trian = Triangulation(model)
     degree = 2

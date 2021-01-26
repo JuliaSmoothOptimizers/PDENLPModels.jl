@@ -133,10 +133,10 @@ nYpde = num_free_dofs(Ypde)
     @test_throws DimensionError GridapPDENLPModel(badx0, f, trian, quad, Ypde, Ycon, Xpde, Xcon, caff, lvary = lvary, uvary = uvary, lvaru = lvaru, uvaru = uvaru)
     @test_throws DimensionError GridapPDENLPModel(badx0, f, trian, quad, Ypde, Ycon, Xpde, Xcon, caff, lvary = lvary, uvary = uvary, lvaru = lvaru, uvaru = uvaru, y0 = y0, lcon = lcon, ucon = ucon)
     
-    @test_throws ErrorException("Error: Xcon or Ycon are both nothing or must be specified.") GridapPDENLPModel(x0, NT, Ypde, Ycon, Xpde, nothing, cter)
-    @test_throws ErrorException("Error: Xcon or Ycon are both nothing or must be specified.") GridapPDENLPModel(x0, NT, Ypde, nothing, Xpde, Xcon, cter)
-    @test_throws ErrorException("Error: Xcon or Ycon are both nothing or must be specified.") GridapPDENLPModel(x0, NT, Ypde, Ycon, Xpde, nothing, cter, lvary = lvary, uvary = uvary, lvaru = lvaru, uvaru = uvaru)
-    @test_throws ErrorException("Error: Xcon or Ycon are both nothing or must be specified.") GridapPDENLPModel(x0, NT, Ypde, nothing, Xpde, Xcon, cter, lvary = lvary, uvary = uvary, lvaru = lvaru, uvaru = uvaru)
+    @test_throws ErrorException("Error: Xcon or Ycon are both nothing or must be specified.") GridapPDENLPModel(x0, NT, Ypde, Ycon, Xpde, PDENLPModels.VoidFESpace(), cter)
+    @test_throws ErrorException("Error: Xcon or Ycon are both nothing or must be specified.") GridapPDENLPModel(x0, NT, Ypde, PDENLPModels.VoidFESpace(), Xpde, Xcon, cter)
+    @test_throws ErrorException("Error: Xcon or Ycon are both nothing or must be specified.") GridapPDENLPModel(x0, NT, Ypde, Ycon, Xpde, PDENLPModels.VoidFESpace(), cter, lvary = lvary, uvary = uvary, lvaru = lvaru, uvaru = uvaru)
+    @test_throws ErrorException("Error: Xcon or Ycon are both nothing or must be specified.") GridapPDENLPModel(x0, NT, Ypde, PDENLPModels.VoidFESpace(), Xpde, Xcon, cter, lvary = lvary, uvary = uvary, lvaru = lvaru, uvaru = uvaru)
 end
 
 #Test util_functions.jl
@@ -144,18 +144,18 @@ x0 = ones(8)
 yh,uh = _split_FEFunction(x0, Ypde, Ycon)
 @test typeof(yh) <: FEFunctionType && typeof(uh) <: FEFunctionType
 x0 = ones(3)
-yh,uh = _split_FEFunction(x0, Ypde, nothing)
+yh,uh = _split_FEFunction(x0, Ypde, PDENLPModels.VoidFESpace())
 @test typeof(yh) <: FEFunctionType && typeof(uh) == Nothing
 x0 = ones(8)
 y,u,k = _split_vector(x0, Ypde, Ycon)
 @test y == x0[1:3] && u == x0[4:8]
 x0 = ones(3)
-y,u,k = _split_vector(x0, Ypde, nothing)
+y,u,k = _split_vector(x0, Ypde, PDENLPModels.VoidFESpace())
 @test y == x0 && u == [] && k == []
 x0 = ones(11)
 y,u,k = _split_vector(x0, Ypde, Ycon)
 @test y == x0[1:3] && u == x0[4:8] && k == x0[9:11]
-y,u,k = _split_vector(x0, Ypde, nothing)
+y,u,k = _split_vector(x0, Ypde, PDENLPModels.VoidFESpace())
 @test y == x0[1:3] && u == [] && k == x0[4:11]
 
 #Test additional_obj_terms.jl
@@ -287,10 +287,10 @@ end
         @test eltype(uvar) == T
 
         #Example 0bis:
-        lvar, uvar = bounds_functions_to_vectors(Y, nothing, Ypde, trian, -T(Inf) * ones(T, 9), 
-                                                                           T(Inf) * ones(T, 9), 
-                                                                           nothing, 
-                                                                           nothing)
+        lvar, uvar = bounds_functions_to_vectors(Y, PDENLPModels.VoidFESpace(), Ypde, trian, -T(Inf) * ones(T, 9), 
+                                                                                              T(Inf) * ones(T, 9), 
+                                                                                              T[], 
+                                                                                              T[])
         @test lvar == -Inf * ones(9)
         @test uvar ==  Inf * ones(9)
         @test eltype(lvar) == T
@@ -308,7 +308,7 @@ end
         #Example 1bis:
         umin(x) = T(x[1]+x[2])
         umax(x) = T(x[1]^2+x[2]^2)
-        lvar, uvar = bounds_functions_to_vectors(Y, nothing, Ypde, trian, umin, umax, nothing, nothing)
+        lvar, uvar = bounds_functions_to_vectors(Y, PDENLPModels.VoidFESpace(), Ypde, trian, umin, umax, nothing, nothing)
         @test lvar == [1.0, 0.0, 0.0, 1.0, 1.0, -1.0, 0.0, 0.0, 1.0]
         @test uvar == 0.5 * ones(T, 9)
         @test eltype(lvar) == T

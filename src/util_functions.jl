@@ -21,7 +21,7 @@ end
 
 function _split_FEFunction(x    :: AbstractVector,
                            Ypde :: FESpace,
-                           Ycon :: Nothing)
+                           Ycon :: VoidFESpace)
 
     nvar_pde = Gridap.FESpaces.num_free_dofs(Ypde)
     yh = FEFunction(Ypde, x[1:nvar_pde])
@@ -54,7 +54,7 @@ end
 
 function _split_vector(x    :: AbstractVector,
                        Ypde :: FESpace,
-                       Ycon :: Nothing)
+                       Ycon :: VoidFESpace)
 
     nvar_pde = Gridap.FESpaces.num_free_dofs(Ypde)
     #nparam   = length(x) - nvar_pde
@@ -63,39 +63,4 @@ function _split_vector(x    :: AbstractVector,
     k = x[nvar_pde+1:length(x)]
 
  return y, [], k
-end
-
-"""
-TO BE FINISHED:
-* convert bounds function as bounds vectors?
-* becareful of multi-field functions
-"""
-function _convert_bound_functions_to_bounds(x    :: AbstractVector,
-                                            Ypde :: FESpace,
-                                            Ycon :: Nothing,
-                                            lvf  :: Function,
-                                            uvf  :: Function)
- 
- nvar_pde = Gridap.FESpaces.num_free_dofs(Ypde)
- 
- lvar, uvar = Array{T,1}(undef, nvar_pde) , Array{T,1}(undef, nvar_pde)      
- @warn "Not implemented"                           
-                                            
- return lvar, uvar
-end
-
-function _convert_bound_functions_to_bounds(x    :: AbstractVector,
-                                            Ypde :: FESpace,
-                                            Ycon :: FESpace,
-                                            lvf  :: Function,
-                                            uvf  :: Function)
- 
- nvar_pde = Gridap.FESpaces.num_free_dofs(Ypde)
- nvar_con = Gridap.FESpaces.num_free_dofs(Ycon)
- nbnds    = nvar_pde + nvar_con
- 
- lvar, uvar = Array{T,1}(undef, nbnds) , Array{T,1}(undef, nbnds)                                 
- @warn "Not implemented"                                    
-               
- return lvar, uvar
 end

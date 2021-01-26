@@ -93,7 +93,7 @@ function bounds_functions_to_vectors(Y      :: FESpace, #Y      :: MultiFieldFES
   return lvar, uvar
 end
 
-function bounds_functions_to_vectors(Y      :: FESpace, #Y      :: MultiFieldFESpace, 
+function bounds_functions_to_vectors(Y     :: FESpace, #Y      :: MultiFieldFESpace, 
                                      Ycon  :: FESpace, 
                                      Ypde  :: FESpace, 
                                      trian :: Triangulation, 
@@ -110,7 +110,7 @@ function bounds_functions_to_vectors(Y      :: FESpace, #Y      :: MultiFieldFES
 end
 
 function bounds_functions_to_vectors(Y      :: FESpace, #Y      :: MultiFieldFESpace, 
-                                     Ycon   :: Nothing, 
+                                     Ycon   :: VoidFESpace, 
                                      Ypde   :: FESpace, 
                                      trian  :: Triangulation, 
                                      lyfunc :: Function, 
@@ -150,13 +150,13 @@ function bounds_functions_to_vectors(Y      :: FESpace, #Y      :: MultiFieldFES
 end
 
 function bounds_functions_to_vectors(Y     :: FESpace, #Y      :: MultiFieldFESpace, 
-                                     Ycon  :: Nothing, 
+                                     Ycon  :: VoidFESpace, 
                                      Ypde  :: FESpace, 
                                      trian :: Triangulation, 
                                      ly    :: AbstractVector, 
                                      uy    :: AbstractVector,
-                                     lu    :: Any,
-                                     uu    :: Any)
+                                     lu    :: AbstractVector,
+                                     uu    :: AbstractVector)
   
   ny = Gridap.FESpaces.num_free_dofs(Ypde)
   
