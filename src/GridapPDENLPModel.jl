@@ -515,7 +515,7 @@ function hess_coord!(nlp  :: GridapPDENLPModel,
 end
 
 function cons!(nlp :: GridapPDENLPModel, x :: AbstractVector, c :: AbstractVector)
-
+  increment!(nlp, :neval_cons)
     #pde_residual = Array{eltype(x),1}(undef, nlp.nvar_pde)
 
     _from_terms_to_residual!(nlp.op, x, nlp, c)

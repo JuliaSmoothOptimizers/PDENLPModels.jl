@@ -326,3 +326,49 @@ end
     end
 
 end
+
+function check_counters(nlp :: AbstractNLPModel)
+  #the real list of functions:
+  #[:obj, :grad, :cons, :jcon, :jgrad, :jac, :jprod, :jtprod, :hess, :hprod, :jhprod]
+  for s in [:obj, :grad, :cons, :jac, :hess]
+    eval(Meta.parse("$(s)"))(nlp, nlp.meta.x0)
+    @test eval(Meta.parse("neval_$(s)"))(nlp) == 1
+  end
+  for s in [:jprod, :hprod]
+    eval(Meta.parse("$(s)"))(nlp, nlp.meta.x0, nlp.meta.x0)
+    @test eval(Meta.parse("neval_$(s)"))(nlp) == 1
+  end
+  jtprod(nlp, nlp.meta.x0, nlp.meta.y0)
+  @test nlp.counters.neval_jtprod == 1
+
+  reset!(nlp) #we trust reset!
+
+  #test Lagrangian Hessian
+  hess(nlp, nlp.meta.x0, nlp.meta.y0)
+  @test nlp.counters.neval_hess == 1
+  hprod(nlp, nlp.meta.x0, nlp.meta.y0, nlp.meta.x0)
+  @test nlp.counters.neval_hprod == 1
+
+  reset!(nlp)
+end
+
+@testset  "Check counters" begin
+
+  EFT  = EnergyFETerm(x->1., trian, quad)
+  function res(yu,v)
+    y,u = yu
+    y*v
+  end
+  term = FETerm(res, trian, quad)
+  cter = FEOperator(Y, Xpde, term)
+  taff = AffineFETerm(res, v->0*v, trian, quad)
+  caff = AffineFEOperator(Y, Xpde, taff)
+  x0   = zeros(8)
+
+  nlp = GridapPDENLPModel(x0, EFT, Ypde, Ycon, Xpde, Xcon, cter)
+  check_counters(nlp)
+
+  nlp2 = GridapPDENLPModel(x0, EFT, Ypde, Ycon, Xpde, Xcon, caff)
+  check_counters(nlp2)
+
+end

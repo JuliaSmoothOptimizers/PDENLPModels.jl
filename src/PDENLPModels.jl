@@ -58,6 +58,14 @@ include("GridapPDENLPModel.jl")
 export GridapPDENLPModel, obj, grad, grad!, hess, cons, cons!, jac, jprod, jprod!, jtprod, jtprod!, jac_op, jac_op!, hprod, hprod!, hess_op, hess_op!, jac_structure, jac_structure!, jac_coord, jac_coord!, hess_structure, hess_structure!, hess_coord, hess_coord!
 export hess_old, hess_coo, hess_obj_structure, hess_obj_structure!
 
+#meta functions
+import NLPModels: has_bounds, bound_constrained, unconstrained, linearly_constrained, equality_constrained, inequality_constrained
+export has_bounds, bound_constrained, unconstrained, linearly_constrained, equality_constrained, inequality_constrained
+
+#counters functions
+import NLPModels: reset!
+export reset!
+
 using Test
 include("hessian_test_functions.jl")
 include("jacobian_test_functions.jl")
