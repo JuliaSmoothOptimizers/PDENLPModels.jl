@@ -477,8 +477,20 @@ function hess(nlp :: GridapPDENLPModel,
   @lencheck nlp.meta.nvar x
   @lencheck nlp.meta.ncon λ
   increment!(nlp, :neval_hess)
+  function ℓ(x, λ)
+
+    κ, xyu = x[1 : nlp.nparam], x[nlp.nparam + 1 : nlp.meta.nvar]
+    yu  = FEFunction(nlp.Y, xyu)
+    int = _obj_integral(nlp.tnrj, κ, yu)
+    
+    c = similar(x, nlp.meta.ncon)
+    _from_terms_to_residual!(nlp.op, x, nlp, c)
+
+    return obj_weight * sum(int) + dot(c, λ)
+  end
+
   ℓ(x) = obj_weight * obj(nlp, x) + dot(cons(nlp, x), λ)
-  Hx = ForwardDiff.hessian(ℓ, x)
+  Hx = ForwardDiff.hessian(x->ℓ(x, λ), x)
   return tril(Hx)
 end
 
@@ -501,9 +513,9 @@ function hess_coord!(nlp  :: GridapPDENLPModel,
   @lencheck nlp.meta.nvar x
   @lencheck nlp.meta.ncon λ
   @lencheck nlp.meta.nnzh vals
-  increment!(nlp, :neval_hess)
-  ℓ(x) = obj_weight * obj(nlp, x) + dot(cons(nlp, x), λ)
-  Hx = ForwardDiff.hessian(ℓ, x)
+  #increment!(nlp, :neval_hess)
+  #ℓ(x) = obj_weight * obj(nlp, x) + dot(cons(nlp, x), λ)
+  Hx = hess(nlp, x, λ) #ForwardDiff.hessian(ℓ, x)
   k = 1
   for j = 1 : nlp.meta.nvar
     for i = j : nlp.meta.nvar
@@ -516,9 +528,9 @@ end
 
 function cons!(nlp :: GridapPDENLPModel, x :: AbstractVector, c :: AbstractVector)
   increment!(nlp, :neval_cons)
-    #pde_residual = Array{eltype(x),1}(undef, nlp.nvar_pde)
+  #pde_residual = Array{eltype(x),1}(undef, nlp.nvar_pde)
 
-    _from_terms_to_residual!(nlp.op, x, nlp, c)
+  _from_terms_to_residual!(nlp.op, x, nlp, c)
 
     #c .= pde_residual
 
@@ -709,7 +721,7 @@ in Gridap.FESpaces.
 function _jac_structure!(op :: Gridap.FESpaces.FEOperatorFromTerms, nlp :: GridapPDENLPModel, rows :: AbstractVector{<: Integer}, cols :: AbstractVector{<: Integer})
 
  nini = jac_k_structure!(nlp, rows, cols)
- nini = allocate_coo_jac!(nlp.op, nlp.Y, nlp.Xpde, nlp.Ypde, nlp.Ycon, rows, cols, nfirst = nini, nparam = nlp.nparam)
+ nini = allocate_coo_jac!(op, nlp.Y, nlp.Xpde, nlp.Ypde, nlp.Ycon, rows, cols, nfirst = nini, nparam = nlp.nparam)
 
  return rows, cols
 end

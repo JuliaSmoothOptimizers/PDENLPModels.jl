@@ -44,6 +44,8 @@ function allocate_coo_jac!(op   :: Gridap.FESpaces.FEOperatorFromTerms,
     cu, cy  = [], []
     r, c    = [], []
 
+    nvar_pde = num_free_dofs(Ypde)
+
     for term in op.terms
      
      _jac_from_term_to_terms_id!(term, r,  c,
@@ -64,7 +66,7 @@ function allocate_coo_jac!(op   :: Gridap.FESpaces.FEOperatorFromTerms,
         assem_u = Gridap.FESpaces.SparseMatrixAssembler(Ycon, Xpde)
         nu = count_nnz_coo_short(assem_u, (ru, cu))
         nini = fill_jac_coo_symbolic!(rows, cols, assem_u, (ru, cu), n = nini)
-        cols[ny + 1: ny + nu] .+= nparam
+        cols[ny + 1: ny + nu] .+= nparam + nvar_pde #translate the columns
     else
         nu = 0
     end
@@ -193,51 +195,51 @@ function _from_terms_to_jacobian(op   :: Gridap.FESpaces.FEOperatorFromTerms,
                                  Ypde :: FESpace,
                                  Ycon :: FESpace) where T <: Number
 
- nvar   = length(x)
- nyu    = num_free_dofs(Y)
- nparam = nvar - nyu
- yh, uh = _split_FEFunction(x, Ypde, Ycon)
- κ, xyu = x[1 : nparam], x[nparam + 1 : nvar]
- yu     = FEFunction(Y, xyu)
+  nvar   = length(x)
+  nyu    = num_free_dofs(Y)
+  nparam = nvar - nyu
+  yh, uh = _split_FEFunction(x, Ypde, Ycon)
+  κ, xyu = x[1 : nparam], x[nparam + 1 : nvar]
+  yu     = FEFunction(Y, xyu)
 
- dy  = Gridap.FESpaces.get_cell_basis(Ypde)
- du  = Ycon != VoidFESpace() ? Gridap.FESpaces.get_cell_basis(Ycon) : nothing #use only jac is furnished
- dyu = Gridap.FESpaces.get_cell_basis(Y)
- v   = Gridap.FESpaces.get_cell_basis(Xpde)
+  dy  = Gridap.FESpaces.get_cell_basis(Ypde)
+  du  = Ycon != VoidFESpace() ? Gridap.FESpaces.get_cell_basis(Ycon) : nothing #use only jac is furnished
+  dyu = Gridap.FESpaces.get_cell_basis(Y)
+  v   = Gridap.FESpaces.get_cell_basis(Xpde)
 
- wu, wy  = [], []
- ru, ry  = [], []
- cu, cy  = [], []
- w, r, c = [], [], []
+  wu, wy  = [], []
+  ru, ry  = [], []
+  cu, cy  = [], []
+  w, r, c = [], [], []
 
- for term in op.terms
+  for term in op.terms
 
-   _jac_from_term_to_terms!(term, κ, yu, yh, uh,
+    _jac_from_term_to_terms!(term, κ, yu, yh, uh,
                                   dyu, dy, du, v,
                                   w,  r,  c,
                                   wu, ru, cu,
                                   wy, ry, cy)
 
- end
+  end
 
- if Ycon != VoidFESpace()
-     assem_u = Gridap.FESpaces.SparseMatrixAssembler(Ycon, Xpde)
-     Au      = Gridap.FESpaces.assemble_matrix(assem_u, (wu, ru, cu))
- else
-     Au      = zeros(Gridap.FESpaces.num_free_dofs(Ypde), 0)
- end
+  assem_y = Gridap.FESpaces.SparseMatrixAssembler(Ypde, Xpde)
+  Ay      = Gridap.FESpaces.assemble_matrix(assem_y, (wy, ry, cy))
 
- assem_y = Gridap.FESpaces.SparseMatrixAssembler(Ypde, Xpde)
- Ay      = Gridap.FESpaces.assemble_matrix(assem_y, (wy, ry, cy))
+  if Ycon != VoidFESpace()
+    assem_u = Gridap.FESpaces.SparseMatrixAssembler(Ycon, Xpde)
+    Au      = Gridap.FESpaces.assemble_matrix(assem_u, (wu, ru, cu))
+  else
+    Au      = zeros(Gridap.FESpaces.num_free_dofs(Ypde), 0)
+  end
 
- S = hcat(Ay,Au)
+  S = hcat(Ay,Au)
 
- assem = Gridap.FESpaces.SparseMatrixAssembler(Y, Xpde)
- #doesn't work as we may not have the good sparsity pattern.
- #Gridap.FESpaces.assemble_matrix_add!(S, assem, (w, r, c))
- S += Gridap.FESpaces.assemble_matrix(assem, (w, r, c))
+  assem = Gridap.FESpaces.SparseMatrixAssembler(Y, Xpde)
+  #doesn't work as we may not have the good sparsity pattern.
+  #Gridap.FESpaces.assemble_matrix_add!(S, assem, (w, r, c))
+  S += Gridap.FESpaces.assemble_matrix(assem, (w, r, c))
 
- return S
+  return S
 end
 
 function _from_terms_to_jacobian_vals!(op   :: Gridap.FESpaces.FEOperatorFromTerms,
@@ -277,15 +279,15 @@ function _from_terms_to_jacobian_vals!(op   :: Gridap.FESpaces.FEOperatorFromTer
  end
  nini = nfirst
 
+ assem_y = Gridap.FESpaces.SparseMatrixAssembler(Ypde, Xpde)
+ nini   = assemble_jac_vals!(vals, assem_y, (wy, ry, cy), n = nini)
+
  if Ycon != VoidFESpace()
      assem_u = Gridap.FESpaces.SparseMatrixAssembler(Ycon, Xpde)
      nini   = assemble_jac_vals!(vals, assem_u, (wu, ru, cu), n = nini)
  else
      #nothing
  end
-
- assem_y = Gridap.FESpaces.SparseMatrixAssembler(Ypde, Xpde)
- nini   = assemble_jac_vals!(vals, assem_y, (wy, ry, cy), n = nini)
 
  assem = Gridap.FESpaces.SparseMatrixAssembler(Y, Xpde)
  nini = assemble_jac_vals!(vals, assem, (w, r, c), n = nini)

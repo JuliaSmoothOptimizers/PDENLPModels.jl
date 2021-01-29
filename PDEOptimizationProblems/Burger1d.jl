@@ -1,7 +1,6 @@
 export Burger1d
 
 """
-
 `Burger1d(;n :: Int = 512, kwargs...)`
 
 Let Ω=(0,1), we solve the one-dimensional ODE-constrained control problem:
@@ -10,7 +9,7 @@ s.t.          -ν y'' + yy' = u + h,   for    x ∈  Ω,
                   u(0) = 0, u(1)=-1,  for    x ∈ ∂Ω,
 where the constraint is a 1D stationary Burger's equation over Ω, with
 h(x)=2(ν + x^3) and ν=0.08. The first objective measures deviation from the
-data u_d(x)=-x^2, while the second term regularizes the control with α = 0.01.
+data y_d(x)=-x^2, while the second term regularizes the control with α = 0.01.
 
 This example has been used in [Section 9.1](Estrin, R., Friedlander, M. P., Orban, D., & Saunders, M. A. (2020).
 Implementing a smooth exact penalty function for equality-constrained nonlinear optimization.
@@ -46,7 +45,7 @@ function Burger1d(;n :: Int = 512, kwargs...)
 
     Xcon = TestFESpace(
             reffe=:Lagrangian, order=1, valuetype=Float64,
-            conformity=:H1, model=model)
+            conformity=:L2, model=model)
     Ycon = TrialFESpace(Xcon)
 
     #Integration machinery
@@ -78,7 +77,8 @@ function Burger1d(;n :: Int = 512, kwargs...)
     t_Ω = FETerm(res,trian,quad)
     op = FEOperator(Ypde, Xpde, t_Ω) # or FEOperator(Y, Xpde, t_Ω)
 
-    nlp = GridapPDENLPModel(f, trian, quad, Ypde, Ycon, Xpde, Xcon, op, name = "Burger1d")
+    x0 = zeros(Gridap.FESpaces.num_free_dofs(Ypde) + Gridap.FESpaces.num_free_dofs(Ycon))
+    nlp = GridapPDENLPModel(x0, f, trian, quad, Ypde, Ycon, Xpde, Xcon, op, name = "Burger1d")
 
     return nlp
 end
