@@ -6,7 +6,7 @@ export Burger1d
 Let Ω=(0,1), we solve the one-dimensional ODE-constrained control problem:
 min_{y,u}   0.5 ∫_Ω​ |y(x) - y_d(x)|^2dx + 0.5 * α * ∫_Ω​ |u|^2
 s.t.          -ν y'' + yy' = u + h,   for    x ∈  Ω,
-                  u(0) = 0, u(1)=-1,  for    x ∈ ∂Ω,
+                  y(0) = 0, y(1)=-1,  for    x ∈ ∂Ω,
 where the constraint is a 1D stationary Burger's equation over Ω, with
 h(x)=2(ν + x^3) and ν=0.08. The first objective measures deviation from the
 data y_d(x)=-x^2, while the second term regularizes the control with α = 0.01.
@@ -54,13 +54,13 @@ function Burger1d(;n :: Int = 512, kwargs...)
     quad = CellQuadrature(trian,degree)
 
     #Now we move to the optimization:
-    ud(x) = -x[1]^2
+    yd(x) = -x[1]^2
     α = 1e-2
     #objective function:
-    f(u, z) = 0.5 * (ud - u) * (ud - u) + 0.5 * α * z * z
+    f(y, u) = 0.5 * (yd - y) * (yd - y) + 0.5 * α * u * u
     function f(yu) #:: Union{Gridap.MultiField.MultiFieldFEFunction, Gridap.CellData.GenericCellField}
-        u, z = yu
-        f(u,z)
+        y, u = yu
+        f(y, u)
     end
 
     #Definition of the constraint operator
@@ -76,9 +76,21 @@ function Burger1d(;n :: Int = 512, kwargs...)
     end
     t_Ω = FETerm(res,trian,quad)
     op = FEOperator(Ypde, Xpde, t_Ω) # or FEOperator(Y, Xpde, t_Ω)
-
-    x0 = zeros(Gridap.FESpaces.num_free_dofs(Ypde) + Gridap.FESpaces.num_free_dofs(Ycon))
+    
+    nvar_pde = Gridap.FESpaces.num_free_dofs(Ypde)
+    nvar_con = Gridap.FESpaces.num_free_dofs(Ycon)
+    x0 = zeros(nvar_pde + nvar_con)
     nlp = GridapPDENLPModel(x0, f, trian, quad, Ypde, Ycon, Xpde, Xcon, op, name = "Burger1d")
+
+    #The solution is just  y = yd and u=0. 
+    cell_xs = get_cell_coordinates(trian)
+    #Create a function that given a cell returns the middle.
+    midpoint(xs) = sum(xs)/length(xs)
+    cell_xm = apply(midpoint, cell_xs)
+    cell_y = apply(x -> yd(x), cell_xm) #this is a vector of size num_cells(trian)
+    #Warning: `interpolate(fs::SingleFieldFESpace, object)` is deprecated, use `interpolate(object, fs::SingleFieldFESpace)` instead.
+    soly = get_free_values(Gridap.FESpaces.interpolate(nlp.Ypde, cell_y))
+    sol = vcat(soly, zeros(eltype(nlp.meta.x0), ncon))
 
     return nlp
 end
