@@ -489,7 +489,7 @@ function hess(nlp :: GridapPDENLPModel,
     return obj_weight * sum(int) + dot(c, λ)
   end
 
-  ℓ(x) = obj_weight * obj(nlp, x) + dot(cons(nlp, x), λ)
+  #ℓ(x) = obj_weight * obj(nlp, x) + dot(cons(nlp, x), λ)
   Hx = ForwardDiff.hessian(x->ℓ(x, λ), x)
   return tril(Hx)
 end
@@ -626,6 +626,7 @@ function jac(nlp :: GridapPDENLPModel, x :: AbstractVector{T}) where T <: Number
 
   if nlp.nparam > 0
       κ, xyu = x[1 : nlp.nparam], x[nlp.nparam + 1 : nlp.meta.nvar]
+      @warn "Extra cons call"
       ck = @closure k -> cons(nlp, vcat(k, xyu))
       jac_k = ForwardDiff.jacobian(ck, κ)
       return hcat(jac_k, pde_jac)
@@ -836,7 +837,21 @@ function _from_terms_to_hprod!(op  :: Gridap.FESpaces.FEOperatorFromTerms,
                                Hv  :: AbstractVector{T},
                                obj_weight :: T) where T <: Number
 
- agrad(t) = ForwardDiff.gradient(x->(obj_weight * obj(nlp, x) + dot(cons(nlp, x), λ)), x + t*v)
+  function ℓ(x, λ)
+
+    κ, xyu = x[1 : nlp.nparam], x[nlp.nparam + 1 : nlp.meta.nvar]
+    yu  = FEFunction(nlp.Y, xyu)
+    int = _obj_integral(nlp.tnrj, κ, yu)
+    
+    c = similar(x, nlp.meta.ncon)
+    _from_terms_to_residual!(nlp.op, x, nlp, c)
+
+    return obj_weight * sum(int) + dot(c, λ)
+  end
+############# Tanj: test this #################################
+ #agrad(t) = ForwardDiff.gradient(x->(obj_weight * obj(nlp, x) + dot(cons(nlp, x), λ)), x + t*v)
+ agrad(t) = ForwardDiff.gradient(x->ℓ(x, λ) , x + t*v)
+###############################################################
  Hv .= ForwardDiff.derivative(t -> agrad(t), 0.)
 
  return Hv
