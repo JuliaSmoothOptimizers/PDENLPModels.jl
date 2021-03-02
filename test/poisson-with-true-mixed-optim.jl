@@ -53,6 +53,8 @@ nUg = num_free_dofs(Ug)
 x0  = zeros(nUg + 2) #zeros(nUg + 2)
 nlp = GridapPDENLPModel(x0, nrj, Ug, V0, op)
 
+check_nlp_dimensions(nlp, exclude_hess=true)
+
 using Test
 
 @test hessian_test_functions(nlp)

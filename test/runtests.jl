@@ -9,6 +9,7 @@ using PDENLPModels: FEFunctionType, _split_vector, _split_FEFunction,
                     _obj_integral, _obj_cell_integral, _compute_gradient_k, _compute_gradient!, _compute_hess_coo
 
 use_derivative_check = false #set true to derivative_check (this is slow)
+include("check-dimensions.jl")
 
 #Test constructors, util_functions.jl and additional_obj_terms.jl
 include("unit-test.jl")
@@ -27,6 +28,9 @@ include("pde-only-incompressible-NS.jl")
 #Mixed boundary conditions, and a source term.
 #include("poisson-with-Neumann-and-Dirichlet.jl") #Peut être décommenter
 #include("1d-Burger-example.jl") #Peut être décommenter
+if false
+  include("code_issue.jl")
+end
 
 #IV. Mixed optimization problem with PDE-constraints
 #Objective only on the parameter
