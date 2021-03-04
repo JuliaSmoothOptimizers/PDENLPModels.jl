@@ -1,5 +1,5 @@
 using BenchmarkTools, ForwardDiff, Gridap, LinearAlgebra, Printf, SparseArrays, Test
-
+using LineSearches: BackTracking
 #JSO
 using JSOSolvers, Krylov, NLPModels, NLPModelsIpopt
 

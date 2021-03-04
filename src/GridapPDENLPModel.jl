@@ -358,7 +358,7 @@ end
 
 function hess_coord(nlp :: GridapPDENLPModel, x :: AbstractVector; obj_weight::Real=one(eltype(x)))
   @lencheck nlp.meta.nvar x
-  
+  #########################################################################################
   #The issue here is that there is no meta specific for the obj only
   #vals = Vector{eltype(x)}(undef, nlp.meta.nnzh)
   
@@ -380,6 +380,8 @@ function hess_coord(nlp :: GridapPDENLPModel, x :: AbstractVector; obj_weight::R
   end
   
   nnzh =  nnz_hess_yu + nnz_hess_k
+  #USE get_nnzh here
+  #########################################################################################
   vals = Vector{eltype(x)}(undef, nnzh)
   
   return hess_coord!(nlp, x, vals; obj_weight=obj_weight)
@@ -470,7 +472,9 @@ function hess_op(nlp :: GridapPDENLPModel,
   return hess_op!(nlp, x, Hv, obj_weight = obj_weight)
 end
 
-function hess(nlp :: GridapPDENLPModel,
+#######################################################################
+# TO BE REMOVED
+function hess2(nlp :: GridapPDENLPModel,
               x   :: AbstractVector,
               λ   :: AbstractVector;
               obj_weight :: Real = one(eltype(x)))
@@ -493,7 +497,73 @@ function hess(nlp :: GridapPDENLPModel,
   Hx = ForwardDiff.hessian(x->ℓ(x, λ), x)
   return tril(Hx)
 end
+###########################################################################
 
+function hess(nlp :: GridapPDENLPModel, 
+              x   :: AbstractVector{T},
+              λ   :: AbstractVector{T};
+              obj_weight :: Real = one(T)) where T
+              
+    @lencheck nlp.meta.nvar x
+    increment!(nlp, :neval_hess)
+
+    mdofs = Gridap.FESpaces.num_free_dofs(nlp.X) + nlp.nparam
+    ndofs = Gridap.FESpaces.num_free_dofs(nlp.Y) + nlp.nparam
+#=
+    if obj_weight == zero(T)
+        (I, J) = hess_obj_structure(nlp)
+        V      = zeros(T, length(J))
+        return sparse(I, J, V, mdofs, ndofs)
+    end
+=#
+
+    (I, J, V) = hess_coo(nlp, x, obj_weight = obj_weight)
+
+    @assert mdofs == ndofs #otherwise there is an error in the Trial/Test spaces
+
+    hess_yu = sparse(I, J, V, mdofs, ndofs)
+
+######################################################################################
+  if typeof(nlp.op) <: Gridap.FESpaces.FEOperatorFromTerms && typeof(nlp.op.terms[1]) <: Union{Gridap.FESpaces.NonlinearFETermWithAutodiff, Gridap.FESpaces.NonlinearFETerm}
+    κ, xyu = x[1 : nlp.nparam], x[nlp.nparam + 1 : nlp.meta.nvar]
+    yu     = FEFunction(nlp.Y, xyu)
+    cell_yu    = Gridap.FESpaces.get_cell_values(yu)
+    cell_id_yu = Gridap.Arrays.IdentityVector(length(cell_yu))
+
+    term = nlp.op.terms[1]
+
+    λf    = FEFunction(nlp.Xpde, λ)
+    cell_λf     = Gridap.FESpaces.get_cell_values(λf)
+    lfh  = CellField(nlp.Xpde, cell_λf)
+    _lfh = Gridap.FESpaces.restrict(lfh, term.trian)
+
+    function _cell_obj_yu(cell)
+      xfh  = CellField(nlp.Y, cell)
+      _xfh = Gridap.FESpaces.restrict(xfh, term.trian)
+      
+      #apply the function and integrate:
+      #_res = integrate(res(_xfh,_v), term.trian, term.quad)
+      #Option 1:
+      _res = integrate(term.res(_xfh,_lfh), term.trian, term.quad) #Is it that we just apply the Lagrange multiplier instead of v ????
+      lag = _res
+      return lag
+    end
+
+    #Compute the hessian with AD
+    cell_r_yu  = Gridap.Arrays.autodiff_array_hessian(_cell_obj_yu, cell_yu, cell_id_yu)
+    #Assemble the matrix in the "good" space
+    assem      = Gridap.FESpaces.SparseMatrixAssembler(nlp.Y, nlp.X)
+    (I, J, V) = assemble_hess(assem, cell_r_yu, cell_id_yu)
+    hess_lag = sparse(I, J, V, mdofs, ndofs)
+  else
+    hess_lag = spzeros(mdofs, ndofs)
+  end
+######################################################################################
+
+    return hess_yu + hess_lag
+end
+
+#=
 function hess_structure!(nlp :: GridapPDENLPModel,
                         rows :: AbstractVector{<: Integer},
                         cols :: AbstractVector{<: Integer})
@@ -504,6 +574,37 @@ function hess_structure!(nlp :: GridapPDENLPModel,
   cols .= getindex.(I, 2)[:]
   return rows, cols
 end
+=#
+###########################################################################################
+# The same as hess_obj_structure as it doesn't really depend on the function (just the spaces)
+#It is not true for the parameter part, but it is dense anyway
+function hess_structure(nlp :: GridapPDENLPModel)
+    
+ if nlp.nparam != 0
+     (I1, J1) = hess_k_obj_structure(nlp)
+     (I2, J2) = hess_yu_obj_structure(nlp)
+     return (vcat(I1, I2 .+ nlp.nparam), vcat(J1, J2 .+ nlp.nparam))
+ end
+ 
+ return hess_yu_obj_structure(nlp)
+end
+
+function hess_structure!(nlp  :: GridapPDENLPModel, 
+                         rows :: AbstractVector, 
+                         cols :: AbstractVector) 
+ nvals = length(rows)
+ @lencheck nvals cols
+
+ nini = hess_k_obj_structure!(nlp, rows, cols)
+ nini = hess_yu_obj_structure!(nlp, rows, cols, nfirst = nini)
+ 
+ if nvals != nini
+     @warn "hess_obj_structure!: Size of vals and number of assignements didn't match"
+ end
+ 
+ return (rows, cols)
+end
+###########################################################################################
 
 function hess_coord!(nlp  :: GridapPDENLPModel,
                      x    :: AbstractVector,
@@ -546,7 +647,7 @@ function _from_terms_to_residual!(op  :: Gridap.FESpaces.FEOperatorFromTerms,
 
     κ, xyu = x[1 : nlp.nparam], x[nlp.nparam + 1 : nlp.meta.nvar]
     yu     = FEFunction(nlp.Y, xyu)
-    v      = Gridap.FESpaces.get_cell_basis(nlp.Xpde)
+    v      = Gridap.FESpaces.get_cell_basis(nlp.Xpde) #Tanj: is it really Xcon ?
 
     w, r = [], []
     for term in op.terms
@@ -627,10 +728,12 @@ function jac(nlp :: GridapPDENLPModel, x :: AbstractVector{T}) where T <: Number
   pde_jac = _from_terms_to_jacobian(nlp.op, x, nlp.Y, nlp.Xpde, nlp.Ypde, nlp.Ycon)
 
   if nlp.nparam > 0
+###################################################################################
       κ, xyu = x[1 : nlp.nparam], x[nlp.nparam + 1 : nlp.meta.nvar]
       @warn "Extra cons call"
       ck = @closure k -> cons(nlp, vcat(k, xyu))
       jac_k = ForwardDiff.jacobian(ck, κ)
+###################################################################################
       return hcat(jac_k, pde_jac)
   end
 

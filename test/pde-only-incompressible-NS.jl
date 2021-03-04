@@ -79,6 +79,9 @@ function _pdeonlyincompressibleNS(;udc = false)
   @time _Hxv = hprod(nlp, rand(nlp.meta.nvar), ones(nlp.meta.nvar));
   @test _Hxv == zeros(nlp.meta.nvar)
 
+  yy = rand(nlp.meta.ncon)
+  @test PDENLPModels.hess2(nlp, xin, yy) ≈ hess(nlp, xin, yy) atol = 1e-14
+
   #We also compare cons and Gridap.FESpaces.residual using @btime:
   #@btime cons(nlp, xin)
   #@btime Gridap.FESpaces.residual(op, FEFunction(Gridap.FESpaces.get_trial(op), xin))

@@ -59,6 +59,50 @@ function count_hess_nnz_coo(a          :: Gridap.FESpaces.GenericSparseMatrixAss
   n
 end
 
+#########################################################################################
+# Work as a generic function if all have the same `trian`
+# Does it really work for NoFETerm ??
+function get_nnzh(tnrj :: T, Y, X, nparam, nvar) where T
+  # Special case as nlp.tnrj has no field trian.    
+  if typeof(tnrj) <: NoFETerm
+    nnz_hess_yu = 0
+  else
+    a           = Gridap.FESpaces.SparseMatrixAssembler(Y, X)
+    ncells      = num_cells(tnrj.trian)
+    cell_id_yu  = Gridap.Arrays.IdentityVector(ncells)
+    nnz_hess_yu = count_hess_nnz_coo_short(a, cell_id_yu)
+  end
+
+  #add the nnz w.r.t. k; by default it is:
+  if (typeof(tnrj) <: MixedEnergyFETerm && tnrj.inde) || typeof(tnrj) <: NoFETerm
+    nnz_hess_k = Int(nparam * (nparam + 1) / 2)
+  else
+    nnz_hess_k = Int(nparam * (nparam + 1) / 2) + (nvar - nparam) * nparam
+  end
+    
+  nnzh =  nnz_hess_yu + nnz_hess_k
+  return nnzh 
+end
+
+function get_nnzh(tnrj :: T, op, Y, X, nparam, nvar) where T
+  # Special case as nlp.tnrj has no field trian.    
+    a           = Gridap.FESpaces.SparseMatrixAssembler(Y, X)
+    ncells      = num_cells(op.terms[1].trian)
+    cell_id_yu  = Gridap.Arrays.IdentityVector(ncells)
+    nnz_hess_yu = count_hess_nnz_coo_short(a, cell_id_yu)
+
+  #add the nnz w.r.t. k; by default it is:
+  if (typeof(tnrj) <: MixedEnergyFETerm && tnrj.inde) || typeof(tnrj) <: NoFETerm
+    nnz_hess_k = Int(nparam * (nparam + 1) / 2)
+  else
+    nnz_hess_k = Int(nparam * (nparam + 1) / 2) + (nvar - nparam) * nparam
+  end
+    
+  nnzh =  nnz_hess_yu + nnz_hess_k
+  return nnzh 
+end
+###########################################################################################
+
 function count_hess_nnz_coo_short(a          :: Gridap.FESpaces.GenericSparseMatrixAssembler,
                                   cell_id_yu :: Gridap.Arrays.IdentityVector{I}) where I
 

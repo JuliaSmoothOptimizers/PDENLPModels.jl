@@ -7,7 +7,6 @@ function GridapPDENLPModel(x0    :: AbstractVector{T},
                            name  :: String = "Generic") where {T, NRJ <: AbstractEnergyTerm}
 
   nvar = length(x0)
-  nnzh = nvar * (nvar + 1) / 2
 
   #_xpde = typeof(Xpde) <: MultiFieldFESpace ? Xpde : MultiFieldFESpace([Xpde])
   X = Xpde #_xpde
@@ -18,6 +17,8 @@ function GridapPDENLPModel(x0    :: AbstractVector{T},
   nparam   = nvar - (nvar_pde + nvar_con)
 
   @assert nparam ≥ 0 throw(DimensionError("x0", nvar_pde, nvar))
+
+  nnzh = get_nnzh(tnrj, Ypde, Xpde, nparam, nvar) #nvar * (nvar + 1) / 2
 
   if NRJ <: NoFETerm && typeof(lvar) <: AbstractVector && typeof(uvar) <: AbstractVector
     lv, uv = lvar, uvar
@@ -151,7 +152,7 @@ function GridapPDENLPModel(x0    :: AbstractVector{T},
   @lencheck nvar lvar uvar
   @lencheck ncon ucon y0
 
-  nnzh = nvar * (nvar + 1) / 2
+  nnzh = get_nnzh(tnrj, c, Y, X, nparam, nvar) #nvar * (nvar + 1) / 2
  
   if typeof(c) <: AffineFEOperator #Here we expect ncon = nvar_pde
     nln = Int[]

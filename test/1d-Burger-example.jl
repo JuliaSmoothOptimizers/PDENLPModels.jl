@@ -85,10 +85,11 @@ function _1dBurger_nlp(; udc = false)
   @test nlp.meta.nvar == 1024
   @test nlp.meta.ncon == 511
 
-  @time _fx =  obj(nlp, sol_gridap)
-  @time _gx = grad(nlp, sol_gridap)
-  @time _Hx = hess(nlp, sol_gridap)
-  @time _cx = cons(nlp, sol_gridap)
+  @time _fx  =  obj(nlp, sol_gridap)
+  @time _gx  = grad(nlp, sol_gridap)
+  @time _Hx  = hess(nlp, sol_gridap)
+  @time _Hxl = hess(nlp, sol_gridap, nlp.meta.y0)
+  @time _cx  = cons(nlp, sol_gridap)
 
   @time _Jx =  jac(nlp, sol_gridap);
   @time _Jx2 =  jac(nlp, zeros(nlp.meta.nvar))
