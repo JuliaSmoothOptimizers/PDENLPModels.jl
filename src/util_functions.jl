@@ -10,23 +10,23 @@ function _split_FEFunction(x    :: AbstractVector,
                            Ypde :: FESpace,
                            Ycon :: FESpace)
 
-    nvar_pde = Gridap.FESpaces.num_free_dofs(Ypde)
-    nvar_con = Gridap.FESpaces.num_free_dofs(Ycon)
+  nvar_pde = Gridap.FESpaces.num_free_dofs(Ypde)
+  nvar_con = Gridap.FESpaces.num_free_dofs(Ycon)
 
-    yh = FEFunction(Ypde, x[1:nvar_pde])
-    uh = FEFunction(Ycon, x[1+nvar_pde:nvar_pde+nvar_con])
+  yh = FEFunction(Ypde, x[1:nvar_pde])
+  uh = FEFunction(Ycon, x[1+nvar_pde:nvar_pde+nvar_con])
 
- return yh, uh
+  return yh, uh
 end
 
 function _split_FEFunction(x    :: AbstractVector,
                            Ypde :: FESpace,
                            Ycon :: VoidFESpace)
 
-    nvar_pde = Gridap.FESpaces.num_free_dofs(Ypde)
-    yh = FEFunction(Ypde, x[1:nvar_pde])
+  nvar_pde = Gridap.FESpaces.num_free_dofs(Ypde)
+  yh = FEFunction(Ypde, x[1:nvar_pde])
 
- return yh, nothing
+  return yh, nothing
 end
 
 """
@@ -41,26 +41,26 @@ function _split_vector(x    :: AbstractVector,
                        Ypde :: FESpace,
                        Ycon :: FESpace)
 
-    nvar_pde = Gridap.FESpaces.num_free_dofs(Ypde)
-    nvar_con = Gridap.FESpaces.num_free_dofs(Ycon)
-    #nparam   = length(x) - (nvar_pde + nvar_con)
+  nvar_pde = Gridap.FESpaces.num_free_dofs(Ypde)
+  nvar_con = Gridap.FESpaces.num_free_dofs(Ycon)
+  #nparam   = length(x) - (nvar_pde + nvar_con)
 
-    y = x[1:nvar_pde]
-    u = x[1+nvar_pde:nvar_pde+nvar_con]
-    k = x[nvar_pde+nvar_con+1:length(x)]
+  y = x[1:nvar_pde]
+  u = x[1+nvar_pde:nvar_pde+nvar_con]
+  k = x[nvar_pde+nvar_con+1:length(x)]
 
- return y, u, k
+  return y, u, k
 end
 
 function _split_vector(x    :: AbstractVector,
                        Ypde :: FESpace,
                        Ycon :: VoidFESpace)
 
-    nvar_pde = Gridap.FESpaces.num_free_dofs(Ypde)
-    #nparam   = length(x) - nvar_pde
+  nvar_pde = Gridap.FESpaces.num_free_dofs(Ypde)
+  #nparam   = length(x) - nvar_pde
 
-    y = x[1:nvar_pde]
-    k = x[nvar_pde+1:length(x)]
+  y = x[1:nvar_pde]
+  k = x[nvar_pde+1:length(x)]
 
- return y, [], k
+  return y, [], k
 end

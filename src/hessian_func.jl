@@ -86,10 +86,10 @@ end
 
 function get_nnzh(tnrj :: T, op, Y, X, nparam, nvar) where T
   # Special case as nlp.tnrj has no field trian.    
-    a           = Gridap.FESpaces.SparseMatrixAssembler(Y, X)
-    ncells      = num_cells(op.terms[1].trian)
-    cell_id_yu  = Gridap.Arrays.IdentityVector(ncells)
-    nnz_hess_yu = count_hess_nnz_coo_short(a, cell_id_yu)
+  a           = Gridap.FESpaces.SparseMatrixAssembler(Y, X)
+  ncells      = num_cells(op.terms[1].trian)
+  cell_id_yu  = Gridap.Arrays.IdentityVector(ncells)
+  nnz_hess_yu = count_hess_nnz_coo_short(a, cell_id_yu)
 
   #add the nnz w.r.t. k; by default it is:
   if (typeof(tnrj) <: MixedEnergyFETerm && tnrj.inde) || typeof(tnrj) <: NoFETerm
@@ -169,17 +169,17 @@ function fill_hess_coo_numeric!(I          :: Array{Ii,1},
   cellidsrows = cell_id_yu
   cellidscols = cell_id_yu
 
-    cell_rows  = Gridap.FESpaces.get_cell_dofs(a.test,cellidsrows)
-    cell_cols  = Gridap.FESpaces.get_cell_dofs(a.trial,cellidscols)
-    cellmat_r  = Gridap.FESpaces.attach_constraints_cols(a.trial,cellmat_rc,cellidscols)
-    cell_vals  = Gridap.FESpaces.attach_constraints_rows(a.test,cellmat_r,cellidsrows)
-    rows_cache = Gridap.FESpaces.array_cache(cell_rows)
-    cols_cache = Gridap.FESpaces.array_cache(cell_cols)
-    vals_cache = Gridap.FESpaces.array_cache(cell_vals)
-    nini = _fill_hess!(a.matrix_type, nini, I, J, V,
-                                      rows_cache,cols_cache,vals_cache,
-                                      cell_rows,cell_cols,cell_vals,
-                                      a.strategy)
+  cell_rows  = Gridap.FESpaces.get_cell_dofs(a.test,cellidsrows)
+  cell_cols  = Gridap.FESpaces.get_cell_dofs(a.trial,cellidscols)
+  cellmat_r  = Gridap.FESpaces.attach_constraints_cols(a.trial,cellmat_rc,cellidscols)
+  cell_vals  = Gridap.FESpaces.attach_constraints_rows(a.test,cellmat_r,cellidsrows)
+  rows_cache = Gridap.FESpaces.array_cache(cell_rows)
+  cols_cache = Gridap.FESpaces.array_cache(cell_cols)
+  vals_cache = Gridap.FESpaces.array_cache(cell_vals)
+  nini = _fill_hess!(a.matrix_type, nini, I, J, V,
+                                    rows_cache,cols_cache,vals_cache,
+                                    cell_rows,cell_cols,cell_vals,
+                                    a.strategy)
 
   nini
 end
@@ -239,21 +239,21 @@ function struct_hess_coo_numeric!(I          :: Array{Ii,1},
                                   nfirst     :: Int = 0,
                                   cols_translate :: Int = 0,
                                   rows_translate :: Int = 0) where {Ii <: Int, Vi <: AbstractFloat}
-    nini = nfirst
+  nini = nfirst
 
-    cellidsrows = cell_id_yu
-    cellidscols = cell_id_yu
+  cellidsrows = cell_id_yu
+  cellidscols = cell_id_yu
 
-    cell_rows  = Gridap.FESpaces.get_cell_dofs(a.test,cellidsrows)
-    cell_cols  = Gridap.FESpaces.get_cell_dofs(a.trial,cellidscols)
-    rows_cache = Gridap.FESpaces.array_cache(cell_rows)
-    cols_cache = Gridap.FESpaces.array_cache(cell_cols)
-    nini = _struct_hess!(a.matrix_type, nini, I, J,
-                                      rows_cache, cols_cache,
-                                      cell_rows, cell_cols,
-                                      a.strategy,
-                                      cols_translate,
-                                      rows_translate)
+  cell_rows  = Gridap.FESpaces.get_cell_dofs(a.test,cellidsrows)
+  cell_cols  = Gridap.FESpaces.get_cell_dofs(a.trial,cellidscols)
+  rows_cache = Gridap.FESpaces.array_cache(cell_rows)
+  cols_cache = Gridap.FESpaces.array_cache(cell_cols)
+  nini = _struct_hess!(a.matrix_type, nini, I, J,
+                                    rows_cache, cols_cache,
+                                    cell_rows, cell_cols,
+                                    a.strategy,
+                                    cols_translate,
+                                    rows_translate)
 
   nini
 end
@@ -317,17 +317,17 @@ function vals_hess_coo_numeric!(V          :: Array{Vi,1},
   cellidsrows = cell_id_yu
   cellidscols = cell_id_yu
 
-    cell_rows  = Gridap.FESpaces.get_cell_dofs(a.test,cellidsrows)
-    cell_cols  = Gridap.FESpaces.get_cell_dofs(a.trial,cellidscols)
-    cellmat_r  = Gridap.FESpaces.attach_constraints_cols(a.trial,cellmat_rc,cellidscols)
-    cell_vals  = Gridap.FESpaces.attach_constraints_rows(a.test,cellmat_r,cellidsrows)
-    rows_cache = Gridap.FESpaces.array_cache(cell_rows)
-    cols_cache = Gridap.FESpaces.array_cache(cell_cols)
-    vals_cache = Gridap.FESpaces.array_cache(cell_vals)
-    nini = _vals_hess!(a.matrix_type, nini, V,
-                                      rows_cache,cols_cache,vals_cache,
-                                      cell_rows,cell_cols,cell_vals,
-                                      a.strategy)
+  cell_rows  = Gridap.FESpaces.get_cell_dofs(a.test,cellidsrows)
+  cell_cols  = Gridap.FESpaces.get_cell_dofs(a.trial,cellidscols)
+  cellmat_r  = Gridap.FESpaces.attach_constraints_cols(a.trial,cellmat_rc,cellidscols)
+  cell_vals  = Gridap.FESpaces.attach_constraints_rows(a.test,cellmat_r,cellidsrows)
+  rows_cache = Gridap.FESpaces.array_cache(cell_rows)
+  cols_cache = Gridap.FESpaces.array_cache(cell_cols)
+  vals_cache = Gridap.FESpaces.array_cache(cell_vals)
+  nini = _vals_hess!(a.matrix_type, nini, V,
+                                    rows_cache,cols_cache,vals_cache,
+                                    cell_rows,cell_cols,cell_vals,
+                                    a.strategy)
 
   nini
 end
