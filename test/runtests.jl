@@ -20,7 +20,7 @@ include("unit-test.jl")
 include("test-unconstrained.jl")
 #Unconstrained optimization <=> Laplacian equation
 @info "Unconstrained problem II"
-#include("test-unconstrained-2.jl")
+include("test-unconstrained-2.jl")
 
 #II. Elementary tests on a PDE problem (no objective fct and no other constraints)
 #Nonlinear with mutli-field

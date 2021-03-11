@@ -508,58 +508,106 @@ function hess(nlp :: GridapPDENLPModel,
 
   mdofs = Gridap.FESpaces.num_free_dofs(nlp.X) + nlp.nparam
   ndofs = Gridap.FESpaces.num_free_dofs(nlp.Y) + nlp.nparam
-#=
-    if obj_weight == zero(T)
-        (I, J) = hess_obj_structure(nlp)
-        V      = zeros(T, length(J))
-        return sparse(I, J, V, mdofs, ndofs)
-    end
-=#
 
-  (I, J, V) = hess_coo(nlp, x, obj_weight = obj_weight)
+  if obj_weight == zero(T)
+    (I, J) = hess_obj_structure(nlp)
+     V     = zeros(T, length(J))
+  else
+    (I, J, V) = hess_coo(nlp, x, obj_weight = obj_weight)
+  end
 
   @assert mdofs == ndofs #otherwise there is an error in the Trial/Test spaces
 
-  hess_yu = sparse(I, J, V, mdofs, ndofs)
+  (I2, J2, V2) = hess_coo(nlp, nlp.op, x, λ)
+  hess_lag = sparse(vcat(I, I2), vcat(J, J2), vcat(V, V2), mdofs, ndofs)
 
-######################################################################################
-  if typeof(nlp.op) <: Gridap.FESpaces.FEOperatorFromTerms && typeof(nlp.op.terms[1]) <: Union{Gridap.FESpaces.NonlinearFETermWithAutodiff, Gridap.FESpaces.NonlinearFETerm}
-    κ, xyu = x[1 : nlp.nparam], x[nlp.nparam + 1 : nlp.meta.nvar]
-    yu     = FEFunction(nlp.Y, xyu)
-    cell_yu    = Gridap.FESpaces.get_cell_values(yu)
-    cell_id_yu = Gridap.Arrays.IdentityVector(length(cell_yu))
+  return hess_lag
+end
 
-    term = nlp.op.terms[1]
+"""
+`hess_coo`: return the hessian of the constraints in COO-format.
+
+Notes:    
+- `hess_coo(nlp, op :: AffineFEOperator, x, λ)`: return 0-matrix
+- `hess_coo(nlp, op :: FEOperatorFromTerms, x, λ)`: iterate over the terms
+
+TODO:
+make it a real COO-format function.
+
+do not work with parameters.
+"""
+function hess_coo(nlp :: GridapPDENLPModel, 
+                  op  :: AffineFEOperator,
+                  x   :: AbstractVector,
+                  λ   :: AbstractVector)
+  mdofs = Gridap.FESpaces.num_free_dofs(nlp.X) + nlp.nparam
+  ndofs = Gridap.FESpaces.num_free_dofs(nlp.Y) + nlp.nparam
+  return findnz(spzeros(mdofs, ndofs))
+end
+
+function hess_coo(nlp :: GridapPDENLPModel, 
+                  op  :: Gridap.FESpaces.FEOperatorFromTerms,
+                  x   :: AbstractVector,
+                  λ   :: AbstractVector)
+  #Init the matrix:
+  mdofs = Gridap.FESpaces.num_free_dofs(nlp.X) + nlp.nparam
+  ndofs = Gridap.FESpaces.num_free_dofs(nlp.Y) + nlp.nparam
+  hess_lag  = spzeros(mdofs, ndofs)
+  #(I2 ,J2, V2) = ...
+
+  κ, xyu = x[1 : nlp.nparam], x[nlp.nparam + 1 : nlp.meta.nvar]
+  yu     = FEFunction(nlp.Y, xyu)
+
+  cell_yu    = Gridap.FESpaces.get_cell_values(yu)
+  cell_id_yu = Gridap.Arrays.IdentityVector(length(cell_yu))
+
+  for term in op.terms
+    if !(typeof(term) <: Union{Gridap.FESpaces.NonlinearFETermWithAutodiff, Gridap.FESpaces.NonlinearFETerm})
+      continue
+    end
 
     λf    = FEFunction(nlp.Xpde, λ)
     cell_λf     = Gridap.FESpaces.get_cell_values(λf)
     lfh  = CellField(nlp.Xpde, cell_λf)
-    _lfh = Gridap.FESpaces.restrict(lfh, term.trian)
+    _lfh = Gridap.FESpaces.restrict(lfh, term.trian) #This is where the term play a first role.
 
-    function _cell_obj_yu(cell)
+    function _cell_res_yu(cell)
       xfh  = CellField(nlp.Y, cell)
       _xfh = Gridap.FESpaces.restrict(xfh, term.trian)
       
-      #apply the function and integrate:
-      #_res = integrate(res(_xfh,_v), term.trian, term.quad)
-      #Option 1:
-      _res = integrate(term.res(_xfh,_lfh), term.trian, term.quad) #Is it that we just apply the Lagrange multiplier instead of v ????
+      if length(κ) > 0
+        _res = integrate(term.res(κ, _xfh,_lfh), term.trian, term.quad)
+      else
+        _res = integrate(term.res(_xfh,_lfh), term.trian, term.quad)
+      end
       lag = _res
       return lag
     end
 
     #Compute the hessian with AD
-    cell_r_yu  = Gridap.Arrays.autodiff_array_hessian(_cell_obj_yu, cell_yu, cell_id_yu)
+    cell_r_yu  = Gridap.Arrays.autodiff_array_hessian(_cell_res_yu, cell_yu, cell_id_yu)
     #Assemble the matrix in the "good" space
     assem      = Gridap.FESpaces.SparseMatrixAssembler(nlp.Y, nlp.X)
-    (I, J, V) = assemble_hess(assem, cell_r_yu, cell_id_yu)
-    hess_lag = sparse(I, J, V, mdofs, ndofs)
-  else
-    hess_lag = spzeros(mdofs, ndofs)
-  end
-######################################################################################
+    (I, J, V)  = assemble_hess(assem, cell_r_yu, cell_id_yu)
+    hess_lag  += sparse(I, J, V, mdofs, ndofs)
 
-  return hess_yu + hess_lag
+    #= What about extra parameters????
+    if nlp.nparam > 0
+      (I1, J1, V1) = _compute_hess_k_coo(nlp, nlp.tnrj, κ, xyu)
+      if obj_weight == one(eltype(x))
+        return (vcat(I1, I2 .+ nlp.nparam),
+                vcat(J1, J2 .+ nlp.nparam),
+                vcat(V1, V2))
+      else
+        return (vcat(I1, I2 .+ nlp.nparam),
+                vcat(J1, J2 .+ nlp.nparam),
+                vcat(obj_weight * V1, obj_weight * V2))
+      end
+    end
+    =#
+  end
+
+  return findnz(hess_lag)
 end
 
 #=

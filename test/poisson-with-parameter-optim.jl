@@ -70,7 +70,7 @@ function _poissonwithparameteroptim(;udc = false)
 
   @test hprod(nlp, x1, zeros(nUg + 1)) == zeros(nUg + 1)
   vr = rand(nUg + 1)
-  @test hprod(nlp, x1, vr) == hess(nlp, x1) * vr #hess ia diagonal matrix
+  @test hprod(nlp, x1, vr) == hess(nlp, x1) * vr #hess is a diagonal matrix
 
   l = rand(nUg)
   @test hprod(nlp, x1, l, zeros(nUg + 1)) == zeros(nUg + 1)
