@@ -17,7 +17,8 @@ https://github.com/gridap/Gridap.jl/blob/758a8620756e164ba0e6b83dc8dcbb278015b3d
 """
 function assemble_hess(a          :: Gridap.FESpaces.GenericSparseMatrixAssembler,
                        cell_r_yu  :: T,
-                       cell_id_yu :: Gridap.Arrays.IdentityVector{Int64}) where T <: AbstractArray
+                       cell_id_yu :: Gridap.Arrays.IdentityVector{Int64}
+                       ) where T <: AbstractArray
 
   #Counts the nnz for the lower triangular.
   n = count_hess_nnz_coo(a, cell_r_yu, cell_id_yu)
@@ -34,7 +35,8 @@ end
 
 function count_hess_nnz_coo(a          :: Gridap.FESpaces.GenericSparseMatrixAssembler,
                             cell_r_yu  :: T,
-                            cell_id_yu :: Gridap.Arrays.IdentityVector{I}) where {T <: AbstractArray, I <: Int}
+                            cell_id_yu :: Gridap.Arrays.IdentityVector{I}
+                            ) where {T <: AbstractArray, I <: Int}
 
   cellmat_rc  = cell_r_yu
   cellidsrows = cell_id_yu
@@ -55,13 +57,25 @@ function count_hess_nnz_coo(a          :: Gridap.FESpaces.GenericSparseMatrixAss
   Is  = Gridap.FESpaces._get_block_layout(mat)
   n   = _count_hess_entries(a.matrix_type, rows_cache, cols_cache,
                             cell_rows, cell_cols, a.strategy, Is)
-
   n
 end
 
-#########################################################################################
-# Work as a generic function if all have the same `trian`
-# Does it really work for NoFETerm ??
+#=
+Programmer note: this function is used in the constructors to set meta.nnzh
+=#
+"""
+`get_nnzh`: return the number of non-zeros elements in the hessian matrix.
+
+Different variants:
+- `get_nnzh(tnrj :: T, Y, X, nparam, nvar)`: consider the hessian of the 
+objective function only.   
+- `get_nnzh(tnrj :: T, op :: AffineFEOperator, Y, X, nparam, nvar)`: consider 
+the hessian of the objective function only.    
+- `get_nnzh(tnrj :: T, op :: Gridap.FESpaces.FEOperatorFromTerms, Y, X, nparam, nvar)`: 
+concatenate non-zeros of the objective-hessian and the hessian of each term composing `op`.    
+
+TODO: Do not handle non-linear discrete parameters in the constraints.
+"""
 function get_nnzh(tnrj :: T, Y, X, nparam, nvar) where T
   # Special case as nlp.tnrj has no field trian.    
   if typeof(tnrj) <: NoFETerm
@@ -84,24 +98,29 @@ function get_nnzh(tnrj :: T, Y, X, nparam, nvar) where T
   return nnzh 
 end
 
-function get_nnzh(tnrj :: T, op, Y, X, nparam, nvar) where T
-  # Special case as nlp.tnrj has no field trian.    
-  a           = Gridap.FESpaces.SparseMatrixAssembler(Y, X)
-  ncells      = num_cells(op.terms[1].trian)
-  cell_id_yu  = Gridap.Arrays.IdentityVector(ncells)
-  nnz_hess_yu = count_hess_nnz_coo_short(a, cell_id_yu)
+function get_nnzh(tnrj :: T, op :: AffineFEOperator, Y, X, nparam, nvar) where T
+  return get_nnzh(tnrj, Y, X, nparam, nvar)
+end
 
-  #add the nnz w.r.t. k; by default it is:
-  if (typeof(tnrj) <: MixedEnergyFETerm && tnrj.inde) || typeof(tnrj) <: NoFETerm
-    nnz_hess_k = Int(nparam * (nparam + 1) / 2)
-  else
-    nnz_hess_k = Int(nparam * (nparam + 1) / 2) + (nvar - nparam) * nparam
+function get_nnzh(tnrj :: T, op :: Gridap.FESpaces.FEOperatorFromTerms, Y, X, nparam, nvar) where T
+  nnz_hess_obj = get_nnzh(tnrj, Y, X, nparam, nvar)
+  
+  nnz_hess_yu = 0
+  for term in op.terms
+    a            = Gridap.FESpaces.SparseMatrixAssembler(Y, X)
+    ncells       = num_cells(term.trian)
+    cell_id_yu   = Gridap.Arrays.IdentityVector(ncells)
+    nnz_hess_yu += count_hess_nnz_coo_short(a, cell_id_yu)
+
+    #add the nnz w.r.t. k; by default it is:
+    #
+    # \TODO: add the number of non-zeros from the parametric constraints
+    #
   end
     
-  nnzh =  nnz_hess_yu + nnz_hess_k
+  nnzh =  nnz_hess_obj + nnz_hess_yu
   return nnzh 
 end
-###########################################################################################
 
 function count_hess_nnz_coo_short(a          :: Gridap.FESpaces.GenericSparseMatrixAssembler,
                                   cell_id_yu :: Gridap.Arrays.IdentityVector{I}) where I
@@ -162,7 +181,8 @@ function fill_hess_coo_numeric!(I          :: Array{Ii,1},
                                 V          :: Array{Vi,1},
                                 a          :: Gridap.FESpaces.GenericSparseMatrixAssembler,
                                 cell_r_yu  :: T,
-                                cell_id_yu :: Gridap.Arrays.IdentityVector{Int64}) where {T <: AbstractArray, Ii <: Int, Vi <: AbstractFloat}
+                                cell_id_yu :: Gridap.Arrays.IdentityVector{Int64}
+                                ) where {T <: AbstractArray, Ii <: Int, Vi <: AbstractFloat}
   nini = 0
 
   cellmat_rc  = cell_r_yu
@@ -211,7 +231,8 @@ _fill_matrix_at_cell! may have a specific specialization
                                      I          :: Array{Ii,1},
                                      J          :: Array{Ii,1},
                                      V          :: Array{Vi,1},
-                                     rows,cols,vals,strategy) where {M, Ii <: Int, Vi <: AbstractFloat}
+                                     rows,cols,vals,strategy
+                                     ) where {M, Ii <: Int, Vi <: AbstractFloat}
   n = nini
   for (j, gidcol) in enumerate(cols)
     if gidcol > 0 && Gridap.FESpaces.col_mask(strategy, gidcol)
@@ -238,7 +259,8 @@ function struct_hess_coo_numeric!(I          :: Array{Ii,1},
                                   cell_id_yu :: Gridap.Arrays.IdentityVector{Int64};
                                   nfirst     :: Int = 0,
                                   cols_translate :: Int = 0,
-                                  rows_translate :: Int = 0) where {Ii <: Int, Vi <: AbstractFloat}
+                                  rows_translate :: Int = 0
+                                  ) where {Ii <: Int, Vi <: AbstractFloat}
   nini = nfirst
 
   cellidsrows = cell_id_yu
@@ -310,7 +332,8 @@ function vals_hess_coo_numeric!(V          :: Array{Vi,1},
                                 a          :: Gridap.FESpaces.GenericSparseMatrixAssembler,
                                 cell_r_yu  :: T,
                                 cell_id_yu :: Gridap.Arrays.IdentityVector{Int64};
-                                nfirst     :: Int = 0) where {T <: AbstractArray, Vi <: AbstractFloat}
+                                nfirst     :: Int = 0
+                                ) where {T <: AbstractArray, Vi <: AbstractFloat}
   nini = nfirst
 
   cellmat_rc  = cell_r_yu
@@ -356,7 +379,8 @@ _fill_matrix_at_cell! may have a specific specialization
 @inline function _vals_hess_at_cell!(::Type{M},
                                      nini   :: Int,
                                      V      :: Array{Vi,1},
-                                     rows,cols,vals,strategy) where {M, Vi <: AbstractFloat}
+                                     rows,cols,vals,strategy
+                                     ) where {M, Vi <: AbstractFloat}
   n = nini
   for (j, gidcol) in enumerate(cols)
     if gidcol > 0 && Gridap.FESpaces.col_mask(strategy, gidcol)
