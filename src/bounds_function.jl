@@ -172,8 +172,8 @@ Iterate for `k = 1` to `nfields` and switch `lfunc[k]` and `ufunc[k]` to vectors
 allocated in `lvar` and `uvar` in place starting from `nini + 1`.
 It returns nini + the number of allocations.
 """
-function _functions_to_vectors!(nini    :: Int, 
-                                nfields :: Int, 
+function _functions_to_vectors!(nini    :: Integer, 
+                                nfields :: Integer, 
                                 trian   :: Triangulation, 
                                 lfunc   :: Function, 
                                 ufunc   :: Function, 

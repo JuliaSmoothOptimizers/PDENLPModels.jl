@@ -36,7 +36,7 @@ end
 function count_hess_nnz_coo(a          :: Gridap.FESpaces.GenericSparseMatrixAssembler,
                             cell_r_yu  :: T,
                             cell_id_yu :: Gridap.Arrays.IdentityVector{I}
-                            ) where {T <: AbstractArray, I <: Int}
+                            ) where {T <: AbstractArray, I <: Integer}
 
   cellmat_rc  = cell_r_yu
   cellidsrows = cell_id_yu
@@ -186,7 +186,7 @@ function fill_hess_coo_numeric!(I          :: Array{Ii,1},
                                 a          :: Gridap.FESpaces.GenericSparseMatrixAssembler,
                                 cell_r_yu  :: T,
                                 cell_id_yu :: Gridap.Arrays.IdentityVector{Int64}
-                                ) where {T <: AbstractArray, Ii <: Int, Vi <: AbstractFloat}
+                                ) where {T <: AbstractArray, Ii <: Integer, Vi <: AbstractFloat}
   nini = 0
 
   cellmat_rc  = cell_r_yu
@@ -209,13 +209,13 @@ function fill_hess_coo_numeric!(I          :: Array{Ii,1},
 end
 
 @noinline function _fill_hess!(a    :: Type{M},
-                               nini :: Int,
+                               nini :: Integer,
                                I    :: Array{Ii,1},
                                J    :: Array{Ii,1},
                                V    :: Array{Vi,1},
                                rows_cache, cols_cache, vals_cache,
                                cell_rows,cell_cols,cell_vals,
-                               strategy) where {M, Ii <: Int, Vi <: AbstractFloat}
+                               strategy) where {M, Ii <: Integer, Vi <: AbstractFloat}
 
   n = nini
   for cell in 1:length(cell_cols)
@@ -236,7 +236,7 @@ _fill_matrix_at_cell! may have a specific specialization
                                      J          :: Array{Ii,1},
                                      V          :: Array{Vi,1},
                                      rows,cols,vals,strategy
-                                     ) where {M, Ii <: Int, Vi <: AbstractFloat}
+                                     ) where {M, Ii <: Integer, Vi <: AbstractFloat}
   n = nini
   for (j, gidcol) in enumerate(cols)
     if gidcol > 0 && Gridap.FESpaces.col_mask(strategy, gidcol)
@@ -261,10 +261,10 @@ function struct_hess_coo_numeric!(I          :: Array{Ii,1},
                                   J          :: Array{Ii,1},
                                   a          :: Gridap.FESpaces.GenericSparseMatrixAssembler,
                                   cell_id_yu :: Gridap.Arrays.IdentityVector{Int64};
-                                  nfirst     :: Int = 0,
-                                  cols_translate :: Int = 0,
-                                  rows_translate :: Int = 0
-                                  ) where {Ii <: Int, Vi <: AbstractFloat}
+                                  nfirst     :: Integer = 0,
+                                  cols_translate :: Integer = 0,
+                                  rows_translate :: Integer = 0
+                                  ) where {Ii <: Integer, Vi <: AbstractFloat}
   nini = nfirst
 
   cellidsrows = cell_id_yu
@@ -285,14 +285,14 @@ function struct_hess_coo_numeric!(I          :: Array{Ii,1},
 end
 
 @noinline function _struct_hess!(a    :: Type{M},
-                                 nini :: Int,
+                                 nini :: Integer,
                                  I    :: Array{Ii,1},
                                  J    :: Array{Ii,1},
                                  rows_cache, cols_cache,
                                  cell_rows,cell_cols,
                                  strategy,
                                  cols_translate,
-                                 rows_translate) where {M, Ii <: Int}
+                                 rows_translate) where {M, Ii <: Integer}
 
   n = nini
   for cell in 1:length(cell_cols)
@@ -312,7 +312,7 @@ _fill_matrix_at_cell! may have a specific specialization
                                       J          :: Array{Ii,1},
                                       rows,cols,strategy,
                                       cols_translate,
-                                      rows_translate) where {M, Ii <: Int}
+                                      rows_translate) where {M, Ii <: Integer}
   n = nini
   for (j, gidcol) in enumerate(cols)
     if gidcol > 0 && Gridap.FESpaces.col_mask(strategy, gidcol)
@@ -336,7 +336,7 @@ function vals_hess_coo_numeric!(V          :: Array{Vi,1},
                                 a          :: Gridap.FESpaces.GenericSparseMatrixAssembler,
                                 cell_r_yu  :: T,
                                 cell_id_yu :: Gridap.Arrays.IdentityVector{Int64};
-                                nfirst     :: Int = 0
+                                nfirst     :: Integer = 0
                                 ) where {T <: AbstractArray, Vi <: AbstractFloat}
   nini = nfirst
 
@@ -360,7 +360,7 @@ function vals_hess_coo_numeric!(V          :: Array{Vi,1},
 end
 
 @noinline function _vals_hess!(a      :: Type{M},
-                               nini   :: Int,
+                               nini   :: Integer,
                                V      :: Array{Vi,1},
                                rows_cache, cols_cache, vals_cache,
                                cell_rows,cell_cols,cell_vals,
@@ -381,7 +381,7 @@ https://github.com/gridap/Gridap.jl/blob/758a8620756e164ba0e6b83dc8dcbb278015b3d
 _fill_matrix_at_cell! may have a specific specialization
 """
 @inline function _vals_hess_at_cell!(::Type{M},
-                                     nini   :: Int,
+                                     nini   :: Integer,
                                      V      :: Array{Vi,1},
                                      rows,cols,vals,strategy
                                      ) where {M, Vi <: AbstractFloat}

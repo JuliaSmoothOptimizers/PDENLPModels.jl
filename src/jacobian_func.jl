@@ -170,7 +170,7 @@ function _from_terms_to_jacobian_vals!(op   :: AffineFEOperator,
                                        Ypde :: FESpace,
                                        Ycon :: FESpace,
                                        vals :: AbstractVector{T};
-                                       nfirst :: Int = 0) where T <: Number
+                                       nfirst :: Integer = 0) where T <: Number
   nini = length(get_matrix(op).nzval)
   vals[nfirst+1:nfirst + nini] .= get_matrix(op).nzval
   return nfirst + nini
@@ -248,7 +248,7 @@ function _from_terms_to_jacobian_vals!(op   :: Gridap.FESpaces.FEOperatorFromTer
                                        Ypde :: FESpace,
                                        Ycon :: FESpace,
                                        vals :: AbstractVector{T};
-                                       nfirst :: Int = 0) where T <: Number
+                                       nfirst :: Integer = 0) where T <: Number
 
   nvar   = length(x)
   nyu    = num_free_dofs(Y)

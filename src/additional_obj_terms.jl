@@ -300,7 +300,7 @@ struct MixedEnergyFETerm <: AbstractEnergyTerm
   trian    :: Triangulation
   quad     :: CellQuadrature
 
-  nparam   :: Int #number of discrete unkonwns.
+  nparam   :: Integer #number of discrete unkonwns.
     
   inde     :: Bool
   #ispace   :: FESpace
@@ -308,7 +308,7 @@ struct MixedEnergyFETerm <: AbstractEnergyTerm
   function MixedEnergyFETerm(f      :: Function,
                              trian  :: Triangulation,
                              quad   :: CellQuadrature,
-                             n      :: Int,
+                             n      :: Integer,
                              inde   :: Bool)
     @assert n > 0
     return new(f, trian, quad, n, inde)
@@ -318,7 +318,7 @@ end
 function MixedEnergyFETerm(f      :: Function,
                            trian  :: Triangulation,
                            quad   :: CellQuadrature,
-                           n      :: Int)
+                           n      :: Integer)
                            #ispace :: FESpace)
   inde = true
   #return MixedEnergyFETerm(f, trian, quad, n, inde, ispace)
@@ -608,7 +608,7 @@ struct ResidualEnergyFETerm <: AbstractEnergyTerm
   #lk       :: Function #regularizer
   #μ        :: Real
 
-  nparam   :: Int #number of discrete unkonwns.
+  nparam   :: Integer #number of discrete unkonwns.
 
   #?counters :: NLSCounters #init at NLSCounters()
 
@@ -616,7 +616,7 @@ struct ResidualEnergyFETerm <: AbstractEnergyTerm
                                 trian :: Triangulation,
                                 quad  :: CellQuadrature,
                                 Fk    :: Function,
-                                n     :: Int)
+                                n     :: Integer)
     @assert n > 0
     return new(Fyu, trian, quad, Fk, n)
   end
