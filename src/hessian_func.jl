@@ -107,8 +107,12 @@ function get_nnzh(tnrj :: T, op :: Gridap.FESpaces.FEOperatorFromTerms, Y, X, np
   
   nnz_hess_yu = 0
   for term in op.terms
+    if typeof(term) <: Gridap.FESpaces.FESourceFromIntegration
+      continue #assuming they don't depend on yu
+    end
+    @show "Debug", typeof(term), nnz_hess_obj, nnz_hess_yu
     a            = Gridap.FESpaces.SparseMatrixAssembler(Y, X)
-    ncells       = num_cells(term.trian)
+    ncells       = num_cells(term.trian) #Don't think it works for `BoundaryTriangulation`
     cell_id_yu   = Gridap.Arrays.IdentityVector(ncells)
     nnz_hess_yu += count_hess_nnz_coo_short(a, cell_id_yu)
 
