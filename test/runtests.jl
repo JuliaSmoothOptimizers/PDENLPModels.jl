@@ -1,7 +1,7 @@
 using BenchmarkTools, ForwardDiff, Gridap, LinearAlgebra, Printf, SparseArrays, Test
 using LineSearches: BackTracking
 #JSO
-using JSOSolvers, Krylov, NLPModels, NLPModelsIpopt
+using Krylov, NLPModels
 
 #PDENLPModels
 using PDENLPModels
@@ -16,11 +16,12 @@ include("unit-test.jl")
 
 #I. Test on unconstrained problems:
 #Elementary tests on an unconstrained problem
-@info "Unconstrained problem I"
+@info "Unconstrained problem I [Uses JSOSolvers.jl]"
+#using JSOSolvers
 include("test-unconstrained.jl")
 #Unconstrained optimization <=> Laplacian equation
-@info "Unconstrained problem II"
-include("test-unconstrained-2.jl")
+@info "Unconstrained problem II [Uses JSOSolvers.jl]"
+include("test-unconstrained-2.jl") #uses tron
 
 #II. Elementary tests on a PDE problem (no objective fct and no other constraints)
 #Nonlinear with mutli-field
