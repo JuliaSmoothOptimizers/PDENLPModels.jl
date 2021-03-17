@@ -662,8 +662,7 @@ function hess_coord!(nlp  :: GridapPDENLPModel,
   increment!(nlp, :neval_hess)
 
   nnzh_obj = get_nnzh(nlp.tnrj, nlp.Y, nlp.X, nlp.nparam, nlp.meta.nvar)
-  @show nnzh_obj, nlp.meta.nnzh, typeof(vals), eltype(x)
-  #hess_coord!(nlp, x, @view vals[1:nnzh_obj] ) #not defined for subarrays
+  #hess_coord!(nlp, x, @view vals[1:nnzh_obj] ) #not defined for subarrays?
   vals[1:nnzh_obj] .= hess_coord(nlp, x)
 
 #############################################################################
