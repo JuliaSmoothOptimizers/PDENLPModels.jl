@@ -497,7 +497,7 @@ function hess2(nlp :: GridapPDENLPModel,
   return tril(Hx)
 end
 ###########################################################################
-
+#### Tanj: IS THIS FUNCTION NECESSARY ????
 function hess(nlp :: GridapPDENLPModel, 
               x   :: AbstractVector{T},
               λ   :: AbstractVector{T};
@@ -547,13 +547,12 @@ end
 
 function hess_coo(nlp :: GridapPDENLPModel, 
                   op  :: Gridap.FESpaces.FEOperatorFromTerms,
-                  x   :: AbstractVector,
-                  λ   :: AbstractVector)
-  #Init the matrix:
-  mdofs = Gridap.FESpaces.num_free_dofs(nlp.X) + nlp.nparam
-  ndofs = Gridap.FESpaces.num_free_dofs(nlp.Y) + nlp.nparam
-  hess_lag  = spzeros(mdofs, ndofs)
-  #(I2 ,J2, V2) = ...
+                  x   :: AbstractVector{T},
+                  λ   :: AbstractVector) where T
+
+  nnzh_obj = get_nnzh(nlp.tnrj, nlp.Y, nlp.X, nlp.nparam, nlp.meta.nvar)
+  nnzh = nlp.meta.nnzh - nnzh_obj
+  (rows, cols, vals) = Vector{T}(undef, nnzh), Vector{T}(undef, nnzh), Vector{T}(undef, nnzh)
 
   κ, xyu = x[1 : nlp.nparam], x[nlp.nparam + 1 : nlp.meta.nvar]
   yu     = FEFunction(nlp.Y, xyu)
@@ -561,6 +560,7 @@ function hess_coo(nlp :: GridapPDENLPModel,
   cell_yu    = Gridap.FESpaces.get_cell_values(yu)
   cell_id_yu = Gridap.Arrays.IdentityVector(length(cell_yu))
 
+  nini = 0
   for term in op.terms
     if !(typeof(term) <: Union{Gridap.FESpaces.NonlinearFETermWithAutodiff, Gridap.FESpaces.NonlinearFETerm})
       continue
@@ -589,7 +589,10 @@ function hess_coo(nlp :: GridapPDENLPModel,
     #Assemble the matrix in the "good" space
     assem      = Gridap.FESpaces.SparseMatrixAssembler(nlp.Y, nlp.X)
     (I, J, V)  = assemble_hess(assem, cell_r_yu, cell_id_yu)
-    hess_lag  += sparse(I, J, V, mdofs, ndofs)
+    nn = length(V)
+    rows[nini+1:nini+nn] .= I
+    cols[nini+1:nini+nn] .= J
+    vals[nini+1:nini+nn] .= V
 
     #= What about extra parameters????
     if nlp.nparam > 0
@@ -607,7 +610,7 @@ function hess_coo(nlp :: GridapPDENLPModel,
     =#
   end
 
-  return findnz(hess_lag)
+  return (rows, cols, vals)
 end
 
 function hess_structure!(nlp :: GridapPDENLPModel, 
