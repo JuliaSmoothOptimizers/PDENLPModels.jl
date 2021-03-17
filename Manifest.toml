@@ -289,6 +289,12 @@ git-tree-sha1 = "b84ab8139afde82c7c65ba2b792fe12e01dd7307"
 uuid = "7d188eb4-7ad8-530c-ae41-71a32a6d4692"
 version = "0.3.3"
 
+[[JSOSolvers]]
+deps = ["Krylov", "LinearAlgebra", "LinearOperators", "Logging", "NLPModels", "NLPModelsModifiers", "Printf", "SolverTools"]
+git-tree-sha1 = "c7ca96552d4096098f7d5cf30958a78cbae218a6"
+uuid = "10dff2fc-5484-5881-a0e0-c90441020f8a"
+version = "0.5.0"
+
 [[Krylov]]
 deps = ["LinearAlgebra", "LinearOperators", "Printf", "SparseArrays"]
 git-tree-sha1 = "8ab2b2884381ef7709c02b0077aeef662203e6b5"
@@ -406,6 +412,18 @@ git-tree-sha1 = "2f45c1807e867e6f365d0332230bf02a03199c98"
 uuid = "a4795742-8479-5a88-8948-cc11e1c8c1a6"
 version = "0.14.0"
 
+[[NLPModelsIpopt]]
+deps = ["Ipopt", "NLPModels", "SolverTools"]
+git-tree-sha1 = "9d3eb9ea4aa4f6f398751baee7035a870009d490"
+uuid = "f4238b75-b362-5c4c-b852-0801c9a21d71"
+version = "0.6.0"
+
+[[NLPModelsModifiers]]
+deps = ["FastClosures", "LinearAlgebra", "LinearOperators", "NLPModels", "Printf", "SparseArrays"]
+git-tree-sha1 = "2ede3a8d4483da83c0283a6cde5edd478d7f6be0"
+uuid = "e01155f1-5c6f-4375-a9d8-616dd036575f"
+version = "0.1.0"
+
 [[NLSolversBase]]
 deps = ["DiffResults", "Distributed", "FiniteDiff", "ForwardDiff"]
 git-tree-sha1 = "39d6bc45e99c96e6995cbddac02877f9b61a1dd1"
@@ -521,6 +539,12 @@ uuid = "1a1011a3-84de-559e-8e89-a11a2f7dc383"
 
 [[Sockets]]
 uuid = "6462fe0b-24de-5631-8697-dd941f90decc"
+
+[[SolverTools]]
+deps = ["DataFrames", "JLD2", "LinearAlgebra", "LinearOperators", "NLPModels", "Printf"]
+git-tree-sha1 = "008ba30a486a7119ddf05eb9c69b9df88bf791dd"
+uuid = "b5612192-2639-5dc1-abfe-fbedd65fab29"
+version = "0.4.0"
 
 [[SortingAlgorithms]]
 deps = ["DataStructures", "Random", "Test"]
