@@ -566,10 +566,10 @@ function hess_coo(nlp :: GridapPDENLPModel,
       continue
     end
 
-    λf    = FEFunction(nlp.Xpde, λ)
-    cell_λf     = Gridap.FESpaces.get_cell_values(λf)
-    lfh  = CellField(nlp.Xpde, cell_λf)
-    _lfh = Gridap.FESpaces.restrict(lfh, term.trian) #This is where the term play a first role.
+    λf      = FEFunction(nlp.Xpde, λ)
+    cell_λf = Gridap.FESpaces.get_cell_values(λf)
+    lfh     = CellField(nlp.Xpde, cell_λf)
+    _lfh    = Gridap.FESpaces.restrict(lfh, term.trian) #This is where the term play a first role.
 
     function _cell_res_yu(cell)
       xfh  = CellField(nlp.Y, cell)
@@ -610,48 +610,43 @@ function hess_coo(nlp :: GridapPDENLPModel,
   return findnz(hess_lag)
 end
 
-#=
-function hess_structure!(nlp :: GridapPDENLPModel,
-                        rows :: AbstractVector{<: Integer},
-                        cols :: AbstractVector{<: Integer})
-  n = nlp.meta.nvar
-  @lencheck nlp.meta.nnzh rows cols
-  I = ((i,j) for i = 1:n, j = 1:n if i ≥ j) 
-  rows .= getindex.(I, 1)[:]
-  cols .= getindex.(I, 2)[:]
-  return rows, cols
-end
-=#
-###########################################################################################
-# The same as hess_obj_structure as it doesn't really depend on the function (just the spaces)
-#It is not true for the parameter part, but it is dense anyway
-function hess_structure(nlp :: GridapPDENLPModel)
-    
-  if nlp.nparam != 0
-    (I1, J1) = hess_k_obj_structure(nlp)
-    (I2, J2) = hess_yu_obj_structure(nlp)
-    return (vcat(I1, I2 .+ nlp.nparam), vcat(J1, J2 .+ nlp.nparam))
-  end
- 
-  return hess_yu_obj_structure(nlp)
-end
+function hess_structure!(nlp :: GridapPDENLPModel, 
+                         rows :: AbstractVector{<: Integer}, 
+                         cols :: AbstractVector{<: Integer})
 
-function hess_structure!(nlp  :: GridapPDENLPModel, 
-                         rows :: AbstractVector, 
-                         cols :: AbstractVector) 
-  nvals = length(rows)
-  @lencheck nvals cols
+  #nnzh_obj = get_nnzh(nlp.tnrj, nlp.Ypde, nlp.Xpde, nparam, nvar)
+  #hess_obj_structure!(nlp, @view rows[1:nnzh_obj], @view cols[1:nnzh_obj])
+  #################################################""
+  n, p = nlp.meta.nvar, nlp.nparam
+  nnz_hess_k = Int(p * (p + 1) / 2) + (n - p) * p
+  I = ((i,j) for i = 1:n, j = 1:p if j ≤ i)
+  rows[1:nnz_hess_k] .= getindex.(I, 1)[:]
+  cols[1:nnz_hess_k] .= getindex.(I, 2)[:]
 
-  nini = hess_k_obj_structure!(nlp, rows, cols)
-  nini = hess_yu_obj_structure!(nlp, rows, cols, nfirst = nini)
- 
-  if nvals != nini
-    @warn "hess_obj_structure!: Size of vals and number of assignements didn't match"
+  nini = hess_yu_obj_structure!(nlp, rows, cols, nfirst = nnz_hess_k)
+  #if nini != nnzh_obj
+  #  @warn "hess_(obj)_structure!: Size of vals and number of assignements didn't match"
+  #end
+  #################################################
+  
+  for term in nlp.op.terms
+    if !(typeof(term) <: Union{Gridap.FESpaces.NonlinearFETermWithAutodiff, Gridap.FESpaces.NonlinearFETerm})
+      continue
+    end
+
+    a = Gridap.FESpaces.SparseMatrixAssembler(nlp.Y, nlp.X)
+    ncells = num_cells(term.trian)
+    cell_id_yu = Gridap.Arrays.IdentityVector(ncells)
+  
+    nini = struct_hess_coo_numeric!(rows, cols, a, cell_id_yu, nfirst = nini, cols_translate = nlp.nparam, rows_translate = nlp.nparam)
   end
- 
-  return (rows, cols)
+
+  if nlp.meta.nnzh != nini
+    @warn "hess_structure!: Size of vals and number of assignements didn't match"
+  end
+
+  (rows, cols)
 end
-###########################################################################################
 
 function hess_coord!(nlp  :: GridapPDENLPModel,
                      x    :: AbstractVector,
@@ -661,16 +656,70 @@ function hess_coord!(nlp  :: GridapPDENLPModel,
   @lencheck nlp.meta.nvar x
   @lencheck nlp.meta.ncon λ
   @lencheck nlp.meta.nnzh vals
-  #increment!(nlp, :neval_hess)
-  #ℓ(x) = obj_weight * obj(nlp, x) + dot(cons(nlp, x), λ)
-  Hx = hess(nlp, x, λ) #ForwardDiff.hessian(ℓ, x)
-  k = 1
-  for j = 1 : nlp.meta.nvar
-    for i = j : nlp.meta.nvar
-      vals[k] = Hx[i, j]
-      k += 1
+  increment!(nlp, :neval_hess)
+
+  nnzh_obj = get_nnzh(nlp.tnrj, nlp.Y, nlp.X, nlp.nparam, nlp.meta.nvar)
+  hess_coord!(nlp, x, λ, @view vals[1:nnzh_obj] )
+
+#############################################################################
+  κ, xyu = x[1 : nlp.nparam], x[nlp.nparam + 1 : nlp.meta.nvar]
+  yu     = FEFunction(nlp.Y, xyu)
+
+  cell_yu    = Gridap.FESpaces.get_cell_values(yu)
+  cell_id_yu = Gridap.Arrays.IdentityVector(length(cell_yu)) #Is it?
+
+  nini = nnzh_obj
+  for term in op.terms
+    if !(typeof(term) <: Union{Gridap.FESpaces.NonlinearFETermWithAutodiff, Gridap.FESpaces.NonlinearFETerm})
+      continue
     end
+
+    λf      = FEFunction(nlp.Xpde, λ)
+    cell_λf = Gridap.FESpaces.get_cell_values(λf)
+    lfh     = CellField(nlp.Xpde, cell_λf)
+    _lfh    = Gridap.FESpaces.restrict(lfh, term.trian) #This is where the term play a first role.
+
+    function _cell_res_yu(cell)
+      xfh  = CellField(nlp.Y, cell)
+      _xfh = Gridap.FESpaces.restrict(xfh, term.trian)
+      
+      if length(κ) > 0
+        _res = integrate(term.res(κ, _xfh,_lfh), term.trian, term.quad)
+      else
+        _res = integrate(term.res(_xfh,_lfh), term.trian, term.quad)
+      end
+      lag = _res
+      return lag
+    end
+
+    ncells     = num_cells(term.trian)
+    cell_id_yu = Gridap.Arrays.IdentityVector(ncells)
+
+    #Compute the hessian with AD
+    cell_r_yu  = Gridap.Arrays.autodiff_array_hessian(_cell_res_yu, cell_yu, cell_id_yu)
+    #Assemble the matrix in the "good" space
+    assem      = Gridap.FESpaces.SparseMatrixAssembler(nlp.Y, nlp.X)
+    #(I, J, V)  = assemble_hess(assem, cell_r_yu, cell_id_yu)
+    nini = vals_hess_coo_numeric!(vals, assem, cell_r_yu, cell_id_yu, nfirst = nini)
+    #vals[nini+1:nini+length(V)] .= V
+    #nini += length(V)
+
+    #= What about extra parameters????
+    if nlp.nparam > 0
+      (I1, J1, V1) = _compute_hess_k_coo(nlp, nlp.tnrj, κ, xyu)
+      if obj_weight == one(eltype(x))
+        return (vcat(I1, I2 .+ nlp.nparam),
+                vcat(J1, J2 .+ nlp.nparam),
+                vcat(V1, V2))
+      else
+        return (vcat(I1, I2 .+ nlp.nparam),
+                vcat(J1, J2 .+ nlp.nparam),
+                vcat(obj_weight * V1, obj_weight * V2))
+      end
+    end
+    =#
   end
+#############################################################################
   return vals
 end
 
