@@ -659,7 +659,9 @@ function hess_coord!(nlp  :: GridapPDENLPModel,
   increment!(nlp, :neval_hess)
 
   nnzh_obj = get_nnzh(nlp.tnrj, nlp.Y, nlp.X, nlp.nparam, nlp.meta.nvar)
-  hess_coord!(nlp, x, λ, @view vals[1:nnzh_obj] )
+  @show nnzh_obj, nlp.meta.nnzh, typeof(vals), eltype(x)
+  #hess_coord!(nlp, x, @view vals[1:nnzh_obj] ) #not defined for subarrays
+  vals[1:nnzh_obj] .= hess_coord(nlp, x)
 
 #############################################################################
   κ, xyu = x[1 : nlp.nparam], x[nlp.nparam + 1 : nlp.meta.nvar]
@@ -669,7 +671,7 @@ function hess_coord!(nlp  :: GridapPDENLPModel,
   cell_id_yu = Gridap.Arrays.IdentityVector(length(cell_yu)) #Is it?
 
   nini = nnzh_obj
-  for term in op.terms
+  for term in nlp.op.terms
     if !(typeof(term) <: Union{Gridap.FESpaces.NonlinearFETermWithAutodiff, Gridap.FESpaces.NonlinearFETerm})
       continue
     end
@@ -692,8 +694,8 @@ function hess_coord!(nlp  :: GridapPDENLPModel,
       return lag
     end
 
-    ncells     = num_cells(term.trian)
-    cell_id_yu = Gridap.Arrays.IdentityVector(ncells)
+    #ncells     = num_cells(term.trian)
+    #cell_id_yu = Gridap.Arrays.IdentityVector(ncells)
 
     #Compute the hessian with AD
     cell_r_yu  = Gridap.Arrays.autodiff_array_hessian(_cell_res_yu, cell_yu, cell_id_yu)
