@@ -11,5 +11,5 @@
 [![](https://img.shields.io/badge/docs-dev-blue.svg)](https://tmigot.github.io/PDENLPModels.jl/dev)
 
 ```
-] add github.com/tmigot/PDENLPModels.jl
+] add github.com/tmigot/PDENLPModels.jl 
 ```
