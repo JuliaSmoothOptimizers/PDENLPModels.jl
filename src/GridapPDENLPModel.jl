@@ -392,7 +392,7 @@ function hess_coord!(nlp  :: GridapPDENLPModel,
                      obj_weight :: Real = one(eltype(x)))
   @lencheck nlp.meta.nvar x
   #@lencheck nlp.meta.nnzh vals #we trust the length of vals
-  #increment!(nlp, :neval_hess)
+  increment!(nlp, :neval_hess)
   
   κ, xyu = x[1 : nlp.nparam], x[nlp.nparam + 1 : nlp.meta.nvar]
   yu     = FEFunction(nlp.Y, xyu)
@@ -662,8 +662,8 @@ function hess_coord!(nlp  :: GridapPDENLPModel,
   increment!(nlp, :neval_hess)
 
   nnzh_obj = get_nnzh(nlp.tnrj, nlp.Y, nlp.X, nlp.nparam, nlp.meta.nvar)
-  #hess_coord!(nlp, x, @view vals[1:nnzh_obj] ) #not defined for subarrays?
-  vals[1:nnzh_obj] .= hess_coord(nlp, x)
+  hess_coord!(nlp, x, @view vals[1:nnzh_obj] )
+  #vals[1:nnzh_obj] .= hess_coord(nlp, x) #TO BE REMOVED IF THAT WORK
 
 #############################################################################
   κ, xyu = x[1 : nlp.nparam], x[nlp.nparam + 1 : nlp.meta.nvar]

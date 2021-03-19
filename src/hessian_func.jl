@@ -18,7 +18,7 @@ https://github.com/gridap/Gridap.jl/blob/758a8620756e164ba0e6b83dc8dcbb278015b3d
 function assemble_hess(a          :: Gridap.FESpaces.GenericSparseMatrixAssembler,
                        cell_r_yu  :: T,
                        cell_id_yu :: Gridap.Arrays.IdentityVector{Int64}
-                       ) where T <: AbstractArray
+                       ) where T <: AbstractVector
 
   #Counts the nnz for the lower triangular.
   n = count_hess_nnz_coo(a, cell_r_yu, cell_id_yu)
@@ -180,13 +180,13 @@ end
   n
 end
 
-function fill_hess_coo_numeric!(I          :: Array{Ii,1},
-                                J          :: Array{Ii,1},
-                                V          :: Array{Vi,1},
+function fill_hess_coo_numeric!(I          :: AbstractVector{Ii},
+                                J          :: AbstractVector{Ii},
+                                V          :: AbstractVector{Vi},
                                 a          :: Gridap.FESpaces.GenericSparseMatrixAssembler,
                                 cell_r_yu  :: T,
                                 cell_id_yu :: Gridap.Arrays.IdentityVector{Int64}
-                                ) where {T <: AbstractArray, Ii <: Integer, Vi <: AbstractFloat}
+                                ) where {T <: AbstractVector, Ii <: Integer, Vi <: AbstractFloat}
   nini = 0
 
   cellmat_rc  = cell_r_yu
@@ -210,9 +210,9 @@ end
 
 @noinline function _fill_hess!(a    :: Type{M},
                                nini :: Integer,
-                               I    :: Array{Ii,1},
-                               J    :: Array{Ii,1},
-                               V    :: Array{Vi,1},
+                               I    :: AbstractVector{Ii},
+                               J    :: AbstractVector{Ii},
+                               V    :: AbstractVector{Vi},
                                rows_cache, cols_cache, vals_cache,
                                cell_rows,cell_cols,cell_vals,
                                strategy) where {M, Ii <: Integer, Vi <: AbstractFloat}
@@ -231,10 +231,11 @@ end
 https://github.com/gridap/Gridap.jl/blob/758a8620756e164ba0e6b83dc8dcbb278015b3d9/src/FESpaces/SparseMatrixAssemblers.jl#L463
 _fill_matrix_at_cell! may have a specific specialization
 """
-@inline function _fill_hess_at_cell!(::Type{M},nini,
-                                     I          :: Array{Ii,1},
-                                     J          :: Array{Ii,1},
-                                     V          :: Array{Vi,1},
+@inline function _fill_hess_at_cell!(::Type{M},
+                                     nini,
+                                     I          :: AbstractVector{Ii},
+                                     J          :: AbstractVector{Ii},
+                                     V          :: AbstractVector{Vi},
                                      rows,cols,vals,strategy
                                      ) where {M, Ii <: Integer, Vi <: AbstractFloat}
   n = nini
@@ -257,8 +258,8 @@ _fill_matrix_at_cell! may have a specific specialization
   n
 end
 
-function struct_hess_coo_numeric!(I          :: Array{Ii,1},
-                                  J          :: Array{Ii,1},
+function struct_hess_coo_numeric!(I          :: AbstractVector{Ii},
+                                  J          :: AbstractVector{Ii},
                                   a          :: Gridap.FESpaces.GenericSparseMatrixAssembler,
                                   cell_id_yu :: Gridap.Arrays.IdentityVector{Int64};
                                   nfirst     :: Integer = 0,
@@ -286,8 +287,8 @@ end
 
 @noinline function _struct_hess!(a    :: Type{M},
                                  nini :: Integer,
-                                 I    :: Array{Ii,1},
-                                 J    :: Array{Ii,1},
+                                 I    :: AbstractVector{Ii},
+                                 J    :: AbstractVector{Ii},
                                  rows_cache, cols_cache,
                                  cell_rows,cell_cols,
                                  strategy,
@@ -308,8 +309,8 @@ https://github.com/gridap/Gridap.jl/blob/758a8620756e164ba0e6b83dc8dcbb278015b3d
 _fill_matrix_at_cell! may have a specific specialization
 """
 @inline function _struct_hess_at_cell!(::Type{M},nini,
-                                      I          :: Array{Ii,1},
-                                      J          :: Array{Ii,1},
+                                      I          :: AbstractVector{Ii},
+                                      J          :: AbstractVector{Ii},
                                       rows,cols,strategy,
                                       cols_translate,
                                       rows_translate) where {M, Ii <: Integer}
@@ -332,12 +333,12 @@ _fill_matrix_at_cell! may have a specific specialization
   n
 end
 
-function vals_hess_coo_numeric!(V          :: Array{Vi,1},
+function vals_hess_coo_numeric!(V          :: AbstractVector{Vi},
                                 a          :: Gridap.FESpaces.GenericSparseMatrixAssembler,
                                 cell_r_yu  :: T,
                                 cell_id_yu :: Gridap.Arrays.IdentityVector{Int64};
                                 nfirst     :: Integer = 0
-                                ) where {T <: AbstractArray, Vi <: AbstractFloat}
+                                ) where {T <: AbstractVector, Vi <: AbstractFloat}
   nini = nfirst
 
   cellmat_rc  = cell_r_yu
@@ -361,7 +362,7 @@ end
 
 @noinline function _vals_hess!(a      :: Type{M},
                                nini   :: Integer,
-                               V      :: Array{Vi,1},
+                               V      :: AbstractVector{Vi},
                                rows_cache, cols_cache, vals_cache,
                                cell_rows,cell_cols,cell_vals,
                                strategy) where {M, Vi <: AbstractFloat}
@@ -382,7 +383,7 @@ _fill_matrix_at_cell! may have a specific specialization
 """
 @inline function _vals_hess_at_cell!(::Type{M},
                                      nini   :: Integer,
-                                     V      :: Array{Vi,1},
+                                     V      :: AbstractVector{Vi},
                                      rows,cols,vals,strategy
                                      ) where {M, Vi <: AbstractFloat}
   n = nini
