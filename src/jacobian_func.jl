@@ -519,7 +519,7 @@ function _jac_from_term_to_terms_id!(term  :: Gridap.FESpaces.FESource,
 
   nothing
 end
-
+#=
 using ForwardDiff
 import Gridap.Arrays.kernel_cache
 import Gridap.Arrays.apply_kernel!
@@ -559,6 +559,7 @@ function autodiff_array_jacobian2(a,i_to_x,m,j_to_i)
   Gridap.Arrays.apply(k,j_to_f,j_to_x)
 
 end
+=#
 
 function _jac_from_term_to_terms_u!(term :: Union{Gridap.FESpaces.NonlinearFETermWithAutodiff,Gridap.FESpaces.NonlinearFETerm},
                                     κ    :: AbstractVector,
@@ -583,14 +584,16 @@ function _jac_from_term_to_terms_u!(term :: Union{Gridap.FESpaces.NonlinearFETer
    end
  end
 
-  #cellvals_u = Gridap.FESpaces.autodiff_cell_jacobian_from_residual(uh_to_cell_residual, uh, cellids)
+  cellvals_u = Gridap.FESpaces.autodiff_cell_jacobian_from_residual(uh_to_cell_residual, uh, cellids)
   ###########
+  #=
   U = Gridap.FESpaces.get_fe_space(uh)
   cell_u_to_cell_residual = Gridap.FESpaces._change_argument_to_cell_u(uh_to_cell_residual,U)
   cell_u = Gridap.FESpaces.get_cell_values(uh)
   #@show size(cell_u[1])
   cell_j = autodiff_array_jacobian2(cell_u_to_cell_residual, cell_u, 4, cellids)
   cellvals_u = cell_j
+  =#
   ##########
 
   Gridap.FESpaces._push_matrix_contribution!(w, r, c, cellvals_u, cellids)
