@@ -2,3 +2,5 @@ Manifest.toml
 *.vtu
 launch.json
 pluto/*
+pluto/data/*
+bench/*
