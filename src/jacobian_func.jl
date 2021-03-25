@@ -269,7 +269,7 @@ function _from_terms_to_jacobian_vals!(op   :: Gridap.FESpaces.FEOperatorFromTer
 
   for term in op.terms
 
-    Main.PDENLPModels._jac_from_term_to_terms!(term, κ, yu, yh, uh,
+    _jac_from_term_to_terms!(term, κ, yu, yh, uh,
                                   dyu, dy, du, v,
                                   w,  r,  c,
                                   wu, ru, cu,
@@ -520,6 +520,46 @@ function _jac_from_term_to_terms_id!(term  :: Gridap.FESpaces.FESource,
   nothing
 end
 
+using ForwardDiff
+import Gridap.Arrays.kernel_cache
+import Gridap.Arrays.apply_kernel!
+struct ForwardDiffJacobianKernel2 <: Gridap.Arrays.Kernel
+m
+end
+function kernel_cache(k::ForwardDiffJacobianKernel2,f,x)
+  cfg = ForwardDiff.JacobianConfig(nothing, x, ForwardDiff.Chunk{length(x)}())
+  n = length(x)
+  m = k.m
+  j = zeros(eltype(x),m,n)
+  (j, cfg)
+end
+
+@inline function apply_kernel!(cache,k::ForwardDiffJacobianKernel2,f,x)
+  j, cfg = cache
+  #@warn size(j,1) != length(x) #@notimplemenetdif
+  #@warn size(j,2) != length(x) #@notimplemenetdif
+  @show j, size(j)
+  #@show ForwardDiff.jacobian(f,x, cfg = cfg)
+  ForwardDiff.jacobian!(j,f,x,cfg)
+  j
+end
+
+function autodiff_array_jacobian2(a,i_to_x,m,j_to_i)
+
+  i_to_xdual = Gridap.Arrays.apply(i_to_x) do x
+    cfg = ForwardDiff.JacobianConfig(nothing, x, ForwardDiff.Chunk{length(x)}())
+    xdual = cfg.duals
+    xdual
+  end
+
+  j_to_f = Gridap.Arrays.to_array_of_functions(a,i_to_xdual,j_to_i)
+  j_to_x = Gridap.Arrays.reindex(i_to_x,j_to_i)
+
+  k = ForwardDiffJacobianKernel2(m)
+  Gridap.Arrays.apply(k,j_to_f,j_to_x)
+
+end
+
 function _jac_from_term_to_terms_u!(term :: Union{Gridap.FESpaces.NonlinearFETermWithAutodiff,Gridap.FESpaces.NonlinearFETerm},
                                     κ    :: AbstractVector,
                                     yh   :: FEFunctionType,
@@ -543,7 +583,15 @@ function _jac_from_term_to_terms_u!(term :: Union{Gridap.FESpaces.NonlinearFETer
    end
  end
 
-  cellvals_u = Gridap.FESpaces.autodiff_cell_jacobian_from_residual(uh_to_cell_residual, uh, cellids)
+  #cellvals_u = Gridap.FESpaces.autodiff_cell_jacobian_from_residual(uh_to_cell_residual, uh, cellids)
+  ###########
+  U = Gridap.FESpaces.get_fe_space(uh)
+  cell_u_to_cell_residual = Gridap.FESpaces._change_argument_to_cell_u(uh_to_cell_residual,U)
+  cell_u = Gridap.FESpaces.get_cell_values(uh)
+  #@show size(cell_u[1])
+  cell_j = autodiff_array_jacobian2(cell_u_to_cell_residual, cell_u, 4, cellids)
+  cellvals_u = cell_j
+  ##########
 
   Gridap.FESpaces._push_matrix_contribution!(w, r, c, cellvals_u, cellids)
 
