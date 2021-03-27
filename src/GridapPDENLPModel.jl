@@ -631,17 +631,18 @@ function hess_structure!(nlp :: GridapPDENLPModel,
   #  @warn "hess_(obj)_structure!: Size of vals and number of assignements didn't match"
   #end
   #################################################
-  
-  for term in nlp.op.terms
-    if !(typeof(term) <: Union{Gridap.FESpaces.NonlinearFETermWithAutodiff, Gridap.FESpaces.NonlinearFETerm})
-      continue
-    end
+  if nlp.meta.ncon > 0
+    for term in nlp.op.terms
+      if !(typeof(term) <: Union{Gridap.FESpaces.NonlinearFETermWithAutodiff, Gridap.FESpaces.NonlinearFETerm})
+        continue
+      end
 
-    a = Gridap.FESpaces.SparseMatrixAssembler(nlp.Y, nlp.X)
-    ncells = num_cells(term.trian)
-    cell_id_yu = Gridap.Arrays.IdentityVector(ncells)
-  
-    nini = struct_hess_coo_numeric!(rows, cols, a, cell_id_yu, nfirst = nini, cols_translate = nlp.nparam, rows_translate = nlp.nparam)
+      a = Gridap.FESpaces.SparseMatrixAssembler(nlp.Y, nlp.X)
+      ncells = num_cells(term.trian)
+      cell_id_yu = Gridap.Arrays.IdentityVector(ncells)
+    
+      nini = struct_hess_coo_numeric!(rows, cols, a, cell_id_yu, nfirst = nini, cols_translate = nlp.nparam, rows_translate = nlp.nparam)
+    end
   end
 
   if nlp.meta.nnzh != nini
