@@ -66,6 +66,9 @@ png("test")
 using Gridap, PDENLPModels
 
 function sis_gridap(x0, n, T)
+    kp(x) = 1.01
+    kr(x) = 2.03
+
     model = CartesianDiscreteModel((0,T),n)
 
     labels = get_face_labeling(model)
@@ -79,10 +82,12 @@ function sis_gridap(x0, n, T)
     U = TrialFESpace(V,uD0)
     =#
 
-    Xcon = TestFESpace(
+    Vcon = TestFESpace(
             reffe=:Lagrangian, order=1, valuetype=Float64,
-            conformity=:H1, model=model)
-    Ycon = TrialFESpace(Xcon)
+            conformity=:L2, model=model)
+    Ucon = TrialFESpace(Vcon)
+    Xcon = MultiFieldFESpace([Vcon])
+    Ycon = MultiFieldFESpace([Ucon])
 
     function f(yu) #:: Union{Gridap.MultiField.MultiFieldFEFunction, Gridap.CellData.GenericCellField}
         cf, pf, uf = yu
@@ -103,27 +108,35 @@ function sis_gridap(x0, n, T)
 
     @law conv(u,∇u) = (∇u ⋅one(∇u))⊙u
     c(u,v) = conv(v,∇(u)) #v⊙conv(u,∇(u))
-    kp(x) = 1.01
-    kr(x) = 2.03
+    function res_pde_nl(yu,v)
+        cf, pf, uf = yu
+        p, q = v
+        #eq. (2) page 3
+        c(cf, p) + c(pf, q)
+    end
     function res_pde(yu,v)
         cf, pf, uf = yu
         p, q = v
         #eq. (2) page 3
-        c(cf, p) + c(pf, q) + p*pf + q*cf #c(cf, p) + c(pf, q) - p * ( kp * pf * (1. - cf) - kr * cf * (1. - cf - pf) ) + q * ( uf * kr * cf * (1. - cf - pf) - kp * pf * pf )
+        - p * ( kp * pf * (1. - cf) - kr * cf * (1. - cf - pf) ) + q * ( uf * kr * cf * (1. - cf - pf) - kp * pf * pf )
     end
 
     trian = Triangulation(model)
     degree = 1
     quad = CellQuadrature(trian,degree)
+    t_Ω_nl = FETerm(res_pde_nl,trian,quad)
     t_Ω = FETerm(res_pde,trian,quad)
-    Y = MultiFieldFESpace([UI, US, Ycon])
-    op_sir = FEOperator(Ypde,Xpde,t_Ω) #FEOperator(Ypde,Xpde,t_Ω)
+    Y = MultiFieldFESpace([UI, US, Ucon])
+    op_sir = FEOperator(Ypde,Xpde,t_Ω_nl)#,t_Ω) #FEOperator(Ypde,Xpde,t_Ω)
 
     xin = zeros(Gridap.FESpaces.num_free_dofs(Y))
     nlp = GridapPDENLPModel(xin, f, trian, quad, Ypde, Ycon, Xpde, Xcon, op_sir) 
     return nlp
 end
-
+n = 10
+nlp = sis_gridap(x0, n, T)
+xr = rand(nlp.meta.nvar)
+jac(nlp, xr)
 ################################################################
 # Testing:
 using NLPModelsTest, Test
