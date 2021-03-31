@@ -65,7 +65,7 @@ png("test")
 # Using Gridap and PDENLPModels
 using Gridap, PDENLPModels
 
-function sis_gridap(x0, n, a, b, T)
+function dynamic_sir_gridap(x0, n,  T)
     model = CartesianDiscreteModel((0,T),n)
 
     labels = get_face_labeling(model)
@@ -93,17 +93,23 @@ function sis_gridap(x0, n, a, b, T)
 
     @law conv(u,∇u) = (∇u ⋅one(∇u))⊙u
     c(u,v) = conv(v,∇(u)) #v⊙conv(u,∇(u))
+    function res_pde_nl(yu,v)
+        I, S, bf, cf = yu
+        p, q = v
+        c(I, p) + c(S, q)
+    end
     function res_pde(yu,v)
         I, S, bf, cf = yu
         p, q = v
-        c(I, p) + c(S, q) - p * ( bf * S * I - cf * I ) + q * bf * S * I
+        - p * ( bf * S * I - cf * I ) + q * bf * S * I
     end
 
     trian = Triangulation(model)
     degree = 1
     quad = CellQuadrature(trian,degree)
+    t_Ω_nl = FETerm(res_pde_nl,trian,quad)
     t_Ω = FETerm(res_pde,trian,quad)
-    op_sir = FEOperator(Ypde,Xpde,t_Ω)
+    op_sir = FEOperator(Ypde,Xpde,t_Ω_nl,t_Ω)
 
     Xbcon = TestFESpace(
             reffe=:Lagrangian, order=1, valuetype=Float64,
@@ -141,7 +147,7 @@ kmax = 6 #beyond is tough
 for k=1:kmax
     local sol_Ih, sol_Sh, h, n, nlp
     n = 10^k
-    nlp = sis_gridap(x0, n, a, b, T)
+    nlp = dynamic_sir_gridap(x0, n, T)
     h = T/n
     sol_Ih = [solI(t) for t=h:h:T]
     sol_Sh = [solS(t) for t=h:h:T]
@@ -161,24 +167,14 @@ end
 
 
 n = 10
-nlp = sis_gridap(x0, n, a, b, T)
+nlp = dynamic_sir_gridap(x0, n, T)
 xr = rand(nlp.meta.nvar)
-#there are no objective function here
 @test obj(nlp, nlp.meta.x0) == 2.5 #:-)
 
 #check derivatives
 @test gradient_check(nlp, x = xr, atol = atol, rtol = rtol) == Dict{Tuple{Int64,Int64},Float64}()
-#@test jacobian_check(nlp, x = xr, atol = atol, rtol = rtol) == Dict{Tuple{Int64,Int64},Float64}()
-#Issue with the jacobian here!!!
-# Why not: Gridap.FESpaces.get_cell_basis(Ycon) ?
+@test jacobian_check(nlp, x = xr, atol = atol, rtol = rtol) == Dict{Tuple{Int64,Int64},Float64}()
 ymp = hessian_check(nlp, x = xr, atol = atol, rtol = rtol)
 @test !any(x -> x!=Dict{Tuple{Int64,Int64},Float64}(), values(ymp))
-#ymp2 = hessian_check_from_grad(nlp, x = xr, atol = atol, rtol = rtol) #uses the jacobian
-#@test !any(x -> x!=Dict{Tuple{Int64,Int64},Float64}(), values(ymp2))
-
-#=
-#This is not working:
-@show "Tanj: quick test"
-jac(nlp, nlp.meta.x0)
-@show "ouf..."
-=#
+ymp2 = hessian_check_from_grad(nlp, x = xr, atol = atol, rtol = rtol) #uses the jacobian
+@test !any(x -> x!=Dict{Tuple{Int64,Int64},Float64}(), values(ymp2))

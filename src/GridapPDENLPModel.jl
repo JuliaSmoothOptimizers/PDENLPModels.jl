@@ -552,7 +552,7 @@ function hess_coo(nlp :: GridapPDENLPModel,
 
   nnzh_obj = get_nnzh(nlp.tnrj, nlp.Y, nlp.X, nlp.nparam, nlp.meta.nvar)
   nnzh = nlp.meta.nnzh - nnzh_obj
-  (rows, cols, vals) = Vector{T}(undef, nnzh), Vector{T}(undef, nnzh), Vector{T}(undef, nnzh)
+  (rows, cols, vals) = Vector{Int}(undef, nnzh), Vector{Int}(undef, nnzh), Vector{T}(undef, nnzh)
 
   κ, xyu = x[1 : nlp.nparam], x[nlp.nparam + 1 : nlp.meta.nvar]
   yu     = FEFunction(nlp.Y, xyu)
@@ -593,6 +593,8 @@ function hess_coo(nlp :: GridapPDENLPModel,
     rows[nini+1:nini+nn] .= I
     cols[nini+1:nini+nn] .= J
     vals[nini+1:nini+nn] .= V
+
+    nini += nn
 
     #= What about extra parameters????
     if nlp.nparam > 0

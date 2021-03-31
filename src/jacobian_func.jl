@@ -635,34 +635,9 @@ function _jac_from_term_to_terms_y!(term :: Gridap.FESpaces.NonlinearFETermWithA
 
   _v  = restrict(v,  term.trian)
   #_uh = (uh == nothing) ? Array{Gridap.CellData.GenericCellField{true,()}}(undef,0) : restrict(uh, term.trian)
-
-  cellids  = Gridap.FESpaces.get_cell_id(term)
-  #=
-  if length(κ) > 0 && uh != nothing
-     _uh = restrict(uh, term.trian)
-     function yh_to_cell_residual(yf)
-       _yf = Gridap.FESpaces.restrict(yf, term.trian)
-       integrate(term.res(vcat(_yf,_uh), κ, _v), term.trian, term.quad)
-     end
-  elseif length(κ) > 0 #&& uh == nothing
-     function yh_to_cell_residual(yf)
-       _yf = Gridap.FESpaces.restrict(yf, term.trian)
-       integrate(term.res(_yf, κ,_v), term.trian, term.quad)
-     end
-  elseif length(κ) == 0 && uh == nothing
-    function yh_to_cell_residual(yf)
-      _yf = Gridap.FESpaces.restrict(yf, term.trian)
-      integrate(term.res(_yf,_v), term.trian, term.quad)
-    end
-  else #length(κ) == 0 && uh == nothing
-     _uh = restrict(uh, term.trian)
-     function yh_to_cell_residual(yf)
-       _yf = Gridap.FESpaces.restrict(yf, term.trian)
-       integrate(term.res(vcat(_yf,_uh),_v), term.trian, term.quad)
-     end
-  end
-  =#
   _uh = (uh != nothing) ? restrict(uh, term.trian) : nothing
+  cellids  = Gridap.FESpaces.get_cell_id(term)
+  
   function yh_to_cell_residual(yf) #Tanj: improved solution is to declare the function outside
     _yf = Gridap.FESpaces.restrict(yf, term.trian)
     if length(κ) > 0 && uh != nothing
@@ -671,7 +646,7 @@ function _jac_from_term_to_terms_y!(term :: Gridap.FESpaces.NonlinearFETermWithA
       return integrate(term.res(κ, _yf, _v), term.trian, term.quad)
     elseif length(κ) == 0 && uh == nothing
       return integrate(term.res(_yf,_v), term.trian, term.quad)
-    else #length(κ) == 0 && uh == nothing
+    else #length(κ) == 0 && uh != nothing
       return integrate(term.res(vcat(_yf,_uh),_v), term.trian, term.quad)
     end
   end
