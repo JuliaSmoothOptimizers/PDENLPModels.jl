@@ -71,7 +71,9 @@ function poissonBoltzman2d(; n :: Int = 100)
     t_Ω = FETerm(res,trian,quad)
     op = FEOperator(Y, Xpde, t_Ω)
 
-    nlp = GridapPDENLPModel(f, trian, quad, Ypde, Ycon, Xpde, Xcon, op, name = "poissonBoltzman2d")
+    Y = MultiFieldFESpace([Ypde, Ycon])
+    xin = zeros(Gridap.FESpaces.num_free_dofs(Y))
+    nlp = GridapPDENLPModel(xin, f, trian, quad, Ypde, Ycon, Xpde, Xcon, op, name = "poissonBoltzman2d")
 
     return nlp
 end
