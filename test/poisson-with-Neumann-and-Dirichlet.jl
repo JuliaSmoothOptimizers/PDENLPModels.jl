@@ -60,7 +60,11 @@ function _poissonwithNeumannandDirichlet(;udc = false)
 
     -v*h
   end
-  topt_Γ = FETerm(res_Γ, btrian, bquad)#FESource(res_Γ, btrian, bquad)
+  function res_Γs(v)
+    v*h #careful to the sign
+  end
+  topt_Γ = FESource(res_Γs, btrian, bquad) #FETerm(res_Γ, btrian, bquad)#FESource(res_Γs, btrian, bquad)
+  #If we use a FETerm here, there is an issue with get_nnz.
 
   Ypde = Ug
   Xpde = V0

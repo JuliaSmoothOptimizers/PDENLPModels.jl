@@ -1,5 +1,5 @@
 using BenchmarkTools, ForwardDiff, Gridap, LinearAlgebra, Printf, SparseArrays, Test
-
+using LineSearches: BackTracking
 #JSO
 using JSOSolvers, Krylov, NLPModels, NLPModelsIpopt
 
@@ -16,26 +16,35 @@ include("unit-test.jl")
 
 #I. Test on unconstrained problems:
 #Elementary tests on an unconstrained problem
+@info "Unconstrained problem I"
+#using JSOSolvers
 include("test-unconstrained.jl")
 #Unconstrained optimization <=> Laplacian equation
-include("test-unconstrained-2.jl")
+@info "Unconstrained problem II"
+include("test-unconstrained-2.jl") #uses tron
 
 #II. Elementary tests on a PDE problem (no objective fct and no other constraints)
 #Nonlinear with mutli-field
+@info "PDE-only incompressible Navier-Stokes"
 include("pde-only-incompressible-NS.jl")
 
 #III. Optimization problem with PDE constraints:
 #Mixed boundary conditions, and a source term.
+@info "Poisson-equation with mixed boundary conditions [add model - work locally]"
 #include("poisson-with-Neumann-and-Dirichlet.jl") #Peut être décommenter
-#include("1d-Burger-example.jl") #Peut être décommenter
+@info "1d Burger's equation"
+include("1d-Burger-example.jl")
 if false
   include("code_issue.jl")
 end
 
 #IV. Mixed optimization problem with PDE-constraints
 #Objective only on the parameter
-include("poisson-with-parameter-optim.jl")
+@info "Parameter optimization with Poisson-equation [broken] l.77"
+#include("poisson-with-parameter-optim.jl") #hessian: "affine operator * k"
 #Mixed objectives with no intertwined terms
+@info "Separable parameter/function optimization with Poisson-equation"
 include("poisson-with-mixed-optim.jl")
 #Mixed objectives with intertwined terms
+@info "Intertwined parameter/function optimization with Poisson-equation"
 include("poisson-with-true-mixed-optim.jl") #TODO check the hessian computation

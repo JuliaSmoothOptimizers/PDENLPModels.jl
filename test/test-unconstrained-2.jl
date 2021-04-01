@@ -92,6 +92,8 @@ function _test_unconstrained2(;udc = false)
   @time _fxtron  = obj(nlp, _tron.solution)
   @time _ngxtron = norm(grad(nlp, _tron.solution))
 
+  @time _stats = ipopt(nlp, x0 = copy(x1))
+
   true
 end
 
