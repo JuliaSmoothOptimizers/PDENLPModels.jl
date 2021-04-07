@@ -1,8 +1,8 @@
 function _poissonwithNeumannandDirichlet(;udc = false)
-  #model = DiscreteModelFromFile("https://github.com/gridap/Tutorials/tree/master/models/model.json")
-  model = DiscreteModelFromFile("test/models/model.json")
-
-  #writevtk(model,"model")
+  n = 10
+  domain = (0,1,0,1)
+  partition = (n,n)
+  model = CartesianDiscreteModel(domain,partition)
 
   V0 = TestFESpace(
       reffe=:Lagrangian, order=1, valuetype=Float64,
