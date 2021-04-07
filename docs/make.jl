@@ -4,7 +4,7 @@ using Printf
 using PDENLPModels
 
 # Add index.md file as introduction to navigation menu
-pages = ["Introduction"=> "index.md",
+pages = ["Introduction" => "index.md",
          "PDENLPModels Progress" => "nlpmodels.md",
          "Krylov.jl to solve linear PDE" => "KrylovforLinearPDE.md"]
 
