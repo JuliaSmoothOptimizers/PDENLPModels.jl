@@ -188,9 +188,8 @@ function _functions_to_vectors!(nini    :: Integer,
     cell_l = apply(x -> lfunc(x)[i], cell_xm) #this is a vector of size num_cells(trian)
     cell_u = apply(x -> ufunc(x)[i], cell_xm) #this is a vector of size num_cells(trian)
 
-    #Warning: `interpolate(fs::SingleFieldFESpace, object)` is deprecated, use `interpolate(object, fs::SingleFieldFESpace)` instead.
-    lvaru = get_free_values(Gridap.FESpaces.interpolate(Y, cell_l))
-    uvaru = get_free_values(Gridap.FESpaces.interpolate(Y, cell_u))
+    lvaru = get_free_values(Gridap.FESpaces.interpolate(cell_l, Y))
+    uvaru = get_free_values(Gridap.FESpaces.interpolate(cell_u, Y))
     new = length(lvaru)
 
     @assert new == length(uvaru)
