@@ -1064,7 +1064,3 @@ function _from_terms_to_hprod!(op  :: Gridap.FESpaces.FEOperatorFromTerms,
 
   return Hv
 end
-
-include("hess_difficulty.jl")
-
-include("additional_functions.jl")

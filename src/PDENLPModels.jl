@@ -40,12 +40,12 @@ module PDENLPModels
   _fespace_to_multifieldfespace(Y :: FESpace) = MultiFieldFESpace([Y])
 
   #Additional modeling structures for the objective function.
-  include("hessian_func.jl")
+  include("hessian_functions.jl")
   include("additional_obj_terms.jl")
   #Set of practical functions: _split_FEFunction, _split_vector
   include("util_functions.jl")
   #Additional functions for the jacobian:
-  include("jacobian_func.jl")
+  include("jacobian_functions.jl")
 
   export AbstractEnergyTerm, EnergyFETerm, MixedEnergyFETerm, NoFETerm
 
