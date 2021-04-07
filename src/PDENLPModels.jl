@@ -67,9 +67,9 @@ module PDENLPModels
   export reset!
 
   using Test
-  include("hessian_test_functions.jl")
-  include("hessian_lag_test_functions.jl")
-  include("jacobian_test_functions.jl")
+  include("test_functions/hessian_test_functions.jl")
+  include("test_functions/hessian_lag_test_functions.jl")
+  include("test_functions/jacobian_test_functions.jl")
   export hessian_test_functions, hessian_lagrangian_test_functions, jacobian_test_functions
 
 end #end of module
