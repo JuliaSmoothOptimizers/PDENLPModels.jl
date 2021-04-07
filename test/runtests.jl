@@ -29,14 +29,8 @@ include("test-unconstrained-2.jl") #uses tron
 include("pde-only-incompressible-NS.jl")
 
 #III. Optimization problem with PDE constraints:
-#Mixed boundary conditions, and a source term.
-@info "Poisson-equation with mixed boundary conditions [add model - work locally]"
-#include("poisson-with-Neumann-and-Dirichlet.jl") #Peut être décommenter
 @info "1d Burger's equation"
 include("1d-Burger-example.jl")
-if false
-  include("code_issue.jl")
-end
 
 #IV. Mixed optimization problem with PDE-constraints
 #Objective only on the parameter

@@ -471,31 +471,6 @@ function hess_op(nlp :: GridapPDENLPModel,
   return hess_op!(nlp, x, Hv, obj_weight = obj_weight)
 end
 
-#######################################################################
-# TO BE REMOVED
-function hess2(nlp :: GridapPDENLPModel,
-              x   :: AbstractVector,
-              λ   :: AbstractVector;
-              obj_weight :: Real = one(eltype(x)))
-  @lencheck nlp.meta.nvar x
-  @lencheck nlp.meta.ncon λ
-  increment!(nlp, :neval_hess)
-  function ℓ(x, λ)
-
-    κ, xyu = x[1 : nlp.nparam], x[nlp.nparam + 1 : nlp.meta.nvar]
-    yu  = FEFunction(nlp.Y, xyu)
-    int = _obj_integral(nlp.tnrj, κ, yu)
-    
-    c = similar(x, nlp.meta.ncon)
-    _from_terms_to_residual!(nlp.op, x, nlp, c)
-
-    return obj_weight * sum(int) + dot(c, λ)
-  end
-
-  #ℓ(x) = obj_weight * obj(nlp, x) + dot(cons(nlp, x), λ)
-  Hx = ForwardDiff.hessian(x->ℓ(x, λ), x)
-  return tril(Hx)
-end
 ###########################################################################
 #### Tanj: IS THIS FUNCTION NECESSARY ????
 function hess(nlp :: GridapPDENLPModel, 
@@ -523,6 +498,7 @@ function hess(nlp :: GridapPDENLPModel,
 
   return hess_lag
 end
+###########################################################################
 
 """
 `hess_coo`: return the hessian of the constraints in COO-format.
@@ -947,18 +923,6 @@ function jac_k_structure!(nlp :: GridapPDENLPModel, rows :: AbstractVector{<: In
   return nnz_jac_k
 end
 
-#=
-function _jac_structure!(op :: Gridap.FESpaces.FEOperatorFromTerms, nlp :: GridapPDENLPModel, rows :: AbstractVector{<: Integer}, cols :: AbstractVector{<: Integer})
-
- m, n = nlp.meta.ncon, nlp.meta.nvar
- I = ((i,j) for i = 1:m, j = 1:n)
- rows .= getindex.(I, 1)[:]
- cols .= getindex.(I, 2)[:]
-
- return rows, cols
-end
-=#
-
 function jac_coord!(nlp :: GridapPDENLPModel, x :: AbstractVector, vals :: AbstractVector)
   @lencheck nlp.meta.nvar x
   @lencheck nlp.meta.nnzj vals
@@ -998,17 +962,6 @@ function _jac_coord!(op :: Gridap.FESpaces.FEOperatorFromTerms, nlp :: GridapPDE
   end
   return vals
 end
-
-#=
-function _jac_coord!(op :: Gridap.FESpaces.FEOperatorFromTerms, nlp :: GridapPDENLPModel, x :: AbstractVector, vals :: AbstractVector)
-  @lencheck nlp.meta.nvar x
-  @lencheck nlp.meta.nnzj vals
-  increment!(nlp, :neval_jac)
-  Jx = jac(nlp, x)
-  vals .= Jx[:]
-  return vals
-end
-=#
 
 function hprod!(nlp  :: GridapPDENLPModel, x :: AbstractVector, λ :: AbstractVector, v :: AbstractVector, Hv :: AbstractVector; obj_weight :: Real = one(eltype(x)))
 
