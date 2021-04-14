@@ -72,4 +72,6 @@ module PDENLPModels
   include("test_functions/jacobian_test_functions.jl")
   export hessian_test_functions, hessian_lagrangian_test_functions, jacobian_test_functions
 
+  #Set of functions for optimal control
+  include("optimal_control_functions.jl")
 end #end of module
