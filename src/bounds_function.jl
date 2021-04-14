@@ -185,11 +185,13 @@ function _functions_to_vectors!(nini    :: Integer,
   @lencheck n uvar
 
   for i=1:nfields
+    Yi = typeof(Y) <: MultiFieldFESpace ? Y.spaces[i] : Y
+
     cell_l = apply(x -> lfunc(x)[i], cell_xm) #this is a vector of size num_cells(trian)
     cell_u = apply(x -> ufunc(x)[i], cell_xm) #this is a vector of size num_cells(trian)
 
-    lvaru = get_free_values(Gridap.FESpaces.interpolate(cell_l, Y))
-    uvaru = get_free_values(Gridap.FESpaces.interpolate(cell_u, Y))
+    lvaru = get_free_values(Gridap.FESpaces.interpolate(cell_l, Yi))
+    uvaru = get_free_values(Gridap.FESpaces.interpolate(cell_u, Yi))
     new = length(lvaru)
 
     @assert new == length(uvaru)
