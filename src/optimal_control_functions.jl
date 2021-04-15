@@ -103,7 +103,6 @@ function GridapOptimalControlNLPModel(f, con, domain, partition; x0 = nothing, x
 end
 
 export adjoint_function_final_condition
-
 function adjoint_function_final_condition(domain, partition, mul, xf)
   model = CartesianDiscreteModel(domain,partition)
   labels = get_face_labeling(model)
@@ -119,6 +118,7 @@ function adjoint_function_final_condition(domain, partition, mul, xf)
   return vcat(ans[1:end-1], xf)
 end
 
+export adjoint_function
 function adjoint_function(domain, partition, mul)
     model = CartesianDiscreteModel(domain,partition)
     labels = get_face_labeling(model)
