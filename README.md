@@ -6,7 +6,6 @@
 [![codecov.io](http://codecov.io/github/tmigot/PDENLPModels.jl/coverage.svg?branch=master)](http://codecov.io/github/tmigot/PDENLPModels.jl?branch=master)
 [![](https://img.shields.io/badge/docs-stable-blue.svg)](https://tmigot.github.io/PDENLPModels.jl/stable)
 [![](https://img.shields.io/badge/docs-dev-blue.svg)](https://tmigot.github.io/PDENLPModels.jl/dev)
-[![GitHub](https://img.shields.io/github/v/release/JuliaSmoothOptimizers/DCISolver.jl.svg?style=flat-square)](https://github.com/JuliaSmoothOptimizers/DCISolver.jl/releases)
 
 PDENLPModels specializes the [NLPModel API](https://github.com/JuliaSmoothOptimizers/NLPModels.jl) to optimization problem with partial differential equation in the constraints. The package relies on [Gridap.jl](https://github.com/gridap/Gridap.jl) for the modeling and the computation of the derivatives. Find tutorials for using Gridap [here](https://github.com/gridap/Tutorials).
 
@@ -80,8 +79,6 @@ using Gridap, PDENLPModels
   #Definition of the constraint operator
   function res(yu, v)
     y, u = yu
-    v
-
     ∇(v)⊙∇(y) - v*u
   end
   h(x) = 1.0
