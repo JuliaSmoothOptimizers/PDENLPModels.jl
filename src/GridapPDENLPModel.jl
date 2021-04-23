@@ -332,8 +332,7 @@ end
 
 function hess(nlp :: GridapPDENLPModel, 
               x   :: AbstractVector{T};
-              obj_weight :: Real = one(T)) where T
-              
+              obj_weight :: Real = one(T)) where T       
   @lencheck nlp.meta.nvar x
   increment!(nlp, :neval_hess)
 
@@ -355,7 +354,7 @@ function hess(nlp :: GridapPDENLPModel,
   return hess_yu
 end
 
-function hess_coord(nlp :: GridapPDENLPModel, x :: AbstractVector; obj_weight::Real=one(eltype(x)))
+function hess_coord(nlp :: GridapPDENLPModel, x :: AbstractVector{T}; obj_weight::Real=one(T)) where T
   @lencheck nlp.meta.nvar x
   #########################################################################################
   #The issue here is that there is no meta specific for the obj only
@@ -381,23 +380,21 @@ function hess_coord(nlp :: GridapPDENLPModel, x :: AbstractVector; obj_weight::R
   nnzh =  nnz_hess_yu + nnz_hess_k
   #USE get_nnzh here
   #########################################################################################
-  vals = Vector{eltype(x)}(undef, nnzh)
+  vals = vcat(Vector{T}(undef, nnzh), zeros(T, nlp.meta.nnzh - nnzh))
   
   return hess_coord!(nlp, x, vals; obj_weight=obj_weight)
 end
 
 function hess_coord!(nlp  :: GridapPDENLPModel,
-                     x    :: AbstractVector,
+                     x    :: AbstractVector{T},
                      vals :: AbstractVector;
-                     obj_weight :: Real = one(eltype(x)))
+                     obj_weight :: Real = one(T)) where T
   @lencheck nlp.meta.nvar x
-  #@lencheck nlp.meta.nnzh vals #we trust the length of vals
+  @lencheck nlp.meta.nnzh vals
   increment!(nlp, :neval_hess)
   
   κ, xyu = x[1 : nlp.nparam], x[nlp.nparam + 1 : nlp.meta.nvar]
-  yu     = FEFunction(nlp.Y, xyu)
-  
-  nvals  = length(vals)
+  yu = FEFunction(nlp.Y, xyu)
   
   #Right now V1 cannot be computed separately
   if (typeof(nlp.tnrj) <: MixedEnergyFETerm && nlp.tnrj.inde) || typeof(nlp.tnrj) <: NoFETerm
@@ -421,26 +418,22 @@ function hess_coord!(nlp  :: GridapPDENLPModel,
 
     #Compute the hessian with AD
     cell_r_yu  = Gridap.Arrays.autodiff_array_hessian(_cell_obj_yu, cell_yu, cell_id_yu)
-    #length(nini) + length(V1) should be length(vals)
     nini = vals_hess_coo_numeric!(vals, a, cell_r_yu, cell_id_yu, nfirst = nini)
   end
-  
-  if nvals != nini
-    @warn "hess_coord!: Size of vals and number of assignements didn't match"
-  end
+  vals .*= obj_weight
   return vals
 end
 
 function hprod!(nlp :: GridapPDENLPModel,
-                x   :: AbstractVector,
+                x   :: AbstractVector{T},
                 v   :: AbstractVector,
                 Hv  :: AbstractVector;
-                obj_weight :: Real = one(eltype(x)))
+                obj_weight :: Real = one(T)) where T
   @lencheck nlp.meta.nvar x v Hv
   increment!(nlp, :neval_hprod)
 
-  if obj_weight == zero(eltype(x))
-    Hv .= zero(similar(x))
+  if obj_weight == zero(T)
+    Hv .= zero(T)
     return Hv
   end
 
@@ -476,9 +469,9 @@ end
 function hess(nlp :: GridapPDENLPModel, 
               x   :: AbstractVector{T},
               λ   :: AbstractVector{T};
-              obj_weight :: Real = one(T)) where T
-              
+              obj_weight :: Real = one(T)) where T       
   @lencheck nlp.meta.nvar x
+  @lencheck nlp.meta.ncon λ
   increment!(nlp, :neval_hess)
 
   mdofs = Gridap.FESpaces.num_free_dofs(nlp.X) + nlp.nparam
@@ -594,7 +587,7 @@ end
 function hess_structure!(nlp :: GridapPDENLPModel, 
                          rows :: AbstractVector{<: Integer}, 
                          cols :: AbstractVector{<: Integer})
-
+  @lencheck nlp.meta.nnzh rows cols
   #nnzh_obj = get_nnzh(nlp.tnrj, nlp.Ypde, nlp.Xpde, nparam, nvar)
   #hess_obj_structure!(nlp, @view rows[1:nnzh_obj], @view cols[1:nnzh_obj])
   #################################################""
@@ -631,18 +624,17 @@ function hess_structure!(nlp :: GridapPDENLPModel,
 end
 
 function hess_coord!(nlp  :: GridapPDENLPModel,
-                     x    :: AbstractVector,
+                     x    :: AbstractVector{T},
                      λ    :: AbstractVector,
                      vals :: AbstractVector;
-                     obj_weight :: Real = one(eltype(x)))
+                     obj_weight :: Real = one(T)) where T
   @lencheck nlp.meta.nvar x
   @lencheck nlp.meta.ncon λ
   @lencheck nlp.meta.nnzh vals
   increment!(nlp, :neval_hess)
 
   nnzh_obj = get_nnzh(nlp.tnrj, nlp.Y, nlp.X, nlp.nparam, nlp.meta.nvar)
-  hess_coord!(nlp, x, @view vals[1:nnzh_obj] )
-  #vals[1:nnzh_obj] .= hess_coord(nlp, x) #TO BE REMOVED IF THAT WORK
+  hess_coord!(nlp, x, vals, obj_weight=obj_weight) # @view vals[1:nnzh_obj]
 
 #############################################################################
   κ, xyu = x[1 : nlp.nparam], x[nlp.nparam + 1 : nlp.meta.nvar]
