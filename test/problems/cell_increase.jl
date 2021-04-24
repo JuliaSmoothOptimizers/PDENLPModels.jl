@@ -1,19 +1,17 @@
-using Plots, LinearAlgebra, SparseArrays
+using LinearAlgebra, SparseArrays
 ###############################################################
 #Data
 x0 = [0.6, 0.1]
-N = sum(x0)
 T = 7 #final time
-###############################################################
-#Now we discretize by hand with forward finite differences
 n = 10
 h = T/n
 
 ################################################################
 # Using Gridap and PDENLPModels
 using Gridap, PDENLPModels
+using NLPModelsTest, Test
 
-function cell_gridap(x0, n, T)
+function cell_increase(args...;x0=x0, n=n, T=T, kwargs...)
     kp(x) = 1.01
     kr(x) = 2.03
 
@@ -75,24 +73,25 @@ end
 
 ################################################################
 # Testing:
-using NLPModelsTest, Test
 
-atol, rtol = √eps(), √eps()
-n = 10
-nlp = cell_gridap(x0, n, T)
-xr = rand(nlp.meta.nvar)
-#Beta-tests
-@test obj(nlp, xr) != nothing
-@test grad(nlp, xr) != nothing
-@test cons(nlp, xr) != nothing
-@test jac(nlp, xr) != nothing
-@test hess(nlp, xr) != nothing
-@test hess(nlp, xr, nlp.meta.y0) != nothing
+function cell_increase_test()
+    atol, rtol = √eps(), √eps()
+    n = 10
+    nlp = cell_increase(x0=x0, n=n, T=T)
+    xr = rand(nlp.meta.nvar)
+    #Beta-tests
+    @test obj(nlp, xr) != nothing
+    @test grad(nlp, xr) != nothing
+    @test cons(nlp, xr) != nothing
+    @test jac(nlp, xr) != nothing
+    @test hess(nlp, xr) != nothing
+    @test hess(nlp, xr, nlp.meta.y0) != nothing
 
-#check derivatives
-@test gradient_check(nlp, x = xr, atol = atol, rtol = rtol) == Dict{Tuple{Int64,Int64},Float64}()
-@test jacobian_check(nlp, x = xr, atol = atol, rtol = rtol) == Dict{Tuple{Int64,Int64},Float64}()
-ymp = hessian_check(nlp, x = xr, atol = atol, rtol = rtol)
-@test !any(x -> x!=Dict{Tuple{Int64,Int64},Float64}(), values(ymp))
-ymp2 = hessian_check_from_grad(nlp, x = xr, atol = atol, rtol = rtol) #uses the jacobian
-@test !any(x -> x!=Dict{Tuple{Int64,Int64},Float64}(), values(ymp2))
+    #check derivatives
+    @test gradient_check(nlp, x = xr, atol = atol, rtol = rtol) == Dict{Tuple{Int64,Int64},Float64}()
+    @test jacobian_check(nlp, x = xr, atol = atol, rtol = rtol) == Dict{Tuple{Int64,Int64},Float64}()
+    ymp = hessian_check(nlp, x = xr, atol = atol, rtol = rtol)
+    @test !any(x -> x!=Dict{Tuple{Int64,Int64},Float64}(), values(ymp))
+    ymp2 = hessian_check_from_grad(nlp, x = xr, atol = atol, rtol = rtol) #uses the jacobian
+    @test !any(x -> x!=Dict{Tuple{Int64,Int64},Float64}(), values(ymp2))
+end

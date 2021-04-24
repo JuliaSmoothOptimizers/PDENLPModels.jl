@@ -1,4 +1,4 @@
-using Plots, LinearAlgebra, SparseArrays
+using LinearAlgebra, SparseArrays
 ###############################################################
 #Data for SIS
 x0 = [1, 2] #I, S, R
@@ -25,66 +25,12 @@ T = 1 #final time
 n = 10
 h = T/n
 
-AI = 1/h * Bidiagonal(ones(n), -ones(n-1), :L)
-AS = 1/h * Bidiagonal(ones(n), -ones(n-1), :L)
-A0 = zeros(2 * n); A0[1] = -x0[1] / h; A0[n+1] = -x0[2] / h;
-
-c(x) = vcat(AI * x[1:n], AS * x[n+1:2*n]) + A0 - F(x)
-
-################################################################
-# The exact solution of the ODE is given by:
-#=
-#known in implicit form in: 
-Exact analytical solutions of the Susceptible-Infected-Recovered (SIR) epidemic
-model and of the SIR model with equal death and birth rates, Harko-Lobo-Mak
-Applied Mathematics and Computation, 2014
-function solI(t)
-    ρ = a * N - b + a * x0[1] * (exp((a * N - b) * t) - 1)
-    I = (a * N - b) * x0[1] * exp((a * N - b) * t) / ρ
-    S = N - I
-    return I
-end
-
-function solS(t)
-  ρ = a * N - b + a * x0[1] * (exp((a * N - b) * t) - 1)
-  I = (a * N - b) * x0[1] * exp((a * N - b) * t) / ρ
-  S = N - I
-  return S
-end
-=#
-C = x0[1] + x0[2] - 1
-λ = a - b + a * C
-function solI(t) #If μ == b
-    ρ = a + λ * ( λ - x0[1]*a ) / ( λ * x0[1] * exp(a * C /b ) ) * exp(-λ * t + a  * C / b)
-    I = λ / ρ
-    S = 1 + C * (1 - b * t) - I
-    return I
-end
-
-function solS(t)
-    ρ = a + λ * ( λ - x0[1]*a ) / ( λ * x0[1] * exp(a * C /b ) ) * exp(-λ * t + a  * C / b)
-    I = λ / ρ
-    S = 1 + C * (1 - b * t) - I
-  return S
-end
-################################################################
-# Some checks and plots
-# Vectorized solution
-sol_Ih = [solI(t) for t=h:h:T]
-sol_Sh = [solS(t) for t=h:h:T]
-
-@show norm(c(vcat(sol_Ih, sol_Sh)), Inf) #check the discretization by hand
-
-plot(0:h:T, vcat(x0[1], sol_Ih))
-plot!(0:h:T, vcat(x0[2], sol_Sh))
-
-png("test")
-
 ################################################################
 # Using Gridap and PDENLPModels
 using Gridap, PDENLPModels
+using NLPModelsTest, Test
 
-function sis_gridap(x0, n, a, b, T)
+function control_sir(args...;x0=x0, n=n, a=a, b=b, μ=μ, T=T, kwargs...)
     model = CartesianDiscreteModel((0,T),n)
 
     labels = get_face_labeling(model)
@@ -137,39 +83,92 @@ function sis_gridap(x0, n, a, b, T)
     return nlp
 end
 
-################################################################
-# Testing:
-using NLPModelsTest, Test
+function control_sir_test()
+    AI = 1/h * Bidiagonal(ones(n), -ones(n-1), :L)
+    AS = 1/h * Bidiagonal(ones(n), -ones(n-1), :L)
+    A0 = zeros(2 * n); A0[1] = -x0[1] / h; A0[n+1] = -x0[2] / h;
 
-atol, rtol = √eps(), √eps()
-# check the value at the solution:
-kmax = 6 #beyond is tough
-for k=1:kmax
-    local sol_Ih, sol_Sh, h, n, nlp
-    n = 10^k
-    nlp = sis_gridap(x0, n, a, b, T)
-    h = T/n
+    c(x) = vcat(AI * x[1:n], AS * x[n+1:2*n]) + A0 - F(x)
+
+    ################################################################
+    # The exact solution of the ODE is given by:
+    #=
+    #known in implicit form in: 
+    Exact analytical solutions of the Susceptible-Infected-Recovered (SIR) epidemic
+    model and of the SIR model with equal death and birth rates, Harko-Lobo-Mak
+    Applied Mathematics and Computation, 2014
+    function solI(t)
+        ρ = a * N - b + a * x0[1] * (exp((a * N - b) * t) - 1)
+        I = (a * N - b) * x0[1] * exp((a * N - b) * t) / ρ
+        S = N - I
+        return I
+    end
+
+    function solS(t)
+    ρ = a * N - b + a * x0[1] * (exp((a * N - b) * t) - 1)
+    I = (a * N - b) * x0[1] * exp((a * N - b) * t) / ρ
+    S = N - I
+    return S
+    end
+    =#
+    C = x0[1] + x0[2] - 1
+    λ = a - b + a * C
+    function solI(t) #If μ == b
+        ρ = a + λ * ( λ - x0[1]*a ) / ( λ * x0[1] * exp(a * C /b ) ) * exp(-λ * t + a  * C / b)
+        I = λ / ρ
+        S = 1 + C * (1 - b * t) - I
+        return I
+    end
+
+    function solS(t)
+        ρ = a + λ * ( λ - x0[1]*a ) / ( λ * x0[1] * exp(a * C /b ) ) * exp(-λ * t + a  * C / b)
+        I = λ / ρ
+        S = 1 + C * (1 - b * t) - I
+    return S
+    end
+    ################################################################
+    # Some checks and plots
+    # Vectorized solution
     sol_Ih = [solI(t) for t=h:h:T]
     sol_Sh = [solS(t) for t=h:h:T]
-    res = norm(cons(nlp, vcat(sol_Ih, sol_Sh)), Inf)
-    @show res
-    if res <= 1e-7
-        @test true
-        break
-    end
-    if k == kmax @test false end
-end
-n = 10
-nlp = sis_gridap(x0, n, a, b, T)
-xr = rand(nlp.meta.nvar)
-#there are no objective function here
-@test obj(nlp, nlp.meta.x0) == x0[1]^2/8/n #:-)
-#@test obj(nlp, xr) - 1/n * (x0[1]^2/4 + 0.5 * sum([xr[i]^2 for i=1:n-1]) + xr[n]^2/4)
 
-#check derivatives
-@test gradient_check(nlp, x = xr, atol = atol, rtol = rtol) == Dict{Tuple{Int64,Int64},Float64}()
-@test jacobian_check(nlp, x = xr, atol = atol, rtol = rtol) == Dict{Tuple{Int64,Int64},Float64}()
-ymp = hessian_check(nlp, x = xr, atol = atol, rtol = rtol)
-@test !any(x -> x!=Dict{Tuple{Int64,Int64},Float64}(), values(ymp))
-ymp2 = hessian_check_from_grad(nlp, x = xr, atol = atol, rtol = rtol)
-@test !any(x -> x!=Dict{Tuple{Int64,Int64},Float64}(), values(ymp2))
+    @show norm(c(vcat(sol_Ih, sol_Sh)), Inf) #check the discretization by hand
+
+    plot(0:h:T, vcat(x0[1], sol_Ih))
+    plot!(0:h:T, vcat(x0[2], sol_Sh))
+
+    png("test")
+
+    atol, rtol = √eps(), √eps()
+    # check the value at the solution:
+    kmax = 6 #beyond is tough
+    for k=1:kmax
+        local sol_Ih, sol_Sh, h, n, nlp
+        n = 10^k
+        nlp = control_sir(x0=x0, n=n, a=a, b=b, μ=μ, T=T)
+        h = T/n
+        sol_Ih = [solI(t) for t=h:h:T]
+        sol_Sh = [solS(t) for t=h:h:T]
+        res = norm(cons(nlp, vcat(sol_Ih, sol_Sh)), Inf)
+        @show res
+        if res <= 1e-7
+            @test true
+            break
+        end
+        if k == kmax @test false end
+    end
+    n = 10
+    nlp = control_sir(x0=x0, n=n, a=a, b=b, μ=μ, T=T)
+    xr = rand(nlp.meta.nvar)
+    #there are no objective function here
+    @test obj(nlp, nlp.meta.x0) == x0[1]^2/8/n #:-)
+    #@test obj(nlp, xr) - 1/n * (x0[1]^2/4 + 0.5 * sum([xr[i]^2 for i=1:n-1]) + xr[n]^2/4)
+
+    #check derivatives
+    @test gradient_check(nlp, x = xr, atol = atol, rtol = rtol) == Dict{Tuple{Int64,Int64},Float64}()
+    @test jacobian_check(nlp, x = xr, atol = atol, rtol = rtol) == Dict{Tuple{Int64,Int64},Float64}()
+    ymp = hessian_check(nlp, x = xr, atol = atol, rtol = rtol)
+    @test !any(x -> x!=Dict{Tuple{Int64,Int64},Float64}(), values(ymp))
+    ymp2 = hessian_check_from_grad(nlp, x = xr, atol = atol, rtol = rtol)
+    @test !any(x -> x!=Dict{Tuple{Int64,Int64},Float64}(), values(ymp2))
+end
