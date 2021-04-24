@@ -1,48 +1,8 @@
-using LinearAlgebra, SparseArrays
-###############################################################
-#Data for SIS
-x0 = [1, 2] #I, S, R
-N = sum(x0)
-
-a = 0.2
-b = 0.1 #0.1 ou 0.7
-μ = 0.1 #vaccination rate :)
-#=
-# The usual SIR:
-F(x) = vcat(a .* x[1:n] .* x[n+1:2*n] .- b .* x[1:n], 
-            -c .- a .* x[1:n] .* x[n+1:2*n],
-            b .* x[2 * n + 1: 3 * n] .+ c
-            )
-=#
-#The simple SIR: Kermack and Mckendrick
-# A note on Exact solution of SIR and SIS epidemic models, Shabbir-Khan-Sadiq
-F(x) = vcat(a .* x[1:n] .* x[n+1:2*n] .- b .* x[1:n], 
-            μ .- a .* x[1:n] .* x[n+1:2*n] .- b .* x[1:n]
-            ) #R is others
-T = 1 #final time
-###############################################################
-#Now we discretize by hand with forward finite differences
-n = 10
-h = T/n
-
-################################################################
-# Using Gridap and PDENLPModels
-using Gridap, PDENLPModels
-using NLPModelsTest, Test
-
-function control_sir(args...;x0=x0, n=n, a=a, b=b, μ=μ, T=T, kwargs...)
+function controlsir(args...; x0 = [1, 2], n = 10, a = 0.2, b = 0.1, μ = 0.1, T = 1, kwargs...)
     model = CartesianDiscreteModel((0,T),n)
 
     labels = get_face_labeling(model)
     add_tag_from_tags!(labels,"diri0",[1]) #initial time condition
-
-    #=
-    V = TestFESpace(
-        reffe=:Lagrangian, conformity=:H1, valuetype=VectorValue{2,Float64},
-        model=model, labels=labels, order=1, dirichlet_tags=["diri0"])
-    uD0 = VectorValue(x0[1], x0[2])  
-    U = TrialFESpace(V,uD0)
-    =#
 
     VI = TestFESpace(
         reffe=:Lagrangian, conformity=:H1, valuetype=Float64,
@@ -83,7 +43,21 @@ function control_sir(args...;x0=x0, n=n, a=a, b=b, μ=μ, T=T, kwargs...)
     return nlp
 end
 
-function control_sir_test()
+function controlsir_test(;x0 = [1, 2], n = 10, a = 0.2, b = 0.1, μ = 0.1, T = 1)
+    #=
+    # The usual SIR:
+    F(x) = vcat(a .* x[1:n] .* x[n+1:2*n] .- b .* x[1:n], 
+                -c .- a .* x[1:n] .* x[n+1:2*n],
+                b .* x[2 * n + 1: 3 * n] .+ c
+                )
+    =#
+    #The simple SIR: Kermack and Mckendrick
+    # A note on Exact solution of SIR and SIS epidemic models, Shabbir-Khan-Sadiq
+    F(x) = vcat(a .* x[1:n] .* x[n+1:2*n] .- b .* x[1:n], 
+    μ .- a .* x[1:n] .* x[n+1:2*n] .- b .* x[1:n]
+    ) #R is others
+
+    h = T/n
     AI = 1/h * Bidiagonal(ones(n), -ones(n-1), :L)
     AS = 1/h * Bidiagonal(ones(n), -ones(n-1), :L)
     A0 = zeros(2 * n); A0[1] = -x0[1] / h; A0[n+1] = -x0[2] / h;
@@ -132,12 +106,11 @@ function control_sir_test()
     sol_Ih = [solI(t) for t=h:h:T]
     sol_Sh = [solS(t) for t=h:h:T]
 
-    @show norm(c(vcat(sol_Ih, sol_Sh)), Inf) #check the discretization by hand
+    #@show norm(c(vcat(sol_Ih, sol_Sh)), Inf) #check the discretization by hand
 
-    plot(0:h:T, vcat(x0[1], sol_Ih))
-    plot!(0:h:T, vcat(x0[2], sol_Sh))
-
-    png("test")
+    #plot(0:h:T, vcat(x0[1], sol_Ih))
+    #plot!(0:h:T, vcat(x0[2], sol_Sh))
+    #png("test")
 
     atol, rtol = √eps(), √eps()
     # check the value at the solution:
@@ -145,7 +118,7 @@ function control_sir_test()
     for k=1:kmax
         local sol_Ih, sol_Sh, h, n, nlp
         n = 10^k
-        nlp = control_sir(x0=x0, n=n, a=a, b=b, μ=μ, T=T)
+        nlp = controlsir(x0=x0, n=n, a=a, b=b, μ=μ, T=T)
         h = T/n
         sol_Ih = [solI(t) for t=h:h:T]
         sol_Sh = [solS(t) for t=h:h:T]
@@ -158,7 +131,7 @@ function control_sir_test()
         if k == kmax @test false end
     end
     n = 10
-    nlp = control_sir(x0=x0, n=n, a=a, b=b, μ=μ, T=T)
+    nlp = controlsir(x0=x0, n=n, a=a, b=b, μ=μ, T=T)
     xr = rand(nlp.meta.nvar)
     #there are no objective function here
     @test obj(nlp, nlp.meta.x0) == x0[1]^2/8/n #:-)

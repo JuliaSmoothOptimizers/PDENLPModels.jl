@@ -1,41 +1,8 @@
-#=
-The goal is mainly to check 
-=#
-using LinearAlgebra, SparseArrays
-###############################################################
-#Data for SIS
-x0 = [1, 2] #I, S
-N = sum(x0)
-
-a = 0.2
-b = 0.7 #0.1 ou 0.7
-F(x) = vcat(a .* x[1:n] .* x[n+1:2*n] .- b .* x[1:n], 
-            b .* x[1:n] .- a .* x[1:n] .* x[n+1:2*n]
-            )
-T = 1 #final time
-###############################################################
-#Now we discretize by hand with forward finite differences
-n = 10
-h = T/n
-
-################################################################
-# Using Gridap and PDENLPModels
-using Gridap, PDENLPModels
-using NLPModelsTest, Test
-
-function sis(args...; x0=x0, n=n, a=a, b=b, T=T, kwargs...)
+function sis(args...; x0 = [1, 2], n = 10, a = 0.2, b = 0.7, T = 1, kwargs...)
     model = CartesianDiscreteModel((0,T),n)
 
     labels = get_face_labeling(model)
     add_tag_from_tags!(labels,"diri0",[1]) #initial time condition
-
-    #=
-    V = TestFESpace(
-        reffe=:Lagrangian, conformity=:H1, valuetype=VectorValue{2,Float64},
-        model=model, labels=labels, order=1, dirichlet_tags=["diri0"])
-    uD0 = VectorValue(x0[1], x0[2])  
-    U = TrialFESpace(V,uD0)
-    =#
 
     VI = TestFESpace(
         reffe=:Lagrangian, conformity=:H1, valuetype=Float64,
@@ -70,7 +37,13 @@ function sis(args...; x0=x0, n=n, a=a, b=b, T=T, kwargs...)
     return nlp
 end
 
-function sis_test()
+function sis_test(;x0 = [1, 2], n = 10, a = 0.2, b = 0.7, T = 1)
+    h = T/n
+    N = sum(x0)
+    F(x) = vcat(a .* x[1:n] .* x[n+1:2*n] .- b .* x[1:n], 
+            b .* x[1:n] .- a .* x[1:n] .* x[n+1:2*n]
+            )
+
     AI = 1/h * Bidiagonal(ones(n), -ones(n-1), :L)
     AS = 1/h * Bidiagonal(ones(n), -ones(n-1), :L)
     A0 = zeros(2 * n); A0[1] = -x0[1] / h; A0[n+1] = -x0[2] / h
@@ -99,12 +72,11 @@ function sis_test()
     sol_Ih = [solI(t) for t=h:h:T]
     sol_Sh = [solS(t) for t=h:h:T]
     
-    @show norm(c(vcat(sol_Ih, sol_Sh)), Inf) #check the discretization by hand
+    #@show norm(c(vcat(sol_Ih, sol_Sh)), Inf) #check the discretization by hand
     
-    plot(0:h:T, vcat(x0[1], sol_Ih))
-    plot!(0:h:T, vcat(x0[2], sol_Sh))
-    
-    png("test")
+    #plot(0:h:T, vcat(x0[1], sol_Ih))
+    #plot!(0:h:T, vcat(x0[2], sol_Sh))
+    #png("test")
 
     nlp = sis(x0=x0, n=n, a=a, b=b, T=T)
 
@@ -119,7 +91,7 @@ function sis_test()
         sol_Ih = [solI(t) for t=h:h:T]
         sol_Sh = [solS(t) for t=h:h:T]
         res = norm(cons(nlp, vcat(sol_Ih, sol_Sh)), Inf)
-        @show res
+        #@show res
         if res <= 1e-15
             @test true
             break

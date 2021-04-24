@@ -1,17 +1,4 @@
-using LinearAlgebra, SparseArrays
-###############################################################
-#Data
-x0 = [0.6, 0.1]
-T = 7 #final time
-n = 10
-h = T/n
-
-################################################################
-# Using Gridap and PDENLPModels
-using Gridap, PDENLPModels
-using NLPModelsTest, Test
-
-function cell_increase(args...;x0=x0, n=n, T=T, kwargs...)
+function cellincrease(args...; x0 = [0.6, 0.1], n = 10, T = 7, kwargs...)
     kp(x) = 1.01
     kr(x) = 2.03
 
@@ -74,10 +61,11 @@ end
 ################################################################
 # Testing:
 
-function cell_increase_test()
+function cellincrease_test(args...; x0 = [0.6, 0.1], n = 10, T = 7, kwargs...)
+
     atol, rtol = √eps(), √eps()
     n = 10
-    nlp = cell_increase(x0=x0, n=n, T=T)
+    nlp = cellincrease(x0, n, T)
     xr = rand(nlp.meta.nvar)
     #Beta-tests
     @test obj(nlp, xr) != nothing
@@ -94,4 +82,5 @@ function cell_increase_test()
     @test !any(x -> x!=Dict{Tuple{Int64,Int64},Float64}(), values(ymp))
     ymp2 = hessian_check_from_grad(nlp, x = xr, atol = atol, rtol = rtol) #uses the jacobian
     @test !any(x -> x!=Dict{Tuple{Int64,Int64},Float64}(), values(ymp2))
+
 end

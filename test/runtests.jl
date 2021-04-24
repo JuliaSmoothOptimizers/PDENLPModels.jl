@@ -1,44 +1,70 @@
-using BenchmarkTools, ForwardDiff, Gridap, LinearAlgebra, Printf, SparseArrays, Test
-#using LineSearches: BackTracking
-#JSO
-using Krylov, NLPModels, NLPModelsIpopt #JSOSolvers, 
-
+using LinearAlgebra, SparseArrays
+#This package
+using Gridap
 #PDENLPModels
 using PDENLPModels
 using PDENLPModels: FEFunctionType, _split_vector, _split_FEFunction,
                     _obj_integral, _obj_cell_integral, _compute_gradient_k, _compute_gradient!, _compute_hess_coo
+#Testing
+using NLPModels, NLPModelsTest, Test
 
-use_derivative_check = false #set true to derivative_check (this is slow)
-include("check-dimensions.jl")
+const pde_problems = [
+  "BURGER1D", 
+  "CELLINCREASE", 
+  "SIS", 
+  "CONTROLSIR", 
+  "DYNAMICSIR", 
+  "BASICUNCONSTRAINED",
+  "PENALIZEDPOISSON",
+  "INCOMPRESSIBLENAVIERSTOKES",
+] #use upper-case
+
+for problem in pde_problems
+    include("problems/$(lowercase(problem)).jl")
+end
+
+n = 10
+test_problems = [
+  burger1d(n=n), 
+  sis(n=n), 
+  dynamicsir(n=n), 
+  controlsir(n=n), 
+  cellincrease(n=n),
+  basicunconstrained(n=n),
+  penalizedpoisson(n=n),
+  incompressiblenavierstokes(n=n),
+]
+#test_problems = (Meta.parse("$(lowercase(problem))(n=$(n))") for problem in pde_problems)
+
+#Tanj: for each problem there is a lowercase(problem) function that returns a GridapPDENLPModel
+#++ would be to also have a lowercase(problem)_test that test the problem with the exact solution.
+local_test = false
+
+@testset "NLP tests" begin
+  for problem in pde_problems
+    nlp = eval(Meta.parse("$(lowercase(problem))(n=$(n))"))
+    @testset "Test problem scenario" begin
+      local_test || eval(Meta.parse("$(lowercase(problem))_test()"))
+    end
+    @testset "Problem $(nlp.meta.name)" begin
+      @testset "Consistency" begin
+        consistent_nlps([nlp, nlp])
+      end
+      @testset "Check dimensions" begin
+        check_nlp_dimensions(nlp)
+      end
+      #@testset "Multiple precision support" begin
+      #  multiple_precision_nlp(nlp)
+      #end
+      @testset "View subarray" begin
+        view_subarray_nlp(nlp)
+      end
+      @testset "Test coord memory" begin
+        coord_memory_nlp(nlp)
+      end
+    end
+  end
+end
 
 #Test constructors, util_functions.jl and additional_obj_terms.jl
 include("unit-test.jl")
-
-#I. Test on unconstrained problems:
-#Elementary tests on an unconstrained problem
-@info "Unconstrained problem I"
-#using JSOSolvers
-include("test-unconstrained.jl")
-#Unconstrained optimization <=> Laplacian equation
-@info "Unconstrained problem II"
-include("test-unconstrained-2.jl") #uses tron
-
-#II. Elementary tests on a PDE problem (no objective fct and no other constraints)
-#Nonlinear with mutli-field
-@info "PDE-only incompressible Navier-Stokes"
-include("pde-only-incompressible-NS.jl")
-
-#III. Optimization problem with PDE constraints:
-@info "1d Burger's equation"
-include("1d-Burger-example.jl")
-
-#IV. Mixed optimization problem with PDE-constraints
-#Objective only on the parameter
-@info "Parameter optimization with Poisson-equation [broken] l.77"
-#include("poisson-with-parameter-optim.jl") #hessian: "affine operator * k"
-#Mixed objectives with no intertwined terms
-@info "Separable parameter/function optimization with Poisson-equation [broken l.393]"
-#include("poisson-with-mixed-optim.jl") 
-#Mixed objectives with intertwined terms
-@info "Intertwined parameter/function optimization with Poisson-equation"
-#include("poisson-with-true-mixed-optim.jl") #TODO check the hessian computation
