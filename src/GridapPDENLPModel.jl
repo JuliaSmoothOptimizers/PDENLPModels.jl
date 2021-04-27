@@ -888,20 +888,21 @@ function _from_terms_to_residual!(
     return res
 end
 
-function jac(nlp::GridapPDENLPModel, x::AbstractVector{T}) where {T<:Number}
-    nvar = nlp.meta.nvar
-    @lencheck nvar x
+function jac(nlp::GridapPDENLPModel, x::AbstractVector{T}) where {T}
+    @lencheck nlp.meta.nvar x
     increment!(nlp, :neval_jac)
 
     pde_jac = _from_terms_to_jacobian(nlp.op, x, nlp.Y, nlp.Xpde, nlp.Ypde, nlp.Ycon)
 
     if nlp.nparam > 0
-        ###################################################################################
         κ, xyu = x[1:nlp.nparam], x[nlp.nparam+1:nlp.meta.nvar]
-        @warn "Extra cons call"
-        ck = @closure k -> cons(nlp, vcat(k, xyu))
+        function _cons(nlp, xyu, k)
+          c = similar(k, nlp.meta.ncon)
+          _from_terms_to_residual!(nlp.op, vcat(k, xyu), nlp, c)
+          return c
+        end
+        ck = @closure k -> _cons(nlp, xyu, k)
         jac_k = ForwardDiff.jacobian(ck, κ)
-        ###################################################################################
         return hcat(jac_k, pde_jac)
     end
 
@@ -1083,9 +1084,9 @@ end
 function _jac_coord!(
     op::Gridap.FESpaces.FEOperatorFromTerms,
     nlp::GridapPDENLPModel,
-    x::AbstractVector,
+    x::AbstractVector{T},
     vals::AbstractVector,
-)
+) where {T}
     @lencheck nlp.meta.nvar x
     @lencheck nlp.meta.nnzj vals
     increment!(nlp, :neval_jac)
@@ -1093,13 +1094,15 @@ function _jac_coord!(
     nnz_jac_k = nlp.nparam > 0 ? nlp.meta.ncon * nlp.nparam : 0
     if nlp.nparam > 0
         κ, xyu = x[1:nlp.nparam], x[nlp.nparam+1:nlp.meta.nvar]
-        ck = @closure k -> cons(nlp, vcat(k, xyu))
+        function _cons(nlp, xyu, k)
+          c = similar(k, nlp.meta.ncon)
+          _from_terms_to_residual!(nlp.op, vcat(k, xyu), nlp, c)
+          return c
+        end
+        ck = @closure k -> _cons(nlp, xyu, k)
         jac_k = ForwardDiff.jacobian(ck, κ)
         vals[1:nnz_jac_k] .= jac_k[:]
     end
-
-    #vals[1:nnz_hess_k] .= _compute_jac_k_vals(nlp, nlp.tnrj, κ, xyu)
-    #Jx = jac(nlp, x)
 
     nini = _from_terms_to_jacobian_vals!(
         nlp.op,
