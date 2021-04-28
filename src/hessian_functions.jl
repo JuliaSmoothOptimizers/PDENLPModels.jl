@@ -133,12 +133,11 @@ function get_nnzh(
         ncells = num_cells(term.trian) #Don't think it works for `BoundaryTriangulation`
         cell_id_yu = Gridap.Arrays.IdentityVector(ncells)
         nnz_hess_yu += count_hess_nnz_coo_short(a, cell_id_yu)
-
-        #add the nnz w.r.t. k; by default it is:
-        # and cross terms ?
-        #
-        # \TODO: add the number of non-zeros from the parametric constraints
-        #
+    end
+    
+    #add the nnz w.r.t. k; by default it is:
+    if nparam > 0
+        nnz_hess_yu += Int(nparam * (nparam + 1) / 2) + (nvar - nparam) * nparam
     end
 
     nnzh = nnz_hess_obj + nnz_hess_yu

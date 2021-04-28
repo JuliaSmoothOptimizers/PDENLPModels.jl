@@ -466,8 +466,9 @@ function _compute_hess_k_coo(
     #This works:
     yu = FEFunction(nlp.Y, xyu)
 
-    gk = @closure k -> _compute_gradient_k(nlp.tnrj, k, yu)
-    Hkk = ForwardDiff.jacobian(gk, κ)
+    #gk = @closure k -> _compute_gradient_k(nlp.tnrj, k, yu)
+    #@warn "Hkk not used"
+    #Hkk = ForwardDiff.jacobian(gk, κ)
 
     if !term.inde
         @warn "works only for independant terms k and yu, so that Hkyu = 0"

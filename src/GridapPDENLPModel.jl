@@ -248,7 +248,7 @@ function hess_yu_obj_structure(nlp::GridapPDENLPModel)
     nini = struct_hess_coo_numeric!(I, J, a, cell_id_yu)
 
     if n != nini
-        @warn "hess_obj_structure!: Size of vals and number of assignements didn't match"
+        @warn "hess_obj_structure!: Size of vals and number of assignements didn't match $(n) vs $(nini)"
     end
 
     (I, J)
@@ -349,7 +349,7 @@ function hess_obj_structure!(
     nini = hess_yu_obj_structure!(nlp, rows, cols, nfirst = nini)
 
     if nvals != nini
-        @warn "hess_obj_structure!: Size of vals and number of assignements didn't match"
+        @warn "hess_obj_structure!: Size of vals and number of assignements didn't match $(nvals) vs $(nini)"
     end
 
     return (rows, cols)
@@ -518,6 +518,7 @@ end
 
 ###########################################################################
 #### Tanj: IS THIS FUNCTION NECESSARY ????
+#=
 function hess(
     nlp::GridapPDENLPModel,
     x::AbstractVector{T},
@@ -545,6 +546,7 @@ function hess(
 
     return hess_lag
 end
+=#
 ###########################################################################
 
 """
@@ -654,49 +656,61 @@ function hess_structure!(
     cols::AbstractVector{<:Integer},
 )
     @lencheck nlp.meta.nnzh rows cols
-    #nnzh_obj = get_nnzh(nlp.tnrj, nlp.Ypde, nlp.Xpde, nparam, nvar)
-    #hess_obj_structure!(nlp, @view rows[1:nnzh_obj], @view cols[1:nnzh_obj])
-    #################################################""
     n, p = nlp.meta.nvar, nlp.nparam
-    nnz_hess_k = Int(p * (p + 1) / 2) + (n - p) * p
-    I = ((i, j) for i = 1:n, j = 1:p if j ≤ i)
+    prows = n
+    nnz_hess_k = if (typeof(nlp.tnrj) <: MixedEnergyFETerm && nlp.tnrj.inde) || typeof(nlp.tnrj) <: NoFETerm
+        prows = p
+        Int(p * (p + 1) / 2)
+    else
+        Int(p * (p + 1) / 2) + (n - p) * p
+    end
+    #nnz_hess_k = Int(p * (p + 1) / 2) + (n - p) * p
+    I = ((i, j) for i = 1:prows, j = 1:p if j ≤ i)
     rows[1:nnz_hess_k] .= getindex.(I, 1)[:]
     cols[1:nnz_hess_k] .= getindex.(I, 2)[:]
 
     nini = hess_yu_obj_structure!(nlp, rows, cols, nfirst = nnz_hess_k)
-    #if nini != nnzh_obj
-    #  @warn "hess_(obj)_structure!: Size of vals and number of assignements didn't match"
-    #end
-    #################################################
+
     if nlp.meta.ncon > 0
-        for term in nlp.op.terms
-            if !(
-                typeof(term) <: Union{
-                    Gridap.FESpaces.NonlinearFETermWithAutodiff,
-                    Gridap.FESpaces.NonlinearFETerm,
-                }
-            )
-                continue
+        ##########################################################
+        # Isolate in a function
+        if typeof(nlp.op) <: Gridap.FESpaces.FEOperatorFromTerms
+            for term in nlp.op.terms 
+                if !(
+                    typeof(term) <: Union{
+                        Gridap.FESpaces.NonlinearFETermWithAutodiff,
+                        Gridap.FESpaces.NonlinearFETerm,
+                    }
+                )
+                    continue
+                end
+
+                a = Gridap.FESpaces.SparseMatrixAssembler(nlp.Y, nlp.X)
+                ncells = num_cells(term.trian)
+                cell_id_yu = Gridap.Arrays.IdentityVector(ncells)
+
+                nini = struct_hess_coo_numeric!(
+                    rows,
+                    cols,
+                    a,
+                    cell_id_yu,
+                    nfirst = nini,
+                    cols_translate = nlp.nparam,
+                    rows_translate = nlp.nparam,
+                )
             end
-
-            a = Gridap.FESpaces.SparseMatrixAssembler(nlp.Y, nlp.X)
-            ncells = num_cells(term.trian)
-            cell_id_yu = Gridap.Arrays.IdentityVector(ncells)
-
-            nini = struct_hess_coo_numeric!(
-                rows,
-                cols,
-                a,
-                cell_id_yu,
-                nfirst = nini,
-                cols_translate = nlp.nparam,
-                rows_translate = nlp.nparam,
-            )
         end
+        ##########################################################
+
+        nnz_hess_k = Int(p * (p + 1) / 2) + (n - p) * p
+        I = ((i, j) for i = 1:n, j = 1:p if j ≤ i)
+        rows[nini+1:nini+nnz_hess_k] .= getindex.(I, 1)[:]
+        cols[nini+1:nini+nnz_hess_k] .= getindex.(I, 2)[:]
+        nini += nnz_hess_k
     end
 
     if nlp.meta.nnzh != nini
-        @warn "hess_structure!: Size of vals and number of assignements didn't match"
+        @warn "hess_structure!: Size of vals and number of assignements didn't match $(nlp.meta.nnzh) vs $(nini)"
     end
 
     (rows, cols)
@@ -716,8 +730,8 @@ function hess_coord!(
 
     nnzh_obj = get_nnzh(nlp.tnrj, nlp.Y, nlp.X, nlp.nparam, nlp.meta.nvar)
     hess_coord!(nlp, x, vals, obj_weight = obj_weight) # @view vals[1:nnzh_obj]
+    decrement!(nlp, :neval_hess)
 
-    #############################################################################
     κ, xyu = x[1:nlp.nparam], x[nlp.nparam+1:nlp.meta.nvar]
     yu = FEFunction(nlp.Y, xyu)
 
@@ -725,62 +739,66 @@ function hess_coord!(
     cell_id_yu = Gridap.Arrays.IdentityVector(length(cell_yu)) #Is it?
 
     nini = nnzh_obj
-    for term in nlp.op.terms
-        if !(
-            typeof(term) <: Union{
-                Gridap.FESpaces.NonlinearFETermWithAutodiff,
-                Gridap.FESpaces.NonlinearFETerm,
-            }
-        )
-            continue
-        end
-
-        λf = FEFunction(nlp.Xpde, λ)
-        cell_λf = Gridap.FESpaces.get_cell_values(λf)
-        lfh = CellField(nlp.Xpde, cell_λf)
-        _lfh = Gridap.FESpaces.restrict(lfh, term.trian) #This is where the term play a first role.
-
-        function _cell_res_yu(cell)
-            xfh = CellField(nlp.Y, cell)
-            _xfh = Gridap.FESpaces.restrict(xfh, term.trian)
-
-            if length(κ) > 0
-                _res = integrate(term.res(κ, _xfh, _lfh), term.trian, term.quad)
-            else
-                _res = integrate(term.res(_xfh, _lfh), term.trian, term.quad)
+    ##########################################################
+    # Isolate in a function
+    if typeof(nlp.op) <: Gridap.FESpaces.FEOperatorFromTerms
+        for term in nlp.op.terms
+            if !(
+                typeof(term) <: Union{
+                    Gridap.FESpaces.NonlinearFETermWithAutodiff,
+                    Gridap.FESpaces.NonlinearFETerm,
+                }
+            )
+                continue
             end
-            lag = _res
-            return lag
+
+            λf = FEFunction(nlp.Xpde, λ)
+            cell_λf = Gridap.FESpaces.get_cell_values(λf)
+            lfh = CellField(nlp.Xpde, cell_λf)
+            _lfh = Gridap.FESpaces.restrict(lfh, term.trian) #This is where the term play a first role.
+
+            function _cell_res_yu(cell)
+                xfh = CellField(nlp.Y, cell)
+                _xfh = Gridap.FESpaces.restrict(xfh, term.trian)
+
+                if length(κ) > 0
+                    _res = integrate(term.res(κ, _xfh, _lfh), term.trian, term.quad)
+                else
+                    _res = integrate(term.res(_xfh, _lfh), term.trian, term.quad)
+                end
+                lag = _res
+                return lag
+            end
+
+            #ncells     = num_cells(term.trian)
+            #cell_id_yu = Gridap.Arrays.IdentityVector(ncells)
+
+            #Compute the hessian with AD
+            cell_r_yu = Gridap.Arrays.autodiff_array_hessian(_cell_res_yu, cell_yu, cell_id_yu)
+            #Assemble the matrix in the "good" space
+            assem = Gridap.FESpaces.SparseMatrixAssembler(nlp.Y, nlp.X)
+            #(I, J, V)  = assemble_hess(assem, cell_r_yu, cell_id_yu)
+            nini = vals_hess_coo_numeric!(vals, assem, cell_r_yu, cell_id_yu, nfirst = nini)
+            #vals[nini+1:nini+length(V)] .= V
+            #nini += length(V)
         end
-
-        #ncells     = num_cells(term.trian)
-        #cell_id_yu = Gridap.Arrays.IdentityVector(ncells)
-
-        #Compute the hessian with AD
-        cell_r_yu = Gridap.Arrays.autodiff_array_hessian(_cell_res_yu, cell_yu, cell_id_yu)
-        #Assemble the matrix in the "good" space
-        assem = Gridap.FESpaces.SparseMatrixAssembler(nlp.Y, nlp.X)
-        #(I, J, V)  = assemble_hess(assem, cell_r_yu, cell_id_yu)
-        nini = vals_hess_coo_numeric!(vals, assem, cell_r_yu, cell_id_yu, nfirst = nini)
-        #vals[nini+1:nini+length(V)] .= V
-        #nini += length(V)
-
-        #= What about extra parameters????
-        if nlp.nparam > 0
-          (I1, J1, V1) = _compute_hess_k_coo(nlp, nlp.tnrj, κ, xyu)
-          if obj_weight == one(eltype(x))
-            return (vcat(I1, I2 .+ nlp.nparam),
-                    vcat(J1, J2 .+ nlp.nparam),
-                    vcat(V1, V2))
-          else
-            return (vcat(I1, I2 .+ nlp.nparam),
-                    vcat(J1, J2 .+ nlp.nparam),
-                    vcat(obj_weight * V1, obj_weight * V2))
-          end
-        end
-        =#
     end
-    #############################################################################
+
+    if nlp.nparam > 0
+        p, n = nlp.nparam, nlp.meta.nvar
+        nnz_hess_k = Int(p * (p + 1) / 2) + (n - p) * p
+        κ, xyu = x[1:nlp.nparam], x[nlp.nparam+1:nlp.meta.nvar]
+        function ℓ(x, λ)
+            c = similar(x, nlp.meta.ncon)
+            _from_terms_to_residual!(nlp.op, x, nlp, c)
+            return dot(c, λ)
+        end
+        agrad = @closure k -> ForwardDiff.gradient(x -> ℓ(x, λ), vcat(k, xyu))
+        Hk = ForwardDiff.jacobian(agrad, κ)
+        vals[nini+1:nini+nnz_hess_k] .= [Hk[i,j] for i = 1:n, j = 1:p if j ≤ i]
+        nini += nnz_hess_k
+    end
+
     return vals
 end
 
@@ -788,11 +806,8 @@ function cons!(nlp::GridapPDENLPModel, x::AbstractVector, c::AbstractVector)
     @lencheck nlp.meta.nvar x
     @lencheck nlp.meta.ncon c
     increment!(nlp, :neval_cons)
-    #pde_residual = Array{eltype(x),1}(undef, nlp.nvar_pde)
 
     _from_terms_to_residual!(nlp.op, x, nlp, c)
-
-    #c .= pde_residual
 
     return c
 end
@@ -1116,7 +1131,7 @@ function _jac_coord!(
     )
 
     if nlp.meta.nnzj != nini
-        @warn "hess_coord!: Size of vals and number of assignements didn't match"
+        @warn "hess_coord!: Size of vals and number of assignements didn't match $(nlp.meta.nnzh) vs $(nini)"
     end
     return vals
 end
@@ -1134,14 +1149,19 @@ function hprod!(
     @lencheck nlp.meta.ncon λ
     increment!(nlp, :neval_hprod)
 
-    λ_pde = λ[1:nlp.nvar_pde]
-    λ_con = λ[nlp.nvar_pde+1:nlp.meta.ncon]
+    #λ_pde = λ[1:nlp.nvar_pde]
+    #λ_con = λ[nlp.nvar_pde+1:nlp.meta.ncon]
+    # _from_terms_to_hprod!(nlp.op, x, λ_pde, v, nlp, Hv, obj_weight)
 
-    _from_terms_to_hprod!(nlp.op, x, λ_pde, v, nlp, Hv, obj_weight)
+    rows, cols = hess_structure(nlp)
+    vals = hess_coord(nlp, x, λ, obj_weight=obj_weight)
+    decrement!(nlp, :neval_hess)
+    coo_sym_prod!(cols, rows, vals, v, Hv)
 
     return Hv
 end
 
+#=
 function _from_terms_to_hprod!(
     op::Gridap.FESpaces.AffineFEOperator,
     x::AbstractVector{T},
@@ -1178,11 +1198,10 @@ function _from_terms_to_hprod!(
 
         return obj_weight * sum(int) + dot(c, λ)
     end
-    ############# Tanj: test this #################################
-    #agrad(t) = ForwardDiff.gradient(x->(obj_weight * obj(nlp, x) + dot(cons(nlp, x), λ)), x + t*v)
+
     agrad(t) = ForwardDiff.gradient(x -> ℓ(x, λ), x + t * v)
-    ###############################################################
     Hv .= ForwardDiff.derivative(t -> agrad(t), 0.0)
 
     return Hv
 end
+=#
