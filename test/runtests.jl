@@ -24,6 +24,7 @@ const pde_problems = [
   "BASICUNCONSTRAINED",
   "PENALIZEDPOISSON",
   "INCOMPRESSIBLENAVIERSTOKES",
+  "POISSONMIXED",
 ] #use upper-case
 
 for problem in pde_problems
