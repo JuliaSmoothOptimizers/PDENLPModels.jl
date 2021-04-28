@@ -466,10 +466,6 @@ function _compute_hess_k_coo(
     #This works:
     yu = FEFunction(nlp.Y, xyu)
 
-    #gk = @closure k -> _compute_gradient_k(nlp.tnrj, k, yu)
-    #@warn "Hkk not used"
-    #Hkk = ForwardDiff.jacobian(gk, κ)
-
     if !term.inde
         @warn "works only for independant terms k and yu, so that Hkyu = 0"
 
@@ -575,21 +571,52 @@ function _compute_hess_k_vals(
     xyu::AbstractVector{T},
 ) where {T}
 
-    nnz = Int(nlp.nparam * (nlp.nparam + 1) / 2)# + (nlp.meta.nvar - nlp.nparam) * nlp.nparam
-    yu = FEFunction(nlp.Y, xyu)
+    inde = (typeof(nlp.tnrj) <: MixedEnergyFETerm && nlp.tnrj.inde) || typeof(nlp.tnrj) <: NoFETerm
 
-    gk = @closure k -> _compute_gradient_k(nlp.tnrj, k, yu)
-    Hkk = ForwardDiff.jacobian(gk, κ)
+    if inde
+        nnz = Int(nlp.nparam * (nlp.nparam + 1) / 2)
+        prows = nlp.nparam
+        yu = FEFunction(nlp.Y, xyu)
 
-    if !term.inde
-        @warn "works only for independant terms k and yu, so that Hkyu = 0"
+        gk = @closure k -> _compute_gradient_k(nlp.tnrj, k, yu)
+        Hxk = ForwardDiff.jacobian(gk, κ)
+    else
+        nnz = Int(nlp.nparam * (nlp.nparam + 1) / 2) + (nlp.meta.nvar - nlp.nparam) * nlp.nparam
+        prows = nlp.meta.nvar
+        #Hxk = ForwardDiff.jacobian(k -> grad(nlp, vcat(k, xyu)), κ) #doesn't work :(
+        function _obj(x)
+            κ, xyu = x[1:nlp.nparam], x[nlp.nparam+1:nlp.meta.nvar]
+            yu = FEFunction(nlp.Y, xyu)
+            int = _obj_integral(nlp.tnrj, κ, yu)
+            return sum(int)
+        end
+        Hxk = ForwardDiff.jacobian(k -> ForwardDiff.gradient(_obj, vcat(k, xyu)), κ)
+        #=
+        function _grad(k)
+            g = similar(k, nlp.meta.nvar)
+            _compute_gradient!(g, term, k, yu, nlp.Y, nlp.X)
+            return g
+        end
+        @show _grad(κ), _grad(κ .+ 1.)
+        Hxk = ForwardDiff.jacobian(_grad, κ)
+        @show Hxk
+        =#
+        #@show "2nd try:"
+        #intf = k -> ForwardDiff.gradient(x -> sum(integrate(term.f(k, x), term.trian, term.quad)), xyu)
+        #Hxk2 = ForwardDiff.jacobian(intf, κ)
+        #@show Hxk2
+        #We need the gradient w.r.t. yu and then derive by k
     end
     vals = zeros(T, nnz)#Array{T,1}(undef, nnz) #TODO not smart
+
+    # simplify?
     k = 1
     for j = 1:nlp.nparam
-        for i = j:nlp.nparam
-            vals[k] = Hkk[i, j]
-            k += 1
+        for i = j:prows
+            if j ≤ i
+                vals[k] = Hxk[i, j]
+                k += 1
+            end
         end
     end
 

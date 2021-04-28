@@ -355,6 +355,7 @@ function hess_obj_structure!(
     return (rows, cols)
 end
 
+#=
 function hess(
     nlp::GridapPDENLPModel,
     x::AbstractVector{T};
@@ -380,6 +381,7 @@ function hess(
 
     return hess_yu
 end
+=#
 
 function hess_coord(
     nlp::GridapPDENLPModel,
@@ -479,7 +481,10 @@ function hprod!(
     end
 
     #Only one lower triangular of the Hessian
-    (rows, cols, vals) = hess_coo(nlp, x, obj_weight = obj_weight)
+    #(rows, cols, vals) = hess_coo(nlp, x, obj_weight = obj_weight)
+    rows, cols = hess_structure(nlp)
+    vals = hess_coord(nlp, x, obj_weight = obj_weight)
+    decrement!(nlp, :neval_hess)
 
     coo_sym_prod!(cols, rows, vals, v, Hv)
 
@@ -493,7 +498,10 @@ function hess_op!(
     obj_weight::Real = one(eltype(x)),
 )
     @lencheck nlp.meta.nvar x Hv
-    (rows, cols, vals) = hess_coo(nlp, x, obj_weight = obj_weight)
+    #(rows, cols, vals) = hess_coo(nlp, x, obj_weight = obj_weight)
+    rows, cols = hess_structure(nlp)
+    vals = hess_coord(nlp, x, obj_weight = obj_weight)
+    decrement!(nlp, :neval_hess)
     prod = @closure v -> coo_sym_prod!(cols, rows, vals, v, Hv)
     return LinearOperator{eltype(x)}(
         nlp.meta.nvar,
