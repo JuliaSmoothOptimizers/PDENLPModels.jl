@@ -180,37 +180,6 @@ function grad!(nlp::GridapPDENLPModel, x::AbstractVector, g::AbstractVector)
     return _compute_gradient!(g, nlp.tnrj, κ, yu, nlp.Y, nlp.X)
 end
 
-function hess_coo(
-    nlp::GridapPDENLPModel,
-    x::AbstractVector;
-    obj_weight::Real = one(eltype(x)),
-)
-
-    κ, xyu = x[1:nlp.nparam], x[nlp.nparam+1:nlp.meta.nvar]
-    yu = FEFunction(nlp.Y, xyu)
-
-    (I2, J2, V2) = _compute_hess_coo(nlp.tnrj, κ, yu, nlp.Y, nlp.X)
-
-    if nlp.nparam > 0
-        (I1, J1, V1) = _compute_hess_k_coo(nlp, nlp.tnrj, κ, xyu)
-        if obj_weight == one(eltype(x))
-            return (vcat(I1, I2 .+ nlp.nparam), vcat(J1, J2 .+ nlp.nparam), vcat(V1, V2))
-        else
-            return (
-                vcat(I1, I2 .+ nlp.nparam),
-                vcat(J1, J2 .+ nlp.nparam),
-                vcat(obj_weight * V1, obj_weight * V2),
-            )
-        end
-    end
-
-    if obj_weight == one(eltype(x))
-        return (I2, J2, V2)
-    end
-
-    return (I2, J2, obj_weight * V2)
-end
-
 function hess_yu_obj_structure(nlp::GridapPDENLPModel)
 
     # Special case as nlp.tnrj has no field trian.    
@@ -452,8 +421,6 @@ function hprod!(
         return Hv
     end
 
-    #Only one lower triangular of the Hessian
-    #(rows, cols, vals) = hess_coo(nlp, x, obj_weight = obj_weight)
     rows, cols = hess_structure(nlp)
     vals = hess_coord(nlp, x, obj_weight = obj_weight)
     decrement!(nlp, :neval_hess)
@@ -470,7 +437,7 @@ function hess_op!(
     obj_weight::Real = one(eltype(x)),
 )
     @lencheck nlp.meta.nvar x Hv
-    #(rows, cols, vals) = hess_coo(nlp, x, obj_weight = obj_weight)
+
     rows, cols = hess_structure(nlp)
     vals = hess_coord(nlp, x, obj_weight = obj_weight)
     decrement!(nlp, :neval_hess)
@@ -494,107 +461,6 @@ function hess_op(
     @lencheck nlp.meta.nvar x
     Hv = similar(x)
     return hess_op!(nlp, x, Hv, obj_weight = obj_weight)
-end
-
-"""
-`hess_coo`: return the hessian of the constraints in COO-format.
-
-Notes:    
-- `hess_coo(nlp, op :: AffineFEOperator, x, λ)`: return 0-matrix
-- `hess_coo(nlp, op :: FEOperatorFromTerms, x, λ)`: iterate over the terms
-
-TODO:
-make it a real COO-format function.
-
-do not work with parameters.
-"""
-function hess_coo(
-    nlp::GridapPDENLPModel,
-    op::AffineFEOperator,
-    x::AbstractVector,
-    λ::AbstractVector,
-)
-    mdofs = Gridap.FESpaces.num_free_dofs(nlp.X) + nlp.nparam
-    ndofs = Gridap.FESpaces.num_free_dofs(nlp.Y) + nlp.nparam
-    return findnz(spzeros(mdofs, ndofs))
-end
-
-function hess_coo(
-    nlp::GridapPDENLPModel,
-    op::Gridap.FESpaces.FEOperatorFromTerms,
-    x::AbstractVector{T},
-    λ::AbstractVector,
-) where {T}
-
-    nnzh_obj = get_nnzh(nlp.tnrj, nlp.Y, nlp.X, nlp.nparam, nlp.meta.nvar)
-    nnzh = nlp.meta.nnzh - nnzh_obj
-    (rows, cols, vals) =
-        Vector{Int}(undef, nnzh), Vector{Int}(undef, nnzh), Vector{T}(undef, nnzh)
-
-    κ, xyu = x[1:nlp.nparam], x[nlp.nparam+1:nlp.meta.nvar]
-    yu = FEFunction(nlp.Y, xyu)
-
-    cell_yu = Gridap.FESpaces.get_cell_values(yu)
-    cell_id_yu = Gridap.Arrays.IdentityVector(length(cell_yu))
-
-    nini = 0
-    for term in op.terms
-        if !(
-            typeof(term) <: Union{
-                Gridap.FESpaces.NonlinearFETermWithAutodiff,
-                Gridap.FESpaces.NonlinearFETerm,
-            }
-        )
-            continue
-        end
-
-        λf = FEFunction(nlp.Xpde, λ)
-        cell_λf = Gridap.FESpaces.get_cell_values(λf)
-        lfh = CellField(nlp.Xpde, cell_λf)
-        _lfh = Gridap.FESpaces.restrict(lfh, term.trian) #This is where the term play a first role.
-
-        function _cell_res_yu(cell)
-            xfh = CellField(nlp.Y, cell)
-            _xfh = Gridap.FESpaces.restrict(xfh, term.trian)
-
-            if length(κ) > 0
-                _res = integrate(term.res(κ, _xfh, _lfh), term.trian, term.quad)
-            else
-                _res = integrate(term.res(_xfh, _lfh), term.trian, term.quad)
-            end
-            lag = _res
-            return lag
-        end
-
-        #Compute the hessian with AD
-        cell_r_yu = Gridap.Arrays.autodiff_array_hessian(_cell_res_yu, cell_yu, cell_id_yu)
-        #Assemble the matrix in the "good" space
-        assem = Gridap.FESpaces.SparseMatrixAssembler(nlp.Y, nlp.X)
-        (I, J, V) = assemble_hess(assem, cell_r_yu, cell_id_yu)
-        nn = length(V)
-        rows[nini+1:nini+nn] .= I
-        cols[nini+1:nini+nn] .= J
-        vals[nini+1:nini+nn] .= V
-
-        nini += nn
-
-        #= What about extra parameters????
-        if nlp.nparam > 0
-          (I1, J1, V1) = _compute_hess_k_coo(nlp, nlp.tnrj, κ, xyu)
-          if obj_weight == one(eltype(x))
-            return (vcat(I1, I2 .+ nlp.nparam),
-                    vcat(J1, J2 .+ nlp.nparam),
-                    vcat(V1, V2))
-          else
-            return (vcat(I1, I2 .+ nlp.nparam),
-                    vcat(J1, J2 .+ nlp.nparam),
-                    vcat(obj_weight * V1, obj_weight * V2))
-          end
-        end
-        =#
-    end
-
-    return (rows, cols, vals)
 end
 
 function hess_structure!(
