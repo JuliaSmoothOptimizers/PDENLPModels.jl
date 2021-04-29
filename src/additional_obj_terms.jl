@@ -301,7 +301,7 @@ function MixedEnergyFETerm(
     n::Integer,
 )
     #ispace :: FESpace)
-    inde = true
+    inde = false
     #return MixedEnergyFETerm(f, trian, quad, n, inde, ispace)
     return MixedEnergyFETerm(f, trian, quad, n, inde)
 end

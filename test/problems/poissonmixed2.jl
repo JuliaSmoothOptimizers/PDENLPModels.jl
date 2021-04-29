@@ -47,7 +47,7 @@ function poissonmixed2(args...; n = 3, kwargs...)
     conformity=:H1, model=model)
     Large = MultiFieldFESpace(repeat([Vp], 2))
     #nrj = MixedEnergyFETerm(fk, trian, quad, 2, Large) #length(k)=2
-    nrj = MixedEnergyFETerm(fk, trian, quad, 2, false)
+    nrj = MixedEnergyFETerm(fk, trian, quad, 2)
 
     nUg = num_free_dofs(Ug)
     x0  = zeros(nUg + 2) #zeros(nUg + 2)
