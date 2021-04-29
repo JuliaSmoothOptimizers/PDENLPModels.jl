@@ -156,10 +156,8 @@ function burger1d_test(; udc = false)
   end
 
   # hprod!(nlp  :: GridapPDENLPModel, x :: AbstractVector, λ :: AbstractVector, v :: AbstractVector, Hv :: AbstractVector
-  Hv =
-    hprod(nlp, sol_gridap, rand(nlp.meta.ncon), rand(nlp.meta.nvar), obj_weight = 0.0)
+  Hv = hprod(nlp, sol_gridap, rand(nlp.meta.ncon), rand(nlp.meta.nvar), obj_weight = 0.0)
   @test Hv[512:1024] == zeros(513)
-  Hvo =
-    hprod(nlp, sol_gridap, zeros(nlp.meta.ncon), rand(nlp.meta.nvar), obj_weight = 0.0)
+  Hvo = hprod(nlp, sol_gridap, zeros(nlp.meta.ncon), rand(nlp.meta.nvar), obj_weight = 0.0)
   @test Hvo == zeros(1024)
 end

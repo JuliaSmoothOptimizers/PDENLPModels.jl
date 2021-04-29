@@ -5,16 +5,16 @@ using PDENLPModels
 
 # Add index.md file as introduction to navigation menu
 pages = [
-    "Introduction" => "index.md",
-    "PDENLPModels Progress" => "nlpmodels.md",
-    "Krylov.jl to solve linear PDE" => "KrylovforLinearPDE.md",
+  "Introduction" => "index.md",
+  "PDENLPModels Progress" => "nlpmodels.md",
+  "Krylov.jl to solve linear PDE" => "KrylovforLinearPDE.md",
 ]
 
 makedocs(
-    sitename = "PDENLPModels.jl",
-    format = Documenter.HTML(),
-    modules = [PDENLPModels],
-    pages = pages,
+  sitename = "PDENLPModels.jl",
+  format = Documenter.HTML(),
+  modules = [PDENLPModels],
+  pages = pages,
 )
 
 # Documenter can also automatically deploy documentation to gh-pages.
