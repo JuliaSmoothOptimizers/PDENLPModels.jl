@@ -31,6 +31,14 @@ X = MultiFieldFESpace([Xpde, Xcon])
 nY = num_free_dofs(Y)
 nYpde = num_free_dofs(Ypde)
 
+@testset "VoidFESpace" begin
+  fespace = PDENLPModels.VoidMultiFieldFESpace() 
+  @test fespace != nothing
+  @test PDENLPModels.num_fields(fespace) == 0
+  @test PDENLPModels._fespace_to_multifieldfespace(Y) == Y
+  @test PDENLPModels._fespace_to_multifieldfespace(fespace) == fespace
+  @test PDENLPModels._fespace_to_multifieldfespace(PDENLPModels.VoidFESpace()) != nothing # PDENLPModels.VoidMultiFieldFESpace()
+end
 
 @testset "Constructors for GridapPDENLPModel" begin
   x0 = zeros(3)
@@ -656,6 +664,9 @@ nYpde = num_free_dofs(Ypde)
     lvaru = lvaru,
     uvaru = uvaru,
   )
+
+  io = IOBuffer()
+  show(io, nlp)
 end
 
 #Test util_functions.jl

@@ -58,11 +58,3 @@ function poissonmixed2_test()
     nlp = poissonmixed2(n = 5)
 
 end
-
-poissonmixed2_test()
-nlp = poissonmixed2()
-check_nlp_dimensions(nlp)
-view_subarray_nlp(nlp)
-coord_memory_nlp(nlp)
-@show hessian_check(nlp)
-consistent_nlps([nlp, nlp])

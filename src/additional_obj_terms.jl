@@ -326,6 +326,7 @@ function _obj_cell_integral(term::MixedEnergyFETerm, κ::AbstractVector, yuh::Ce
     return integrate(term.f(κ, _yuh), term.trian, term.quad)
 end
 
+#=
 function _obj_cell_integral(term::MixedEnergyFETerm, κ::CellFieldType, yuh::CellFieldType)
 
     _yuh = Gridap.FESpaces.restrict(yuh, term.trian)
@@ -333,6 +334,7 @@ function _obj_cell_integral(term::MixedEnergyFETerm, κ::CellFieldType, yuh::Cel
 
     return integrate(term.f(_κ, _yuh), term.trian, term.quad)
 end
+=#
 
 function _compute_gradient!(
     g::AbstractVector,

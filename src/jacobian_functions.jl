@@ -153,8 +153,6 @@ function count_nnz_jac(
     if Ycon != VoidFESpace()
         assem_u = Gridap.FESpaces.SparseMatrixAssembler(Ycon, Xpde)
         nini += count_nnz_coo_short(assem_u, (ru, cu))
-    else
-        #nothing
     end
 
     assem_y = Gridap.FESpaces.SparseMatrixAssembler(Ypde, Xpde)
@@ -344,8 +342,6 @@ function _from_terms_to_jacobian_vals!(
     if Ycon != VoidFESpace()
         assem_u = Gridap.FESpaces.SparseMatrixAssembler(Ycon, Xpde)
         nini = assemble_jac_vals!(vals, assem_u, (wu, ru, cu), n = nini)
-    else
-        #nothing
     end
 
     assem = Gridap.FESpaces.SparseMatrixAssembler(Y, Xpde)

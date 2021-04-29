@@ -81,10 +81,3 @@ function poissonparam_test()
     @test hprod(nlp, x1, l, vr) ≈ Symmetric(hess(nlp, x1, l), :L) * vr atol = 1e-14
 
 end
-
-poissonparam_test()
-nlp = poissonparam()
-check_nlp_dimensions(nlp)
-view_subarray_nlp(nlp)
-coord_memory_nlp(nlp)
-consistent_nlps([nlp, nlp])
