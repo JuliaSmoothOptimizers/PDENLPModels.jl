@@ -44,9 +44,7 @@ function penalizedpoisson(args...; n = 2^4, kwargs...)
   return GridapPDENLPModel(xin, f, trian, quad, Ypde, Xpde)
 end
 
-
 function penalizedpoisson_test(; udc = false)
-
   nlp = penalizedpoisson()
   x1 = vcat(rand(Gridap.FESpaces.num_free_dofs(nlp.Ypde)))
   v = x1
@@ -67,12 +65,12 @@ function penalizedpoisson_test(; udc = false)
   if udc
     # Check derivatives using NLPModels tools:
     # https://github.com/JuliaSmoothOptimizers/NLPModels.jl/blob/master/src/dercheck.jl
-    @test gradient_check(nlp) == Dict{Int64,Float64}()
-    @test jacobian_check(nlp) == Dict{Tuple{Int64,Int64},Float64}() #not a surprise as there are no constraints...
+    @test gradient_check(nlp) == Dict{Int64, Float64}()
+    @test jacobian_check(nlp) == Dict{Tuple{Int64, Int64}, Float64}() #not a surprise as there are no constraints...
     H_errs = hessian_check(nlp) #slow
-    @test H_errs[0] == Dict{Int,Dict{Tuple{Int,Int},Float64}}()
+    @test H_errs[0] == Dict{Int, Dict{Tuple{Int, Int}, Float64}}()
     H_errs_fg = hessian_check_from_grad(nlp)
-    @test H_errs_fg[0] == Dict{Int,Dict{Tuple{Int,Int},Float64}}()
+    @test H_errs_fg[0] == Dict{Int, Dict{Tuple{Int, Int}, Float64}}()
   end
 
   ###############################################################################

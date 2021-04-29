@@ -63,7 +63,7 @@ local_test = false
       end
       @info "$(problem) coord"
       @testset "Test coord memory" begin
-      @time coord_memory_nlp(nlp)
+        @time coord_memory_nlp(nlp)
       end
     end
   end

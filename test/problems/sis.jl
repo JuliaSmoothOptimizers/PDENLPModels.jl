@@ -51,17 +51,17 @@ function sis_test(; x0 = [1, 2], n = 10, a = 0.2, b = 0.7, T = 1)
   h = T / n
   N = sum(x0)
   F(x) = vcat(
-    a .* x[1:n] .* x[n+1:2*n] .- b .* x[1:n],
-    b .* x[1:n] .- a .* x[1:n] .* x[n+1:2*n],
+    a .* x[1:n] .* x[(n + 1):(2 * n)] .- b .* x[1:n],
+    b .* x[1:n] .- a .* x[1:n] .* x[(n + 1):(2 * n)],
   )
 
   AI = 1 / h * Bidiagonal(ones(n), -ones(n - 1), :L)
   AS = 1 / h * Bidiagonal(ones(n), -ones(n - 1), :L)
   A0 = zeros(2 * n)
   A0[1] = -x0[1] / h
-  A0[n+1] = -x0[2] / h
+  A0[n + 1] = -x0[2] / h
 
-  c(x) = vcat(AI * x[1:n], AS * x[n+1:2*n]) + A0 - F(x)
+  c(x) = vcat(AI * x[1:n], AS * x[(n + 1):(2 * n)]) + A0 - F(x)
 
   ################################################################
   # The exact solution of the ODE is given by:
@@ -116,11 +116,11 @@ function sis_test(; x0 = [1, 2], n = 10, a = 0.2, b = 0.7, T = 1)
 
   #check derivatives
   @test gradient_check(nlp, x = xr, atol = atol, rtol = rtol) ==
-    Dict{Tuple{Int64,Int64},Float64}()
+        Dict{Tuple{Int64, Int64}, Float64}()
   @test jacobian_check(nlp, x = xr, atol = atol, rtol = rtol) ==
-    Dict{Tuple{Int64,Int64},Float64}()
+        Dict{Tuple{Int64, Int64}, Float64}()
   ymp = hessian_check(nlp, x = xr, atol = atol, rtol = rtol)
-  @test !any(x -> x != Dict{Tuple{Int64,Int64},Float64}(), values(ymp))
+  @test !any(x -> x != Dict{Tuple{Int64, Int64}, Float64}(), values(ymp))
   ymp2 = hessian_check_from_grad(nlp, x = xr, atol = atol, rtol = rtol)
-  @test !any(x -> x != Dict{Tuple{Int64,Int64},Float64}(), values(ymp2))
+  @test !any(x -> x != Dict{Tuple{Int64, Int64}, Float64}(), values(ymp2))
 end

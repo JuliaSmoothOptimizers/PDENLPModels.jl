@@ -72,8 +72,7 @@ function dynamicsir(args...; x0 = [1, 2], n = 10, T = 1, kwargs...)
   #we need to be smart to avoid divisions
   function f(yu) #:: Union{Gridap.MultiField.MultiFieldFEFunction, Gridap.CellData.GenericCellField}
     I, S, bf, cf = yu
-    0.5 * ((bf ⋅ w0) - w1) ⋅ ((bf ⋅ w0) - w1) +
-    0.5 * ((cf ⋅ w0) - w2) ⋅ ((cf ⋅ w0) - w2)
+    0.5 * ((bf ⋅ w0) - w1) ⋅ ((bf ⋅ w0) - w1) + 0.5 * ((cf ⋅ w0) - w2) ⋅ ((cf ⋅ w0) - w2)
   end
 
   ndofs = Gridap.FESpaces.num_free_dofs(Ypde) + Gridap.FESpaces.num_free_dofs(Ycon)
@@ -152,11 +151,11 @@ function dynamicsir_test(; x0 = [1, 2], n = 10, T = 1)
 
   #check derivatives
   @test gradient_check(nlp, x = xr, atol = atol, rtol = rtol) ==
-    Dict{Tuple{Int64,Int64},Float64}()
+        Dict{Tuple{Int64, Int64}, Float64}()
   @test jacobian_check(nlp, x = xr, atol = atol, rtol = rtol) ==
-    Dict{Tuple{Int64,Int64},Float64}()
+        Dict{Tuple{Int64, Int64}, Float64}()
   ymp = hessian_check(nlp, x = xr, atol = atol, rtol = rtol)
-  @test !any(x -> x != Dict{Tuple{Int64,Int64},Float64}(), values(ymp))
+  @test !any(x -> x != Dict{Tuple{Int64, Int64}, Float64}(), values(ymp))
   ymp2 = hessian_check_from_grad(nlp, x = xr, atol = atol, rtol = rtol) #uses the jacobian
-  @test !any(x -> x != Dict{Tuple{Int64,Int64},Float64}(), values(ymp2))
+  @test !any(x -> x != Dict{Tuple{Int64, Int64}, Float64}(), values(ymp2))
 end

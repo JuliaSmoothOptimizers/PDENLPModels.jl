@@ -42,7 +42,6 @@ function basicunconstrained(args...; n = 2^4, kwargs...)
 end
 
 function basicunconstrained_test(; udc = false)
-
   n = 10
   nlp = basicunconstrained(n = n)
   ubis(x) = x[1]^2 + x[2]^2
@@ -74,10 +73,7 @@ function basicunconstrained_test(; udc = false)
   Ycon = Ucon
   trian = Triangulation(model)
 
-  x1 = vcat(
-    rand(Gridap.FESpaces.num_free_dofs(Ypde)),
-    ones(Gridap.FESpaces.num_free_dofs(Ycon)),
-  )
+  x1 = vcat(rand(Gridap.FESpaces.num_free_dofs(Ypde)), ones(Gridap.FESpaces.num_free_dofs(Ycon)))
   x = x1
   v = x1
 
@@ -120,11 +116,11 @@ function basicunconstrained_test(; udc = false)
     println("derivatives check. This may take approx. 5 minutes.")
     #Check derivatives using NLPModels tools:
     #https://github.com/JuliaSmoothOptimizers/NLPModels.jl/blob/master/src/dercheck.jl
-    @test gradient_check(nlp) == Dict{Int64,Float64}()
-    @test jacobian_check(nlp) == Dict{Tuple{Int64,Int64},Float64}() #not a surprise as there are no constraints...
+    @test gradient_check(nlp) == Dict{Int64, Float64}()
+    @test jacobian_check(nlp) == Dict{Tuple{Int64, Int64}, Float64}() #not a surprise as there are no constraints...
     H_errs = hessian_check(nlp) #slow
-    @test H_errs[0] == Dict{Int,Dict{Tuple{Int,Int},Float64}}()
+    @test H_errs[0] == Dict{Int, Dict{Tuple{Int, Int}, Float64}}()
     H_errs_fg = hessian_check_from_grad(nlp)
-    @test H_errs_fg[0] == Dict{Int,Dict{Tuple{Int,Int},Float64}}()
+    @test H_errs_fg[0] == Dict{Int, Dict{Tuple{Int, Int}, Float64}}()
   end
 end

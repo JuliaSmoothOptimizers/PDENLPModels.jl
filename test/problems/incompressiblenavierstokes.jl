@@ -1,5 +1,4 @@
 function incompressiblenavierstokes(args...; n = 3, kwargs...)
-
   domain = (0, 1, 0, 1)
   partition = (n, n)
   model = CartesianDiscreteModel(domain, partition)
@@ -13,7 +12,7 @@ function incompressiblenavierstokes(args...; n = 3, kwargs...)
   V = TestFESpace(
     reffe = :Lagrangian,
     conformity = :H1,
-    valuetype = VectorValue{D,Float64},
+    valuetype = VectorValue{D, Float64},
     model = model,
     labels = labels,
     order = order,
@@ -79,7 +78,6 @@ function incompressiblenavierstokes(args...; n = 3, kwargs...)
 end
 
 function incompressiblenavierstokes_test(; udc = false)
-
   nlp = incompressiblenavierstokes()
   xin = nlp.meta.x0
   ndofs = nlp.meta.nvar
@@ -100,8 +98,7 @@ function incompressiblenavierstokes_test(; udc = false)
   # 2.492 ms (19611 allocations: 2.16 MiB) for residual
 
   cx = cons(nlp, xin)
-  Gcx =
-    Gridap.FESpaces.residual(nlp.op, FEFunction(Gridap.FESpaces.get_trial(nlp.op), xin))
+  Gcx = Gridap.FESpaces.residual(nlp.op, FEFunction(Gridap.FESpaces.get_trial(nlp.op), xin))
   @test norm(cx - Gcx, Inf) == 0.0
   @test length(cx) == ndofs
 
@@ -115,8 +112,7 @@ function incompressiblenavierstokes_test(; udc = false)
   # 25.290 ms (71788 allocations: 31.69 MiB) for jacobian without analytical jacobian
   # 8.562 ms (56321 allocations: 6.61 MiB) for jacobian with analytical jacobian
   Jx = jac(nlp, xin)
-  GJx =
-    Gridap.FESpaces.jacobian(nlp.op, FEFunction(Gridap.FESpaces.get_trial(nlp.op), xin))
+  GJx = Gridap.FESpaces.jacobian(nlp.op, FEFunction(Gridap.FESpaces.get_trial(nlp.op), xin))
   #=
   GJx_with_jac = Gridap.FESpaces.jacobian(op_with_jac, FEFunction(Gridap.FESpaces.get_trial(nlp.op), xin))
   @test issparse(Jx)
@@ -145,17 +141,12 @@ function incompressiblenavierstokes_test(; udc = false)
   uh, ph = solve(solver, nlp.op)
   sol_gridap = vcat(get_free_values(uh), get_free_values(ph))
 
-  cGx = Gridap.FESpaces.residual(
-    nlp.op,
-    FEFunction(Gridap.FESpaces.get_trial(nlp.op), sol_gridap),
-  )
+  cGx = Gridap.FESpaces.residual(nlp.op, FEFunction(Gridap.FESpaces.get_trial(nlp.op), sol_gridap))
   cx = cons(nlp, sol_gridap)
   @test norm(cx - cGx, Inf) <= eps(Float64)
 
-  JGsolx = Gridap.FESpaces.jacobian(
-    nlp.op,
-    FEFunction(Gridap.FESpaces.get_trial(nlp.op), sol_gridap),
-  )
+  JGsolx =
+    Gridap.FESpaces.jacobian(nlp.op, FEFunction(Gridap.FESpaces.get_trial(nlp.op), sol_gridap))
   Jsolx = jac(nlp, sol_gridap)
   @test norm(JGsolx - Jsolx, Inf) <= eps(Float64)
 

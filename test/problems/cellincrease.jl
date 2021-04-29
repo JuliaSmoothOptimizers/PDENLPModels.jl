@@ -76,7 +76,6 @@ end
 # Testing:
 
 function cellincrease_test(args...; x0 = [0.6, 0.1], n = 10, T = 7, kwargs...)
-
   atol, rtol = √eps(), √eps()
   n = 10
   nlp = cellincrease(x0, n, T)
@@ -84,11 +83,11 @@ function cellincrease_test(args...; x0 = [0.6, 0.1], n = 10, T = 7, kwargs...)
 
   #check derivatives
   @test gradient_check(nlp, x = xr, atol = atol, rtol = rtol) ==
-    Dict{Tuple{Int64,Int64},Float64}()
+        Dict{Tuple{Int64, Int64}, Float64}()
   @test jacobian_check(nlp, x = xr, atol = atol, rtol = rtol) ==
-    Dict{Tuple{Int64,Int64},Float64}()
+        Dict{Tuple{Int64, Int64}, Float64}()
   ymp = hessian_check(nlp, x = xr, atol = atol, rtol = rtol)
-  @test !any(x -> x != Dict{Tuple{Int64,Int64},Float64}(), values(ymp))
+  @test !any(x -> x != Dict{Tuple{Int64, Int64}, Float64}(), values(ymp))
   ymp2 = hessian_check_from_grad(nlp, x = xr, atol = atol, rtol = rtol) #uses the jacobian
-  @test !any(x -> x != Dict{Tuple{Int64,Int64},Float64}(), values(ymp2))
+  @test !any(x -> x != Dict{Tuple{Int64, Int64}, Float64}(), values(ymp2))
 end

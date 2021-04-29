@@ -17,13 +17,8 @@ f(x) = dot(x, x)
 trian = Triangulation(model)
 quad = CellQuadrature(trian, 1)
 
-Xcon = TestFESpace(
-  reffe = :Lagrangian,
-  order = 1,
-  valuetype = Float64,
-  conformity = :H1,
-  model = model,
-)
+Xcon =
+  TestFESpace(reffe = :Lagrangian, order = 1, valuetype = Float64, conformity = :H1, model = model)
 Ycon = TrialFESpace(Xcon)
 Y = MultiFieldFESpace([Ypde, Ycon])
 X = MultiFieldFESpace([Xpde, Xcon])
@@ -32,7 +27,7 @@ nY = num_free_dofs(Y)
 nYpde = num_free_dofs(Ypde)
 
 @testset "VoidFESpace" begin
-  fespace = PDENLPModels.VoidMultiFieldFESpace() 
+  fespace = PDENLPModels.VoidMultiFieldFESpace()
   @test fespace != nothing
   @test PDENLPModels.num_fields(fespace) == 0
   @test PDENLPModels._fespace_to_multifieldfespace(Y) == Y
@@ -121,54 +116,10 @@ end
   nlp = GridapPDENLPModel(x0y, NTf, Ypde, Xpde, cter, lvar = lvary, uvar = uvary)
   nlp = GridapPDENLPModel(x0y, EFT, Ypde, Xpde, cter, lvar = lvary, uvar = uvary)
   nlp = GridapPDENLPModel(x0y, MEFT, Ypde, Xpde, cter, lvar = lvary, uvar = uvary)
-  nlp = GridapPDENLPModel(
-    x0,
-    NT,
-    Ypde,
-    Ycon,
-    Xpde,
-    Xcon,
-    cter,
-    y0 = y0,
-    lcon = lcon,
-    ucon = ucon,
-  )
-  nlp = GridapPDENLPModel(
-    x0,
-    NTf,
-    Ypde,
-    Ycon,
-    Xpde,
-    Xcon,
-    cter,
-    y0 = y0,
-    lcon = lcon,
-    ucon = ucon,
-  )
-  nlp = GridapPDENLPModel(
-    x0,
-    EFT,
-    Ypde,
-    Ycon,
-    Xpde,
-    Xcon,
-    cter,
-    y0 = y0,
-    lcon = lcon,
-    ucon = ucon,
-  )
-  nlp = GridapPDENLPModel(
-    x0,
-    MEFT,
-    Ypde,
-    Ycon,
-    Xpde,
-    Xcon,
-    cter,
-    y0 = y0,
-    lcon = lcon,
-    ucon = ucon,
-  )
+  nlp = GridapPDENLPModel(x0, NT, Ypde, Ycon, Xpde, Xcon, cter, y0 = y0, lcon = lcon, ucon = ucon)
+  nlp = GridapPDENLPModel(x0, NTf, Ypde, Ycon, Xpde, Xcon, cter, y0 = y0, lcon = lcon, ucon = ucon)
+  nlp = GridapPDENLPModel(x0, EFT, Ypde, Ycon, Xpde, Xcon, cter, y0 = y0, lcon = lcon, ucon = ucon)
+  nlp = GridapPDENLPModel(x0, MEFT, Ypde, Ycon, Xpde, Xcon, cter, y0 = y0, lcon = lcon, ucon = ucon)
   nlp = GridapPDENLPModel(
     x0,
     f,
@@ -511,17 +462,7 @@ end
     ucon = baducon,
   )
   #@test_throws DimensionError GridapPDENLPModel(f, trian, quad, Ypde, Ycon, Xpde, Xcon, caff, lvary = badlvary, uvary = baduvary, y0 = bady0, lcon = lcon, ucon = baducon)
-  @test_throws DimensionError GridapPDENLPModel(
-    badx0,
-    f,
-    trian,
-    quad,
-    Ypde,
-    Ycon,
-    Xpde,
-    Xcon,
-    cter,
-  )
+  @test_throws DimensionError GridapPDENLPModel(badx0, f, trian, quad, Ypde, Ycon, Xpde, Xcon, cter)
   @test_throws DimensionError GridapPDENLPModel(
     badx0,
     f,
@@ -569,17 +510,7 @@ end
     lcon = lcon,
     ucon = ucon,
   )
-  @test_throws DimensionError GridapPDENLPModel(
-    badx0,
-    f,
-    trian,
-    quad,
-    Ypde,
-    Ycon,
-    Xpde,
-    Xcon,
-    caff,
-  )
+  @test_throws DimensionError GridapPDENLPModel(badx0, f, trian, quad, Ypde, Ycon, Xpde, Xcon, caff)
   @test_throws DimensionError GridapPDENLPModel(
     badx0,
     f,
@@ -628,15 +559,25 @@ end
     ucon = ucon,
   )
 
-  @test_throws ErrorException(
-    "Error: Xcon or Ycon are both nothing or must be specified.",
-  ) GridapPDENLPModel(x0, NT, Ypde, Ycon, Xpde, PDENLPModels.VoidFESpace(), cter)
-  @test_throws ErrorException(
-    "Error: Xcon or Ycon are both nothing or must be specified.",
-  ) GridapPDENLPModel(x0, NT, Ypde, PDENLPModels.VoidFESpace(), Xpde, Xcon, cter)
-  @test_throws ErrorException(
-    "Error: Xcon or Ycon are both nothing or must be specified.",
-  ) GridapPDENLPModel(
+  @test_throws ErrorException("Error: Xcon or Ycon are both nothing or must be specified.") GridapPDENLPModel(
+    x0,
+    NT,
+    Ypde,
+    Ycon,
+    Xpde,
+    PDENLPModels.VoidFESpace(),
+    cter,
+  )
+  @test_throws ErrorException("Error: Xcon or Ycon are both nothing or must be specified.") GridapPDENLPModel(
+    x0,
+    NT,
+    Ypde,
+    PDENLPModels.VoidFESpace(),
+    Xpde,
+    Xcon,
+    cter,
+  )
+  @test_throws ErrorException("Error: Xcon or Ycon are both nothing or must be specified.") GridapPDENLPModel(
     x0,
     NT,
     Ypde,
@@ -649,9 +590,7 @@ end
     lvaru = lvaru,
     uvaru = uvaru,
   )
-  @test_throws ErrorException(
-    "Error: Xcon or Ycon are both nothing or must be specified.",
-  ) GridapPDENLPModel(
+  @test_throws ErrorException("Error: Xcon or Ycon are both nothing or must be specified.") GridapPDENLPModel(
     x0,
     NT,
     Ypde,
@@ -732,7 +671,7 @@ y, u, k = _split_vector(x0, Ypde, PDENLPModels.VoidFESpace())
   g = similar(vcat(ones(2), x1))
   _compute_gradient!(g, tnrj, ones(2), yu1, Y, X)
   @test g[1:2] == 2 * ones(2)
-  @test g[3:nY+2] == zeros(nY)
+  @test g[3:(nY + 2)] == zeros(nY)
   _H = _compute_hess_coo(tnrj, ones(2), yu1, Y, X)
   @test _obj_integral(tnrj, ones(2), yu2) == 2.0
   @test _obj_cell_integral(tnrj, ones(2), yuh2) == 2.0
@@ -862,102 +801,97 @@ end
       umin,
       umax,
     )
-    @test lvar ==
-      vcat(-T(Inf) * ones(T, 9), [-1.0, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 1.0, 1.0])
-      @test uvar == vcat(T(Inf) * ones(T, 9), 0.5 * ones(T, 9))
-      @test eltype(lvar) == T
-      @test eltype(uvar) == T
-      #Example 1bis:
-      umin(x) = T(x[1] + x[2])
-      umax(x) = T(x[1]^2 + x[2]^2)
-      lvar, uvar = bounds_functions_to_vectors(
-        Y,
-        PDENLPModels.VoidFESpace(),
-        Ypde,
-        trian,
-        umin,
-        umax,
-        nothing,
-        nothing,
-      )
-      @test lvar == [1.0, 0.0, 0.0, 1.0, 1.0, -1.0, 0.0, 0.0, 1.0]
-      @test uvar == 0.5 * ones(T, 9)
-      @test eltype(lvar) == T
-      @test eltype(uvar) == T
-      #Example 2:
-      umin(x) = [T(x[1] + x[2])]
-      umax(x) = [T(x[1]^2 + x[2]^2)]
-      lvar, uvar =
-        bounds_functions_to_vectors(Y, Ycon, Ypde, trian, umin, umax, umin, umax)
-      @test lvar == [
-        1.0,
-        0.0,
-        0.0,
-        1.0,
-        1.0,
-        -1.0,
-        0.0,
-        0.0,
-        1.0,
-        -1.0,
-        0.0,
-        0.0,
-        0.0,
-        1.0,
-        1.0,
-        0.0,
-        1.0,
-        1.0,
-      ]
-      @test uvar == 0.5 * ones(T, 18)
-      @test eltype(lvar) == T
-      @test eltype(uvar) == T
-
+    @test lvar == vcat(-T(Inf) * ones(T, 9), [-1.0, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 1.0, 1.0])
+    @test uvar == vcat(T(Inf) * ones(T, 9), 0.5 * ones(T, 9))
+    @test eltype(lvar) == T
+    @test eltype(uvar) == T
+    #Example 1bis:
+    umin(x) = T(x[1] + x[2])
+    umax(x) = T(x[1]^2 + x[2]^2)
+    lvar, uvar = bounds_functions_to_vectors(
+      Y,
+      PDENLPModels.VoidFESpace(),
+      Ypde,
+      trian,
+      umin,
+      umax,
+      nothing,
+      nothing,
+    )
+    @test lvar == [1.0, 0.0, 0.0, 1.0, 1.0, -1.0, 0.0, 0.0, 1.0]
+    @test uvar == 0.5 * ones(T, 9)
+    @test eltype(lvar) == T
+    @test eltype(uvar) == T
+    #Example 2:
+    umin(x) = [T(x[1] + x[2])]
+    umax(x) = [T(x[1]^2 + x[2]^2)]
+    lvar, uvar = bounds_functions_to_vectors(Y, Ycon, Ypde, trian, umin, umax, umin, umax)
+    @test lvar == [
+      1.0,
+      0.0,
+      0.0,
+      1.0,
+      1.0,
+      -1.0,
+      0.0,
+      0.0,
+      1.0,
+      -1.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      1.0,
+      0.0,
+      1.0,
+      1.0,
+    ]
+    @test uvar == 0.5 * ones(T, 18)
+    @test eltype(lvar) == T
+    @test eltype(uvar) == T
   end
 end
 
 function check_counters(nlp::AbstractNLPModel)
-    #the real list of functions:
-    #[:obj, :grad, :cons, :jcon, :jgrad, :jac, :jprod, :jtprod, :hess, :hprod, :jhprod]
-    for s in [:obj, :grad, :cons, :jac, :hess]
-        eval(Meta.parse("$(s)"))(nlp, nlp.meta.x0)
-        @test eval(Meta.parse("neval_$(s)"))(nlp) == 1
-    end
-    for s in [:jprod, :hprod]
-        eval(Meta.parse("$(s)"))(nlp, nlp.meta.x0, nlp.meta.x0)
-        @test eval(Meta.parse("neval_$(s)"))(nlp) == 1
-    end
-    jtprod(nlp, nlp.meta.x0, nlp.meta.y0)
-    @test nlp.counters.neval_jtprod == 1
+  #the real list of functions:
+  #[:obj, :grad, :cons, :jcon, :jgrad, :jac, :jprod, :jtprod, :hess, :hprod, :jhprod]
+  for s in [:obj, :grad, :cons, :jac, :hess]
+    eval(Meta.parse("$(s)"))(nlp, nlp.meta.x0)
+    @test eval(Meta.parse("neval_$(s)"))(nlp) == 1
+  end
+  for s in [:jprod, :hprod]
+    eval(Meta.parse("$(s)"))(nlp, nlp.meta.x0, nlp.meta.x0)
+    @test eval(Meta.parse("neval_$(s)"))(nlp) == 1
+  end
+  jtprod(nlp, nlp.meta.x0, nlp.meta.y0)
+  @test nlp.counters.neval_jtprod == 1
 
-    reset!(nlp) #we trust reset!
+  reset!(nlp) #we trust reset!
 
-    #test Lagrangian Hessian
-    hess(nlp, nlp.meta.x0, nlp.meta.y0)
-    @test nlp.counters.neval_hess == 1
-    hprod(nlp, nlp.meta.x0, nlp.meta.y0, nlp.meta.x0)
-    @test nlp.counters.neval_hprod == 1
+  #test Lagrangian Hessian
+  hess(nlp, nlp.meta.x0, nlp.meta.y0)
+  @test nlp.counters.neval_hess == 1
+  hprod(nlp, nlp.meta.x0, nlp.meta.y0, nlp.meta.x0)
+  @test nlp.counters.neval_hprod == 1
 
-    reset!(nlp)
+  reset!(nlp)
 end
 
 @testset "Check counters" begin
+  EFT = EnergyFETerm(x -> 1.0, trian, quad)
+  function res(yu, v)
+    y, u = yu
+    y * v
+  end
+  term = FETerm(res, trian, quad)
+  cter = FEOperator(Y, Xpde, term)
+  taff = AffineFETerm(res, v -> 0 * v, trian, quad)
+  caff = AffineFEOperator(Y, Xpde, taff)
+  x0 = zeros(8)
 
-    EFT = EnergyFETerm(x -> 1.0, trian, quad)
-    function res(yu, v)
-        y, u = yu
-        y * v
-    end
-    term = FETerm(res, trian, quad)
-    cter = FEOperator(Y, Xpde, term)
-    taff = AffineFETerm(res, v -> 0 * v, trian, quad)
-    caff = AffineFEOperator(Y, Xpde, taff)
-    x0 = zeros(8)
+  nlp = GridapPDENLPModel(x0, EFT, Ypde, Ycon, Xpde, Xcon, cter)
+  check_counters(nlp)
 
-    nlp = GridapPDENLPModel(x0, EFT, Ypde, Ycon, Xpde, Xcon, cter)
-    check_counters(nlp)
-
-    nlp2 = GridapPDENLPModel(x0, EFT, Ypde, Ycon, Xpde, Xcon, caff)
-    check_counters(nlp2)
-
+  nlp2 = GridapPDENLPModel(x0, EFT, Ypde, Ycon, Xpde, Xcon, caff)
+  check_counters(nlp2)
 end
