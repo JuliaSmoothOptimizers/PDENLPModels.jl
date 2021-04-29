@@ -355,34 +355,6 @@ function hess_obj_structure!(
     return (rows, cols)
 end
 
-#=
-function hess(
-    nlp::GridapPDENLPModel,
-    x::AbstractVector{T};
-    obj_weight::Real = one(T),
-) where {T}
-    @lencheck nlp.meta.nvar x
-    increment!(nlp, :neval_hess)
-
-    mdofs = Gridap.FESpaces.num_free_dofs(nlp.X) + nlp.nparam
-    ndofs = Gridap.FESpaces.num_free_dofs(nlp.Y) + nlp.nparam
-
-    if obj_weight == zero(T)
-        (I, J) = hess_obj_structure(nlp)
-        V = zeros(T, length(J))
-        return sparse(I, J, V, mdofs, ndofs)
-    end
-
-    (I, J, V) = hess_coo(nlp, x, obj_weight = obj_weight)
-
-    @assert mdofs == ndofs #otherwise there is an error in the Trial/Test spaces
-
-    hess_yu = sparse(I, J, V, mdofs, ndofs)
-
-    return hess_yu
-end
-=#
-
 function hess_coord(
     nlp::GridapPDENLPModel,
     x::AbstractVector{T};
@@ -523,39 +495,6 @@ function hess_op(
     Hv = similar(x)
     return hess_op!(nlp, x, Hv, obj_weight = obj_weight)
 end
-
-###########################################################################
-#### Tanj: IS THIS FUNCTION NECESSARY ????
-#=
-function hess(
-    nlp::GridapPDENLPModel,
-    x::AbstractVector{T},
-    λ::AbstractVector{T};
-    obj_weight::Real = one(T),
-) where {T}
-    @lencheck nlp.meta.nvar x
-    @lencheck nlp.meta.ncon λ
-    increment!(nlp, :neval_hess)
-
-    mdofs = Gridap.FESpaces.num_free_dofs(nlp.X) + nlp.nparam
-    ndofs = Gridap.FESpaces.num_free_dofs(nlp.Y) + nlp.nparam
-
-    if obj_weight == zero(T)
-        (I, J) = hess_obj_structure(nlp)
-        V = zeros(T, length(J))
-    else
-        (I, J, V) = hess_coo(nlp, x, obj_weight = obj_weight)
-    end
-
-    @assert mdofs == ndofs #otherwise there is an error in the Trial/Test spaces
-
-    (I2, J2, V2) = hess_coo(nlp, nlp.op, x, λ)
-    hess_lag = sparse(vcat(I, I2), vcat(J, J2), vcat(V, V2), mdofs, ndofs)
-
-    return hess_lag
-end
-=#
-###########################################################################
 
 """
 `hess_coo`: return the hessian of the constraints in COO-format.
