@@ -367,32 +367,6 @@ function _compute_gradient!(
     return g
 end
 
-function _compute_gradient(
-    term::MixedEnergyFETerm,
-    κ::AbstractVector,
-    yu::FEFunctionType,
-    Y::FESpace,
-    X::FESpace,
-)
-
-    cell_yu = Gridap.FESpaces.get_cell_values(yu)
-    cell_id_yu = Gridap.Arrays.IdentityVector(length(cell_yu))
-
-    function _cell_obj_yu(cell)
-        yuh = CellField(Y, cell)
-        _obj_cell_integral(term, κ, yuh)
-    end
-
-    #Compute the gradient with AD
-    cell_r_yu = Gridap.Arrays.autodiff_array_gradient(_cell_obj_yu, cell_yu, cell_id_yu)
-    #Put the result in the format expected by Gridap.FESpaces.assemble_matrix
-    vecdata_yu = [[cell_r_yu], [cell_id_yu]] #TODO would replace by Tuple work?
-    #Assemble the gradient in the "good" space
-    assem = Gridap.FESpaces.SparseMatrixAssembler(Y, X)
-
-    return Gridap.FESpaces.assemble_vector(assem, vecdata_yu)
-end
-
 function _compute_gradient_k(term::MixedEnergyFETerm, κ::AbstractVector, yu::FEFunctionType)
     @lencheck term.nparam κ
     intf = @closure k -> sum(integrate(term.f(k, yu), term.trian, term.quad))
