@@ -27,7 +27,9 @@ const pde_problems = [
   "POISSONMIXED",
   "POISSONPARAM",
   "POISSONMIXED2",
-] #use upper-case
+  "TOREBRACHISTOCHRONE", 
+  "CONTROLELASTICMEMBRANE",
+]
 
 for problem in pde_problems
   include("problems/$(lowercase(problem)).jl")
