@@ -14,9 +14,6 @@ const FEFunctionType =
   Union{Gridap.FESpaces.SingleFieldFEFunction, Gridap.MultiField.MultiFieldFEFunction}
 const CellFieldType = Union{Gridap.MultiField.MultiFieldCellField, Gridap.CellData.GenericCellField}
 
-"""
-Useful structure to avoid putting nothing
-"""
 struct VoidFESpace <: FESpace end
 
 import Gridap.FESpaces.num_free_dofs

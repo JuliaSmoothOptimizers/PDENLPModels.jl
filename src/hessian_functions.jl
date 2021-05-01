@@ -10,14 +10,14 @@ function allocate_coo_vectors_IJ(
   return (zeros(Ti, n), zeros(Ti, n))
 end
 
-"""
+#=
 These functions:
 https://github.com/gridap/Gridap.jl/blob/758a8620756e164ba0e6b83dc8dcbb278015b3d9/src/FESpaces/SparseMatrixAssemblers.jl#L463
 
 https://github.com/gridap/Gridap.jl/blob/758a8620756e164ba0e6b83dc8dcbb278015b3d9/src/Algebra/SparseMatrixCSC.jl
 
 https://github.com/gridap/Gridap.jl/blob/758a8620756e164ba0e6b83dc8dcbb278015b3d9/src/Algebra/SparseMatrices.jl#L29-L33
-"""
+=#
 function assemble_hess(
   a::Gridap.FESpaces.GenericSparseMatrixAssembler,
   cell_r_yu::T,
@@ -261,10 +261,10 @@ end
   n
 end
 
-"""
+#=
 https://github.com/gridap/Gridap.jl/blob/758a8620756e164ba0e6b83dc8dcbb278015b3d9/src/FESpaces/SparseMatrixAssemblers.jl#L463
 _fill_matrix_at_cell! may have a specific specialization
-"""
+=#
 @inline function _fill_hess_at_cell!(
   ::Type{M},
   nini,
@@ -353,10 +353,10 @@ end
   n
 end
 
-"""
+#=
 https://github.com/gridap/Gridap.jl/blob/758a8620756e164ba0e6b83dc8dcbb278015b3d9/src/FESpaces/SparseMatrixAssemblers.jl#L463
 _fill_matrix_at_cell! may have a specific specialization
-"""
+=#
 @inline function _struct_hess_at_cell!(
   ::Type{M},
   nini,
@@ -445,10 +445,10 @@ end
   n
 end
 
-"""
+#=
 https://github.com/gridap/Gridap.jl/blob/758a8620756e164ba0e6b83dc8dcbb278015b3d9/src/FESpaces/SparseMatrixAssemblers.jl#L463
 _fill_matrix_at_cell! may have a specific specialization
-"""
+=#
 @inline function _vals_hess_at_cell!(
   ::Type{M},
   nini::Integer,

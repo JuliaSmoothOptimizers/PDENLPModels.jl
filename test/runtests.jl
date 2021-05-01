@@ -30,6 +30,8 @@ const pde_problems = [
   "TOREBRACHISTOCHRONE", 
   "CONTROLELASTICMEMBRANE",
 ]
+# missing an example with an FESource term
+# FEOperatorsFromTerms including a LinearFETerm
 
 for problem in pde_problems
   include("problems/$(lowercase(problem)).jl")

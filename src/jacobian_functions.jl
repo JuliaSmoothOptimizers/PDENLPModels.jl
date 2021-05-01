@@ -1,9 +1,9 @@
-"""
+#=
 This is a modified version of
 `function fill_matrix_coo_symbolic!(I,J,a::GenericSparseMatrixAssembler,matdata,n=0) end`
 from Gridap.FESpaces.
 The motivation is to avoid the use of the yet unknown values.
-"""
+=#
 function fill_jac_coo_symbolic!(
   I,
   J,
@@ -91,12 +91,12 @@ function allocate_coo_jac!(
   return nini
 end
 
-"""
+#=
 This is a modified version of
 `function count_matrix_nnz_coo(a::GenericSparseMatrixAssembler,matdata) end`
 from Gridap.FESpaces.
 The motivation is to avoid the use of the yet unknown values.
-"""
+=#
 function count_nnz_coo_short(a::Gridap.FESpaces.GenericSparseMatrixAssembler, cellidmatdata)
   n = 0
   for (cellidsrows, cellidscols) in zip(cellidmatdata...)
@@ -298,11 +298,11 @@ function _from_terms_to_jacobian_vals!(
   return nini
 end
 
-"""
+#=
 Adaptation of
 `function assemble_matrix_add!(mat,a::GenericSparseMatrixAssembler,matdata) end`
 from Gridap.FESpaces
-"""
+=#
 function assemble_jac_vals!(mat, a::Gridap.FESpaces.GenericSparseMatrixAssembler, matdata; n = 0)
   nini = n
   for (cellmat_rc, cellidsrows, cellidscols) in zip(matdata...)

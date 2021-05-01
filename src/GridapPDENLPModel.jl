@@ -33,79 +33,11 @@ TODO:
 [ ] time evolution pde problems.   
 [ ] Handle the case where g and H are given.   
 [ ] Handle several terms in the objective function (via an FEOperator)?   
-[ ] Be more explicit on the different types of FETerm in  _from_term_to_terms!   
-[ ] Could we control the Dirichlet boundary condition? (like classical control of heat equations)   
-[ ] Clean the tests.   
-[ ] Missing: constraint ncon with num_free_dofs(Xpde)?   
+[ ] Could we control the Dirichlet boundary condition? (like classical control of heat equations)     
 
 Main constructor:
 
-`GridapPDENLPModel(:: NLPModelMeta, :: Counters, :: AbstractEnergyTerm, :: FESpace, :: Union{FESpace,Nothing}, :: FESpace, :: Union{FESpace,Nothing}, :: FESpace, :: Union{FESpace,Nothing}, :: Union{FEOperator, Nothing}, :: Int, :: Int, :: Int)`
-
-Additional constructors:
-- Unconstrained and no control
- GridapPDENLPModel(x0, tnrj, Ypde, Xpde)   
- GridapPDENLPModel(x0, f, trian, quad, Ypde, Xpde)   
- GridapPDENLPModel(f, trian, quad, Ypde, Xpde)   
-- Bound constraints:   
- GridapPDENLPModel(x0, tnrj, Ypde, Xpde, lvar, uvar)   
- GridapPDENLPModel(x0, f, trian, quad, Ypde, Xpde, lvar, uvar)   
- GridapPDENLPModel(f, trian, quad, Ypde, Xpde, lvar, uvar)   
-- PDE-constrained:   
- GridapPDENLPModel(x0, tnrj, Ypde, Xpde, c)   
- GridapPDENLPModel(Ypde, Xpde, c)   
- GridapPDENLPModel(x0, tnrj, Ypde, Ycon, Xpde, Xcon, c)   
- GridapPDENLPModel(x0, f, trian, quad, Ypde, Ycon, Xpde, Xcon, c)   
- GridapPDENLPModel(f, trian, quad, Ypde, Ycon, Xpde, Xcon, c)   
- GridapPDENLPModel(x0, tnrj, Ypde, Ycon, Xpde, Xcon, c, lcon, ucon)   
- GridapPDENLPModel(x0, f, trian, quad, Ypde, Ycon, Xpde, Xcon, c, lcon, ucon)   
- GridapPDENLPModel(f, trian, quad, Ypde, Ycon, Xpde, Xcon, c, lcon, ucon)   
-- PDE-constrained and bounds:   
- GridapPDENLPModel(x0, tnrj, Ypde, Xpde, lvar, uvar, c)
- GridapPDENLPModel(x0, tnrj, Ypde, Ycon, Xpde, Xcon, lvar, uvar, c)   
- GridapPDENLPModel(x0, f, trian, quad, Ypde, Ycon, Xpde, Xcon, lvar, uvar, c)   
- GridapPDENLPModel(f, trian, quad, Ypde, Ycon, Xpde, Xcon, lvar, uvar, c)   
- GridapPDENLPModel(x0, tnrj, Ypde, Ycon, Xpde, Xcon, lvar, uvar, c, lcon, ucon)   
- GridapPDENLPModel(x0, f, trian, quad, Ypde, Ycon, Xpde, Xcon, lvar, uvar, c, lcon, ucon)   
- GridapPDENLPModel(f, trian, quad, Ypde, Ycon, Xpde, Xcon, lvar, uvar, c, lcon, ucon)   
-
-**Future constructors**:
-- Functional bounds: in this case |lvar|=|uvar|=nparam
- GridapPDENLPModel(x0, tnrj, Ypde, Xpde, lfunc, ufunc)   
- GridapPDENLPModel(x0, f, trian, quad, Ypde, Xpde, lfunc, ufunc)   
- GridapPDENLPModel(f, trian, quad, Ypde, Xpde, lfunc, ufunc)
- GridapPDENLPModel(x0, tnrj, Ypde, Xpde, lvar, uvar, lfunc, ufunc)   
- GridapPDENLPModel(x0, f, trian, quad, Ypde, Xpde, lvar, uvar, lfunc, ufunc)   
- GridapPDENLPModel(f, trian, quad, Ypde, Xpde, lvar, uvar, lfunc, ufunc) 
- GridapPDENLPModel(x0, tnrj, Ypde, Xpde, lvar, uvar, lfunc, ufunc, c)
- GridapPDENLPModel(x0, tnrj, Ypde, Ycon, Xpde, Xcon, lvar, uvar, lfunc, ufunc, c)   
- GridapPDENLPModel(x0, f, trian, quad, Ypde, Ycon, Xpde, Xcon, lvar, uvar, lfunc, ufunc, c)   
- GridapPDENLPModel(f, trian, quad, Ypde, Ycon, Xpde, Xcon, lvar, uvar, lfunc, ufunc, c)   
- GridapPDENLPModel(x0, tnrj, Ypde, Ycon, Xpde, Xcon, lvar, uvar, lfunc, ufunc, c, lcon, ucon)   
- GridapPDENLPModel(x0, f, trian, quad, Ypde, Ycon, Xpde, Xcon, lvar, uvar, lfunc, ufunc, c, lcon, ucon)   
- GridapPDENLPModel(f, trian, quad, Ypde, Ycon, Xpde, Xcon, lvar, uvar, lfunc, ufunc, c, lcon, ucon)     
-- Discrete constraints (ck, lckon, uckon) only for problems with nparam > 0 (hence only if x0 given or tnrj)
- GridapPDENLPModel(x0, tnrj, Ypde, Xpde, ck, lckon, uckon)   
- GridapPDENLPModel(x0, f, trian, quad, Ypde, Xpde, ck, lckon, uckon) 
- GridapPDENLPModel(x0, tnrj, Ypde, Xpde, c, ck, lckon, uckon) 
- GridapPDENLPModel(x0, tnrj, Ypde, Ycon, Xpde, Xcon, c, ck, lckon, uckon)   
- GridapPDENLPModel(x0, f, trian, quad, Ypde, Ycon, Xpde, Xcon, c, ck, lckon, uckon)
- GridapPDENLPModel(x0, tnrj, Ypde, Ycon, Xpde, Xcon, c, lcon, ucon, ck, lckon, uckon)   
- GridapPDENLPModel(x0, f, trian, quad, Ypde, Ycon, Xpde, Xcon, c, lcon, ucon, ck, lckon, uckon)  
- GridapPDENLPModel(x0, tnrj, Ypde, Xpde, lvar, uvar, c, ck, lckon, uckon)
- GridapPDENLPModel(x0, tnrj, Ypde, Ycon, Xpde, Xcon, lvar, uvar, c, ck, lckon, uckon)   
- GridapPDENLPModel(x0, f, trian, quad, Ypde, Ycon, Xpde, Xcon, lvar, uvar, c, ck, lckon, uckon) 
- GridapPDENLPModel(x0, tnrj, Ypde, Ycon, Xpde, Xcon, lvar, uvar, c, lcon, ucon, ck, lckon, uckon)   
- GridapPDENLPModel(x0, f, trian, quad, Ypde, Ycon, Xpde, Xcon, lvar, uvar, c, lcon, ucon, ck, lckon, uckon) 
- GridapPDENLPModel(x0, tnrj, Ypde, Xpde, lfunc, ufunc, ck, lckon, uckon)   
- GridapPDENLPModel(x0, f, trian, quad, Ypde, Xpde, lfunc, ufunc, ck, lckon, uckon) 
- GridapPDENLPModel(x0, tnrj, Ypde, Xpde, lvar, uvar, lfunc, ufunc, ck, lckon, uckon)   
- GridapPDENLPModel(x0, f, trian, quad, Ypde, Xpde, lvar, uvar, lfunc, ufunc, ck, lckon, uckon)
- GridapPDENLPModel(x0, tnrj, Ypde, Xpde, lvar, uvar, lfunc, ufunc, c, ck, lckon, uckon)
- GridapPDENLPModel(x0, tnrj, Ypde, Ycon, Xpde, Xcon, lvar, uvar, lfunc, ufunc, c, ck, lckon, uckon)   
- GridapPDENLPModel(x0, f, trian, quad, Ypde, Ycon, Xpde, Xcon, lvar, uvar, lfunc, ufunc, c, ck, lckon, uckon)
- GridapPDENLPModel(x0, tnrj, Ypde, Ycon, Xpde, Xcon, lvar, uvar, lfunc, ufunc, c, lcon, ucon, ck, lckon, uckon)   
- GridapPDENLPModel(x0, f, trian, quad, Ypde, Ycon, Xpde, Xcon, lvar, uvar, lfunc, ufunc, c, lcon, ucon, ck, lckon, uckon)
+`GridapPDENLPModel(:: NLPModelMeta, :: Counters, :: AbstractEnergyTerm, :: FESpace, :: Union{FESpace,Nothing}, :: FESpace, :: Union{FESpace,Nothing}, :: FESpace, :: Union{FESpace,Nothing}, :: Union{FEOperator, Nothing}, :: Int, :: Int, :: Int)` 
 
 The following keyword arguments are available to all constructors:
 - `name`: The name of the model (default: "Generic")
@@ -545,7 +477,7 @@ function _from_term_to_terms!(
   return w, r
 end
 
-"""
+#=
 Note:
 - mul! seems faster than doing:
 rows, cols, vals = findnz(get_matrix(op))
@@ -553,7 +485,7 @@ coo_prod!(cols, rows, vals, v, res)
 
 - get_matrix(op) is a sparse matrix
 - Benchmark equivalent to Gridap.FESpaces.residual!(res, op_affine.op, xrand)
-"""
+=#
 function _from_terms_to_residual!(
   op::AffineFEOperator,
   x::AbstractVector,
@@ -588,15 +520,6 @@ function jac(nlp::GridapPDENLPModel, x::AbstractVector{T}) where {T}
   return pde_jac
 end
 
-"""
-    Jv = jprod!(nlp, x, v, Jv)
-Evaluate ``J(x)v``, the Jacobian-vector product at `x` in place.
-
-Note for GridapPDENLPModel:
-- Evaluate the jacobian and then use mul! (here coo_prod! is slower as we have to compute findnz).
-- Alternative: benefit from the AD? Jv .= ForwardDiff.derivative(t->nlp.c(nlp, x + t * v), 0)
-when the jacobian is obtained by AD.
-"""
 function jprod!(nlp::GridapPDENLPModel, x::AbstractVector, v::AbstractVector, Jv::AbstractVector)
   @lencheck nlp.meta.nvar x v
   @lencheck nlp.meta.ncon Jv
@@ -608,15 +531,6 @@ function jprod!(nlp::GridapPDENLPModel, x::AbstractVector, v::AbstractVector, Jv
   return Jv
 end
 
-"""
-    Jv = jtprod!(nlp, x, v, Jv)
-Evaluate ``J(x)'v``, the Jacobian-vector product at `x` in place.
-
-Note for GridapPDENLPModel:
-- Evaluate the jacobian and then use mul! (here coo_prod! is slower as we have to compute findnz).
-- Alternative: benefit from the AD? Jtv .= ForwardDiff.gradient(x -> dot(nlp.c(x), v), x)
-when the jacobian is obtained by AD.
-"""
 function jtprod!(nlp::GridapPDENLPModel, x::AbstractVector, v::AbstractVector, Jtv::AbstractVector)
   @lencheck nlp.meta.nvar x Jtv
   @lencheck nlp.meta.ncon v
@@ -672,11 +586,7 @@ function _jac_structure!(
   return rows, cols
 end
 
-"""
-Adaptation of 
-`function allocate_matrix(a::SparseMatrixAssembler,matdata) end`
-in Gridap.FESpaces.
-"""
+#Adaptation of `function allocate_matrix(a::SparseMatrixAssembler,matdata) end` in Gridap.FESpaces.
 function _jac_structure!(
   op::Gridap.FESpaces.FEOperatorFromTerms,
   nlp::GridapPDENLPModel,

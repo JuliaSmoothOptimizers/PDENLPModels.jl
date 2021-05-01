@@ -8,7 +8,7 @@ Return the integral of the objective function
 x is a vector of GenericCellField, for instance resulting from
 `yuh = CellField(Y, cell_yu)`.
 
-See also: MixedEnergyFETerm, EnergyFETerm, NoFETerm, `_obj_integral`,
+See also: `MixedEnergyFETerm`, `EnergyFETerm`, `NoFETerm`, `_obj_integral`,
 `_compute_gradient_k`, `_compute_hess_coo`, `_compute_hess_k_coo`
 """
 function _obj_cell_integral end
@@ -18,7 +18,7 @@ Return the integral of the objective function
 
 `_obj_integral(:: AbstractEnergyTerm, :: FEFunctionType, :: AbstractVector)`
 
-See also: MixedEnergyFETerm, EnergyFETerm, NoFETerm,
+See also: `MixedEnergyFETerm`, `EnergyFETerm`, `NoFETerm`,
 `_obj_cell_integral`, `_compute_gradient_k`, `_compute_hess_coo`,
 `_compute_hess_k_coo`
 """
@@ -29,7 +29,7 @@ Return the derivative of the objective function w.r.t. κ.
 
 `_compute_gradient_k(:: AbstractEnergyTerm, :: FEFunctionType, :: AbstractVector)`
 
-See also: MixedEnergyFETerm, EnergyFETerm, NoFETerm, `_obj_integral`,
+See also: `MixedEnergyFETerm`, `EnergyFETerm`, `NoFETerm`, `_obj_integral`,
 `_obj_cell_integral`, `_compute_hess_coo`, `_compute_hess_k_coo`
 """
 function _compute_gradient_k end
@@ -39,7 +39,7 @@ Return the gradient of the objective function and set it in place.
 
 `_compute_gradient!(:: AbstractVector, :: EnergyFETerm, :: AbstractVector, :: FEFunctionType, :: FESpace, :: FESpace)`
 
-See also: MixedEnergyFETerm, EnergyFETerm, NoFETerm, `_obj_integral`,
+See also: `MixedEnergyFETerm`, `EnergyFETerm`, `NoFETerm`, `_obj_integral`,
 `_obj_cell_integral`, `_compute_hess_coo`, `_compute_hess_k_coo`
 """
 function _compute_gradient! end
@@ -49,7 +49,7 @@ Return the hessian w.r.t. yu of the objective function in coo format.
 
 `_compute_hess_coo(:: AbstractEnergyTerm, :: AbstractVector, :: FEFunctionType, :: FESpace, :: FESpace)`
 
-See also: MixedEnergyFETerm, EnergyFETerm, NoFETerm, `_obj_integral`,
+See also: `MixedEnergyFETerm`, `EnergyFETerm`, `NoFETerm`, `_obj_integral`,
 `_obj_cell_integral`, `_compute_gradient_k`, `_compute_hess_k_coo`
 """
 function _compute_hess_coo end
@@ -59,18 +59,18 @@ Return the values of the hessian w.r.t. κ of the objective function.
 
 `_compute_hess_k_vals(:: AbstractNLPModel, :: AbstractEnergyTerm, :: AbstractVector, :: AbstractVector)`
 
-See also: MixedEnergyFETerm, EnergyFETerm, NoFETerm, `_obj_integral`,
+See also: `MixedEnergyFETerm`, `EnergyFETerm`, `NoFETerm`, `_obj_integral`,
 `_obj_cell_integral`, `_compute_gradient_k`, `_compute_hess_coo`
 """
 function _compute_hess_k_vals end
 
-@doc raw"""
+"""
 FETerm modeling the objective function when there are no intregral objective.
 
 ```math
-\begin{equation}
+\begin{aligned}
  f(\kappa)
-\end{equation}
+\end{aligned}
  ```
 
 Constructors:
@@ -79,11 +79,10 @@ Constructors:
 
   `NoFETerm(:: Function)`
 
-See also: MixedEnergyFETerm, EnergyFETerm, \_obj\_cell\_integral,
-\_obj\_integral, \_compute\_gradient\_k!
+See also: `MixedEnergyFETerm`, `EnergyFETerm`, `_obj_cell_integral`,
+`_obj_integral`, `_compute_gradient_k!`
 """
 struct NoFETerm <: AbstractEnergyTerm
-  # For the objective function
   f::Function
 end
 
@@ -107,9 +106,7 @@ function _compute_gradient!(
   nvar = nparam + nyu
   @lencheck nvar g
 
-  #Assemble the gradient in the "good" space
   g[(nparam + 1):nvar] .= zeros(nyu)
-
   g[1:nparam] .= _compute_gradient_k(tnrj, κ, yu)
 
   return g
@@ -138,13 +135,13 @@ function _compute_hess_k_vals(
   return LowerTriangular(ForwardDiff.hessian(term.f, κ))[:]
 end
 
-@doc raw"""
+"""
 FETerm modeling the objective function of the optimization problem.
 
 ```math
-\begin{equation}
+\begin{aligned}
 \int_{\Omega} f(y,u) d\Omega,
-\end{equation}
+\end{aligned}
 ```
 where Ω is described by:
  - trian :: Triangulation
@@ -154,11 +151,10 @@ Constructor:
 
 `EnergyFETerm(:: Function, :: Triangulation, :: CellQuadrature)`
 
-See also: MixedEnergyFETerm, NoFETerm, \_obj\_cell\_integral, \_obj\_integral,
-_compute\_gradient\_k!
+See also: MixedEnergyFETerm, NoFETerm, `_obj_cell_integral`, `_obj_integral`,
+`_compute_gradient_k!`
 """
 struct EnergyFETerm <: AbstractEnergyTerm
-  # For the objective function
   f::Function
   trian::Triangulation
   quad::CellQuadrature
@@ -246,14 +242,14 @@ function _compute_hess_k_vals(
   return T[]
 end
 
-@doc raw"""
+"""
 FETerm modeling the objective function of the optimization problem with
 functional and discrete unknowns.
 
 ```math
-\begin{equation}
+\begin{aligned}
 \int_{\Omega} f(y,u,\kappa) d\Omega,
-\end{equation}
+\end{aligned}
 ```
 where Ω is described by:
  - trian :: Triangulation
@@ -263,8 +259,8 @@ Constructor:
 
 `MixedEnergyFETerm(:: Function, :: Triangulation, :: CellQuadrature, :: Int)`
 
-See also: EnergyFETerm, NoFETerm, \_obj\_cell\_integral, \_obj\_integral,
-\_compute\_gradient\_k!
+See also: `EnergyFETerm`, `NoFETerm`, `_obj_cell_integral`, `_obj_integral`,
+`_compute_gradient_k!`
 """
 struct MixedEnergyFETerm <: AbstractEnergyTerm
   f::Function
@@ -274,7 +270,6 @@ struct MixedEnergyFETerm <: AbstractEnergyTerm
   nparam::Integer #number of discrete unkonwns.
 
   inde::Bool
-  #ispace   :: FESpace
 
   function MixedEnergyFETerm(
     f::Function,
@@ -289,9 +284,7 @@ struct MixedEnergyFETerm <: AbstractEnergyTerm
 end
 
 function MixedEnergyFETerm(f::Function, trian::Triangulation, quad::CellQuadrature, n::Integer)
-  #ispace :: FESpace)
   inde = false
-  #return MixedEnergyFETerm(f, trian, quad, n, inde, ispace)
   return MixedEnergyFETerm(f, trian, quad, n, inde)
 end
 
@@ -446,15 +439,15 @@ function _compute_hess_k_vals(
   return vals
 end
 
-@doc raw"""
+"""
 FETerm modeling the objective function of the optimization problem with
 functional and discrete unknowns, describe as a norm and a regularizer.
 
 ```math
-\begin{equation}
+\begin{aligned}
 \frac{1}{2}\|Fyu(y,u)\|^2_{L^2_\Omega} + \lambda\int_{\Omega} lyu(y,u) d\Omega
  + \frac{1}{2}\|Fk(κ)\|^2 + \mu lk(κ)
-\end{equation}
+\end{aligned}
 ```
 where Ω is described by:
  - trian :: Triangulation
@@ -464,7 +457,7 @@ Constructor:
 
 `ResidualEnergyFETerm(:: Function, :: Triangulation, :: CellQuadrature, :: Function, :: Int)`
 
-See also: EnergyFETerm, NoFETerm, MixedEnergyFETerm
+See also: `EnergyFETerm`, `NoFETerm`, `MixedEnergyFETerm`
 """
 struct ResidualEnergyFETerm <: AbstractEnergyTerm
   Fyu::Function
