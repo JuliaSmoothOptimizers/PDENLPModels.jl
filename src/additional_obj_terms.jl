@@ -64,8 +64,8 @@ See also: `MixedEnergyFETerm`, `EnergyFETerm`, `NoFETerm`, `_obj_integral`,
 """
 function _compute_hess_k_vals end
 
-"""
-FETerm modeling the objective function when there are no intregral objective.
+@doc raw"""
+FETerm modeling the objective function when there are no integral objective.
 
 ```math
 \begin{aligned}
@@ -79,8 +79,7 @@ Constructors:
 
   `NoFETerm(:: Function)`
 
-See also: `MixedEnergyFETerm`, `EnergyFETerm`, `_obj_cell_integral`,
-`_obj_integral`, `_compute_gradient_k!`
+See also: `MixedEnergyFETerm`, `EnergyFETerm`, `_obj_cell_integral`, `_obj_integral`, `_compute_gradient_k!`
 """
 struct NoFETerm <: AbstractEnergyTerm
   f::Function
@@ -135,7 +134,7 @@ function _compute_hess_k_vals(
   return LowerTriangular(ForwardDiff.hessian(term.f, κ))[:]
 end
 
-"""
+@doc raw"""
 FETerm modeling the objective function of the optimization problem.
 
 ```math
@@ -242,7 +241,7 @@ function _compute_hess_k_vals(
   return T[]
 end
 
-"""
+@doc raw"""
 FETerm modeling the objective function of the optimization problem with
 functional and discrete unknowns.
 
@@ -439,7 +438,7 @@ function _compute_hess_k_vals(
   return vals
 end
 
-"""
+@doc raw"""
 FETerm modeling the objective function of the optimization problem with
 functional and discrete unknowns, describe as a norm and a regularizer.
 
