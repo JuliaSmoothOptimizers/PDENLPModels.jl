@@ -1,7 +1,7 @@
 export bounds_functions_to_vectors
 
 """
-(lvar, uvar) = bounds_functions_to_vectors(Y :: MultiFieldFESpace, Ycon :: Union{FESpace, Nothing},  Ypde :: FESpace, trian :: Triangulation, lyfunc :: Union{Function, AbstractVector}, uyfunc :: Union{Function, AbstractVector}, lufunc :: Union{Function, AbstractVector}, uufunc :: Union{Function, AbstractVector})
+`(lvar, uvar) = bounds_functions_to_vectors(Y :: MultiFieldFESpace, Ycon :: Union{FESpace, Nothing},  Ypde :: FESpace, trian :: Triangulation, lyfunc :: Union{Function, AbstractVector}, uyfunc :: Union{Function, AbstractVector}, lufunc :: Union{Function, AbstractVector}, uufunc :: Union{Function, AbstractVector})`
 
 Return the bounds `lvar` and `uvar`.
 """
