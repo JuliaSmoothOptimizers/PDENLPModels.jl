@@ -14,29 +14,29 @@ umin(x) = 0.0 and umax(x) = 1.0.
 function controlelasticmembrane(args...; n = 3, kargs...)
 
   # Domain
-  domain = (-1,1,-1,1)
-  partition = (n,n)
-  model = CartesianDiscreteModel(domain,partition)
+  domain = (-1, 1, -1, 1)
+  partition = (n, n)
+  model = CartesianDiscreteModel(domain, partition)
 
   # Definition of the spaces:
   Xpde = TestFESpace(
-    reffe=:Lagrangian, 
-    conformity=:H1, 
-    valuetype=Float64, 
-    model=model, 
-    order=2, 
-    dirichlet_tags="boundary",
+    reffe = :Lagrangian,
+    conformity = :H1,
+    valuetype = Float64,
+    model = model,
+    order = 2,
+    dirichlet_tags = "boundary",
   )
 
   y0(x) = 0.0
   Ypde = TrialFESpace(Xpde, y0)
 
   Xcon = TestFESpace(
-    reffe=:Lagrangian, 
-    order=1, 
-    valuetype=Float64,
-    conformity=:H1, 
-    model=model,
+    reffe = :Lagrangian,
+    order = 1,
+    valuetype = Float64,
+    conformity = :H1,
+    model = model,
   )
   Ycon = TrialFESpace(Xcon)
   Y = MultiFieldFESpace([Ypde, Ycon])
@@ -44,7 +44,7 @@ function controlelasticmembrane(args...; n = 3, kargs...)
   # Integration machinery
   trian = Triangulation(model)
   degree = 1
-  quad = CellQuadrature(trian,degree)
+  quad = CellQuadrature(trian, degree)
 
   # Objective function:
   yd(x) = -x[1]^2
@@ -55,15 +55,15 @@ function controlelasticmembrane(args...; n = 3, kargs...)
   end
 
   # Definition of the constraint operator
-  ω = π - 1/8
-  h(x) = - sin( ω*x[1])*sin( ω*x[2])
+  ω = π - 1 / 8
+  h(x) = -sin(ω * x[1]) * sin(ω * x[2])
   function res(yu, v)
     y, u = yu
-    ∇(v)⊙∇(y) - v*u #- v * h
+    ∇(v) ⊙ ∇(y) - v * u #- v * h
   end
   # t_Ω = FETerm(res,trian,quad)
   # op = FEOperator(Y, Xpde, t_Ω)
-  t_Ω = AffineFETerm(res, v->v * h, trian, quad)
+  t_Ω = AffineFETerm(res, v -> v * h, trian, quad)
   op = AffineFEOperator(Y, Xpde, t_Ω)
 
   # It is easy to have a constant bounds
@@ -74,14 +74,14 @@ function controlelasticmembrane(args...; n = 3, kargs...)
 
   return GridapPDENLPModel(
     zeros(npde + ncon),
-    f, 
-    trian, 
-    quad, 
-    Ypde, 
-    Ycon, 
-    Xpde, 
-    Xcon, 
-    op, 
+    f,
+    trian,
+    quad,
+    Ypde,
+    Ycon,
+    Xpde,
+    Xcon,
+    op,
     lvaru = zeros(ncon),
     uvaru = ones(ncon),
     name = "controlelasticmembrane1",
@@ -90,5 +90,4 @@ end
 
 function controlelasticmembrane_test()
   nlp = controlelasticmembrane()
-
 end

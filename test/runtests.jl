@@ -27,7 +27,7 @@ const pde_problems = [
   "POISSONMIXED",
   "POISSONPARAM",
   "POISSONMIXED2",
-  "TOREBRACHISTOCHRONE", 
+  "TOREBRACHISTOCHRONE",
   "CONTROLELASTICMEMBRANE",
 ]
 # missing an example with an FESource term
