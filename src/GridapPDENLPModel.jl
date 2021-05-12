@@ -526,6 +526,7 @@ function jprod!(nlp::GridapPDENLPModel, x::AbstractVector, v::AbstractVector, Jv
   increment!(nlp, :neval_jprod)
 
   Jx = jac(nlp, x)
+  decrement!(nlp, :neval_jac)
   mul!(Jv, Jx, v)
 
   return Jv
@@ -537,6 +538,7 @@ function jtprod!(nlp::GridapPDENLPModel, x::AbstractVector, v::AbstractVector, J
   increment!(nlp, :neval_jtprod)
 
   Jx = jac(nlp, x)
+  decrement!(nlp, :neval_jac)
   mul!(Jtv, Jx', v)
 
   return Jtv
@@ -556,6 +558,7 @@ function jac_op!(nlp::GridapPDENLPModel, x::AbstractVector, Jv::AbstractVector, 
   @lencheck nlp.meta.ncon Jv
 
   Jx = jac(nlp, x)
+  decrement!(nlp, :neval_jac)
 
   prod = @closure v -> mul!(Jv, Jx, v)
   ctprod = @closure v -> mul!(Jtv, Jx', v)
