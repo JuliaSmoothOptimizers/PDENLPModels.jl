@@ -575,7 +575,7 @@ function _jac_from_term_to_terms_u!(
   ###########
   U = Gridap.FESpaces.get_fe_space(uh)
   cell_u_to_cell_residual = Gridap.FESpaces._change_argument_to_cell_u(uh_to_cell_residual, U)
-  cell_u = Gridap.FESpaces.get_cell_values(uh)
+  cell_u = Gridap.FESpaces.get_cell_dof_values(uh)
   _temp = cell_u_to_cell_residual(cell_u)
   ncu = length(_temp[1])
   cell_j = autodiff_array_jacobian2(cell_u_to_cell_residual, cell_u, ncu, cellids)

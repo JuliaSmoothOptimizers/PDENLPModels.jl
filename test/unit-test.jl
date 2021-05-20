@@ -640,12 +640,12 @@ y, u, k = _split_vector(x0, Ypde, PDENLPModels.VoidFESpace())
   #Test MultiField yu
   x1 = zeros(nY)
   yu1 = FEFunction(Y, x1)
-  cel1 = Gridap.FESpaces.get_cell_values(yu1)
+  cel1 = Gridap.FESpaces.get_cell_dof_values(yu1)
   yuh1 = CellField(Y, cel1)
   #Test SingleField yu
   x2 = rand(Gridap.FESpaces.num_free_dofs(Ypde))
   yu2 = FEFunction(Ypde, x2)
-  cel2 = Gridap.FESpaces.get_cell_values(yu2)
+  cel2 = Gridap.FESpaces.get_cell_dof_values(yu2)
   yuh2 = CellField(Ypde, cel2)
 
   tnrj = NoFETerm()

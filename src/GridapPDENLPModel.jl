@@ -98,7 +98,6 @@ function obj(nlp::GridapPDENLPModel, x::AbstractVector)
   return sum(int)
 end
 
-#=GRIDAPv15
 function grad!(nlp::GridapPDENLPModel, x::AbstractVector, g::AbstractVector)
   @lencheck nlp.meta.nvar x g
   increment!(nlp, :neval_grad)
@@ -108,7 +107,6 @@ function grad!(nlp::GridapPDENLPModel, x::AbstractVector, g::AbstractVector)
 
   return _compute_gradient!(g, nlp.tnrj, κ, yu, nlp.Y, nlp.X)
 end
-=#
 
 #=GRIDAPv15
 function hess_yu_obj_structure!(
@@ -205,7 +203,7 @@ function hess_coord!(
     a = Gridap.FESpaces.SparseMatrixAssembler(nlp.Y, nlp.X)
     ncells = num_cells(nlp.tnrj.trian)
     cell_id_yu = Gridap.Arrays.IdentityVector(ncells)
-    cell_yu = Gridap.FESpaces.get_cell_values(yu)
+    cell_yu = Gridap.FESpaces.get_cell_dof_values(yu)
 
     function _cell_obj_yu(cell)
       yuh = CellField(nlp.Y, cell)
@@ -332,7 +330,7 @@ function hess_coord!(
   κ, xyu = x[1:(nlp.nparam)], x[(nlp.nparam + 1):(nlp.meta.nvar)]
   yu = FEFunction(nlp.Y, xyu)
 
-  cell_yu = Gridap.FESpaces.get_cell_values(yu)
+  cell_yu = Gridap.FESpaces.get_cell_dof_values(yu)
   cell_id_yu = Gridap.Arrays.IdentityVector(length(cell_yu)) #Is it?
 
   nini = nnzh_obj
@@ -348,7 +346,7 @@ function hess_coord!(
       end
 
       λf = FEFunction(nlp.Xpde, λ)
-      cell_λf = Gridap.FESpaces.get_cell_values(λf)
+      cell_λf = Gridap.FESpaces.get_cell_dof_values(λf)
       lfh = CellField(nlp.Xpde, cell_λf)
       _lfh = Gridap.FESpaces.restrict(lfh, term.trian) #This is where the term play a first role.
 

@@ -181,7 +181,7 @@ function _compute_gradient!(
 )
   @lencheck 0 κ
 
-  cell_yu = Gridap.FESpaces.get_cell_values(yu)
+  cell_yu = Gridap.FESpaces.get_cell_dof_values(yu)
   cell_id_yu = Gridap.Arrays.IdentityVector(length(cell_yu))
 
   function _cell_obj_yu(cell)
@@ -214,7 +214,7 @@ function _compute_hess_coo(
 )
   @lencheck 0 κ
 
-  cell_yu = Gridap.FESpaces.get_cell_values(yu)
+  cell_yu = Gridap.FESpaces.get_cell_dof_values(yu)
   cell_id_yu = Gridap.Arrays.IdentityVector(length(cell_yu))
 
   function _cell_obj_yu(cell)
@@ -299,7 +299,7 @@ function _obj_cell_integral(term::MixedEnergyFETerm, κ::AbstractVector, yuh::Ce
   _yuh = Gridap.FESpaces.restrict(yuh, term.trian)
   #=
   kf = interpolate_everywhere(term.ispace, κ)
-  cell_kf = Gridap.FESpaces.get_cell_values(kf)
+  cell_kf = Gridap.FESpaces.get_cell_dof_values(kf)
   kfu    = CellField(term.ispace, cell_kf)
   _kfu = Gridap.FESpaces.restrict(kfu, term.trian)
 
@@ -329,7 +329,7 @@ function _compute_gradient!(
   nyu = num_free_dofs(Y)
   @lencheck term.nparam + nyu g
 
-  cell_yu = Gridap.FESpaces.get_cell_values(yu)
+  cell_yu = Gridap.FESpaces.get_cell_dof_values(yu)
   cell_id_yu = Gridap.Arrays.IdentityVector(length(cell_yu))
 
   function _cell_obj_yu(cell)
@@ -363,7 +363,7 @@ function _compute_hess_coo(
   Y::FESpace,
   X::FESpace,
 )
-  cell_yu = Gridap.FESpaces.get_cell_values(yu)
+  cell_yu = Gridap.FESpaces.get_cell_dof_values(yu)
   cell_id_yu = Gridap.Arrays.IdentityVector(length(cell_yu))
 
   function _cell_obj_yu(cell)
