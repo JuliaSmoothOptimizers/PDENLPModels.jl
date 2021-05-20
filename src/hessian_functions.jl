@@ -18,6 +18,7 @@ https://github.com/gridap/Gridap.jl/blob/758a8620756e164ba0e6b83dc8dcbb278015b3d
 
 https://github.com/gridap/Gridap.jl/blob/758a8620756e164ba0e6b83dc8dcbb278015b3d9/src/Algebra/SparseMatrices.jl#L29-L33
 =#
+#=GRIDAPv15
 function assemble_hess(
   a::Gridap.FESpaces.GenericSparseMatrixAssembler,
   cell_r_yu::T,
@@ -36,7 +37,9 @@ function assemble_hess(
 
   (I, J, V)
 end
+=#
 
+#=GRIDAPv15
 function count_hess_nnz_coo(
   a::Gridap.FESpaces.GenericSparseMatrixAssembler,
   cell_r_yu::T,
@@ -46,8 +49,8 @@ function count_hess_nnz_coo(
   cellidsrows = cell_id_yu
   cellidscols = cell_id_yu
 
-  cell_rows = Gridap.FESpaces.get_cell_dofs(a.test, cellidsrows)
-  cell_cols = Gridap.FESpaces.get_cell_dofs(a.trial, cellidscols)
+  cell_rows = Gridap.FESpaces.get_cell_dof_ids(a.test, cellidsrows)
+  cell_cols = Gridap.FESpaces.get_cell_dof_ids(a.trial, cellidscols)
   rows_cache = Gridap.FESpaces.array_cache(cell_rows)
   cols_cache = Gridap.FESpaces.array_cache(cell_cols)
 
@@ -63,6 +66,7 @@ function count_hess_nnz_coo(
     _count_hess_entries(a.matrix_type, rows_cache, cols_cache, cell_rows, cell_cols, a.strategy, Is)
   n
 end
+=#
 
 #=
 Programmer note: this function is used in the constructors to set meta.nnzh
@@ -106,6 +110,7 @@ function get_nnzh(tnrj::T, op::AffineFEOperator, Y, X, nparam, nvar) where {T}
   return get_nnzh(tnrj, Y, X, nparam, nvar)
 end
 
+#=GRIDAPv15
 function get_nnzh(tnrj::T, op::Gridap.FESpaces.FEOperatorFromTerms, Y, X, nparam, nvar) where {T}
   nnz_hess_obj = get_nnzh(tnrj, Y, X, nparam, nvar)
 
@@ -128,6 +133,7 @@ function get_nnzh(tnrj::T, op::Gridap.FESpaces.FEOperatorFromTerms, Y, X, nparam
   nnzh = nnz_hess_obj + nnz_hess_yu
   return nnzh
 end
+=#
 
 function count_hess_nnz_coo_short(
   a::Gridap.FESpaces.GenericSparseMatrixAssembler,
@@ -138,8 +144,8 @@ function count_hess_nnz_coo_short(
   cellidsrows = cell_id_yu
   cellidscols = cell_id_yu
 
-  cell_rows = Gridap.FESpaces.get_cell_dofs(a.test, cellidsrows)
-  cell_cols = Gridap.FESpaces.get_cell_dofs(a.trial, cellidscols)
+  cell_rows = Gridap.FESpaces.get_cell_dof_ids(a.test, cellidsrows)
+  cell_cols = Gridap.FESpaces.get_cell_dof_ids(a.trial, cellidscols)
   rows_cache = Gridap.FESpaces.array_cache(cell_rows)
   cols_cache = Gridap.FESpaces.array_cache(cell_cols)
 
@@ -198,6 +204,7 @@ end
   n
 end
 
+#=GRIDAPv15
 function fill_hess_coo_numeric!(
   I::AbstractVector{Ii},
   J::AbstractVector{Ii},
@@ -212,8 +219,8 @@ function fill_hess_coo_numeric!(
   cellidsrows = cell_id_yu
   cellidscols = cell_id_yu
 
-  cell_rows = Gridap.FESpaces.get_cell_dofs(a.test, cellidsrows)
-  cell_cols = Gridap.FESpaces.get_cell_dofs(a.trial, cellidscols)
+  cell_rows = Gridap.FESpaces.get_cell_dof_ids(a.test, cellidsrows)
+  cell_cols = Gridap.FESpaces.get_cell_dof_ids(a.trial, cellidscols)
   cellmat_r = Gridap.FESpaces.attach_constraints_cols(a.trial, cellmat_rc, cellidscols)
   cell_vals = Gridap.FESpaces.attach_constraints_rows(a.test, cellmat_r, cellidsrows)
   rows_cache = Gridap.FESpaces.array_cache(cell_rows)
@@ -236,7 +243,9 @@ function fill_hess_coo_numeric!(
 
   nini
 end
+=#
 
+#=GRIDAPv15
 @noinline function _fill_hess!(
   a::Type{M},
   nini::Integer,
@@ -260,11 +269,13 @@ end
   end
   n
 end
+=#
 
 #=
 https://github.com/gridap/Gridap.jl/blob/758a8620756e164ba0e6b83dc8dcbb278015b3d9/src/FESpaces/SparseMatrixAssemblers.jl#L463
 _fill_matrix_at_cell! may have a specific specialization
 =#
+#=GRIDAPv15
 @inline function _fill_hess_at_cell!(
   ::Type{M},
   nini,
@@ -295,7 +306,9 @@ _fill_matrix_at_cell! may have a specific specialization
   end
   n
 end
+=#
 
+#=GRIDAPv15
 function struct_hess_coo_numeric!(
   I::AbstractVector{Ii},
   J::AbstractVector{Ii},
@@ -310,8 +323,8 @@ function struct_hess_coo_numeric!(
   cellidsrows = cell_id_yu
   cellidscols = cell_id_yu
 
-  cell_rows = Gridap.FESpaces.get_cell_dofs(a.test, cellidsrows)
-  cell_cols = Gridap.FESpaces.get_cell_dofs(a.trial, cellidscols)
+  cell_rows = Gridap.FESpaces.get_cell_dof_ids(a.test, cellidsrows)
+  cell_cols = Gridap.FESpaces.get_cell_dof_ids(a.trial, cellidscols)
   rows_cache = Gridap.FESpaces.array_cache(cell_rows)
   cols_cache = Gridap.FESpaces.array_cache(cell_cols)
   nini = _struct_hess!(
@@ -330,7 +343,9 @@ function struct_hess_coo_numeric!(
 
   nini
 end
+=#
 
+#=GRIDAPv15
 @noinline function _struct_hess!(
   a::Type{M},
   nini::Integer,
@@ -352,11 +367,13 @@ end
   end
   n
 end
+=#
 
 #=
 https://github.com/gridap/Gridap.jl/blob/758a8620756e164ba0e6b83dc8dcbb278015b3d9/src/FESpaces/SparseMatrixAssemblers.jl#L463
 _fill_matrix_at_cell! may have a specific specialization
 =#
+#=GRIDAPv15
 @inline function _struct_hess_at_cell!(
   ::Type{M},
   nini,
@@ -386,7 +403,9 @@ _fill_matrix_at_cell! may have a specific specialization
   end
   n
 end
+=#
 
+#=GRIDAPv15
 function vals_hess_coo_numeric!(
   V::AbstractVector{Vi},
   a::Gridap.FESpaces.GenericSparseMatrixAssembler,
@@ -400,8 +419,8 @@ function vals_hess_coo_numeric!(
   cellidsrows = cell_id_yu
   cellidscols = cell_id_yu
 
-  cell_rows = Gridap.FESpaces.get_cell_dofs(a.test, cellidsrows)
-  cell_cols = Gridap.FESpaces.get_cell_dofs(a.trial, cellidscols)
+  cell_rows = Gridap.FESpaces.get_cell_dof_ids(a.test, cellidsrows)
+  cell_cols = Gridap.FESpaces.get_cell_dof_ids(a.trial, cellidscols)
   cellmat_r = Gridap.FESpaces.attach_constraints_cols(a.trial, cellmat_rc, cellidscols)
   cell_vals = Gridap.FESpaces.attach_constraints_rows(a.test, cellmat_r, cellidsrows)
   rows_cache = Gridap.FESpaces.array_cache(cell_rows)
@@ -422,7 +441,9 @@ function vals_hess_coo_numeric!(
 
   nini
 end
+=#
 
+#=GRIDAPv15
 @noinline function _vals_hess!(
   a::Type{M},
   nini::Integer,
@@ -444,11 +465,13 @@ end
   end
   n
 end
+=#
 
 #=
 https://github.com/gridap/Gridap.jl/blob/758a8620756e164ba0e6b83dc8dcbb278015b3d9/src/FESpaces/SparseMatrixAssemblers.jl#L463
 _fill_matrix_at_cell! may have a specific specialization
 =#
+#=GRIDAPv15
 @inline function _vals_hess_at_cell!(
   ::Type{M},
   nini::Integer,
@@ -475,3 +498,4 @@ _fill_matrix_at_cell! may have a specific specialization
   end
   n
 end
+=#

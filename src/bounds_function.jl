@@ -187,7 +187,7 @@ function _functions_to_vectors!(
   trian::Triangulation,
   lfunc::Function,
   ufunc::Function,
-  cell_xm::Gridap.Arrays.AppliedArray,
+  cell_xm, # What is this type ??? Former Gridap.Arrays.AppliedArray
   Y::FESpace,
   lvar::AbstractVector,
   uvar::AbstractVector,
