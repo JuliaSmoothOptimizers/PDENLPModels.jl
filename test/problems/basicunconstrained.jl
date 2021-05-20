@@ -1,10 +1,4 @@
 function basicunconstrained(args...; n = 2^4, kwargs...)
-  ubis(x) = x[1]^2 + x[2]^2
-  function f(yu)
-    y, u = yu
-    0.5 * (ubis - u) * (ubis - u) + 0.5 * y * y
-  end
-
   domain = (0, 1, 0, 1)
   partition = (n, n)
   model = CartesianDiscreteModel(domain, partition)
@@ -22,12 +16,19 @@ function basicunconstrained(args...; n = 2^4, kwargs...)
   Ycon = Ucon
   trian = Triangulation(model)
   degree = 2
-  quad = Measure(trian, degree) # CellQuadrature(trian, degree)
+  dΩ = Measure(trian, degree) # CellQuadrature(trian, degree)
+
+  ubis(x) = x[1]^2 + x[2]^2
+  function f(yu)
+    y, u = yu
+    # 0.5 * (ubis - u) * (ubis - u) + 0.5 * y * y
+    ∫( 0.5 * (ubis - u) * (ubis - u) + 0.5 * y * y )*dΩ
+  end
 
   Y = MultiFieldFESpace([U, Ucon])
   X = MultiFieldFESpace([V0, Xcon])
   xin = zeros(Gridap.FESpaces.num_free_dofs(Y))
-  return GridapPDENLPModel(xin, f, trian, quad, Y, X)
+  return GridapPDENLPModel(xin, f, trian, dΩ, Y, X)
 end
 
 #=GRIDAPv15

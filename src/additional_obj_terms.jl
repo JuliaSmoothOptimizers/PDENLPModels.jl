@@ -161,15 +161,17 @@ end
 
 function _obj_integral(term::EnergyFETerm, κ::AbstractVector, x::FEFunctionType)
   @lencheck 0 κ
-  return integrate(term.f(x), term.quad)
+  return term.f(x) # integrate(term.f(x), term.quad)
 end
 
+#= REMOVE
 function _obj_cell_integral(term::EnergyFETerm, κ::AbstractVector, yuh::CellFieldType)
   @lencheck 0 κ
   _yuh = Gridap.FESpaces.restrict(yuh, term.trian)
 
   return integrate(term.f(_yuh), term.quad)
 end
+=#
 
 function _compute_gradient!(
   g::AbstractVector,
@@ -183,14 +185,16 @@ function _compute_gradient!(
 
   cell_yu = Gridap.FESpaces.get_cell_dof_values(yu)
   cell_id_yu = Gridap.Arrays.IdentityVector(length(cell_yu))
-
+#=
   function _cell_obj_yu(cell)
     yuh = CellField(Y, cell)
     _obj_cell_integral(tnrj, κ, yuh)
   end
-
+=#
   #Compute the gradient with AD
-  cell_r_yu = Gridap.Arrays.autodiff_array_gradient(_cell_obj_yu, cell_yu, cell_id_yu)
+  #cell_r_yu = Gridap.Arrays.autodiff_array_gradient(_cell_obj_yu, cell_yu, cell_id_yu)
+
+  cell_r_yu = get_array(gradient(tnrj.f, yu))
   #Put the result in the format expected by Gridap.FESpaces.assemble_matrix
   vecdata_yu = [[cell_r_yu], [cell_id_yu]] #TODO would replace by Tuple work?
   #Assemble the gradient in the "good" space
@@ -294,6 +298,7 @@ function _obj_integral(term::MixedEnergyFETerm, κ::AbstractVector, x::FEFunctio
   return integrate(term.f(κ, x), term.quad)
 end
 
+#= REMOVE
 function _obj_cell_integral(term::MixedEnergyFETerm, κ::AbstractVector, yuh::CellFieldType)
   @lencheck term.nparam κ
   _yuh = Gridap.FESpaces.restrict(yuh, term.trian)
@@ -306,6 +311,7 @@ function _obj_cell_integral(term::MixedEnergyFETerm, κ::AbstractVector, yuh::Ce
   return integrate(term.f(_kfu, _yuh), term.quad)=#
   return integrate(term.f(κ, _yuh), term.quad)
 end
+=#
 
 #=
 function _obj_cell_integral(term::MixedEnergyFETerm, κ::CellFieldType, yuh::CellFieldType)
@@ -332,6 +338,7 @@ function _compute_gradient!(
   cell_yu = Gridap.FESpaces.get_cell_dof_values(yu)
   cell_id_yu = Gridap.Arrays.IdentityVector(length(cell_yu))
 
+  #=
   function _cell_obj_yu(cell)
     yuh = CellField(Y, cell)
     _obj_cell_integral(term, κ, yuh)
@@ -339,6 +346,8 @@ function _compute_gradient!(
 
   #Compute the gradient with AD
   cell_r_yu = Gridap.Arrays.autodiff_array_gradient(_cell_obj_yu, cell_yu, cell_id_yu)
+  =#
+  cell_r_yu = get_array(gradient(tnrj.f, κ, yu))
   #Put the result in the format expected by Gridap.FESpaces.assemble_matrix
   vecdata_yu = [[cell_r_yu], [cell_id_yu]] #TODO would replace by Tuple work?
   #Assemble the gradient in the "good" space
