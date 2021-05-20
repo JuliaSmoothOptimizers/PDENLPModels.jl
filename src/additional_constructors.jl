@@ -62,7 +62,7 @@ function GridapPDENLPModel(
   x0::S,
   f::Function,
   trian::Triangulation,
-  quad::CellQuadrature,
+  quad::Measure,
   Ypde::FESpace,
   Xpde::FESpace;
   lvar::S = fill!(similar(x0), -eltype(S)(Inf)),
@@ -77,11 +77,12 @@ function GridapPDENLPModel(
   return GridapPDENLPModel(x0, tnrj, Ypde, Xpde, lvar = lvar, uvar = uvar, name = name)
 end
 
+#=GRIDAPv15
 function GridapPDENLPModel(
   x0::S,
   f::Function,
   trian::Triangulation,
-  quad::CellQuadrature,
+  quad::Measure,
   Ypde::FESpace,
   Xpde::FESpace,
   c::FEOperator;
@@ -96,7 +97,9 @@ function GridapPDENLPModel(
 
   return GridapPDENLPModel(x0, tnrj, Ypde, Xpde, c, lvar = lvar, uvar = uvar, name = name)
 end
+=#
 
+#=GRIDAPv15
 function GridapPDENLPModel(
   x0::S,
   tnrj::NRJ,
@@ -127,7 +130,9 @@ function GridapPDENLPModel(
     lin = lin,
   )
 end
+=#
 
+#=GRIDAPv15
 function GridapPDENLPModel(
   x0::S,
   tnrj::NRJ,
@@ -243,12 +248,14 @@ function GridapPDENLPModel(
     nparam,
   )
 end
+=#
 
+#=GRIDAPv15
 function GridapPDENLPModel(
   x0::S,
   f::Function,
   trian::Triangulation,
-  quad::CellQuadrature,
+  quad::Measure,
   Ypde::FESpace,
   Ycon::FESpace,
   Xpde::FESpace,
@@ -300,3 +307,4 @@ function GridapPDENLPModel(
     lin = lin,
   )
 end
+=#

@@ -66,7 +66,7 @@ with $a=1$ and $c=3$.
   
   trian = Triangulation(model)
   degree = 1
-  quad = CellQuadrature(trian, degree)
+  quad = Measure(trian, degree)
 
   # boundaries
   xmin = 0

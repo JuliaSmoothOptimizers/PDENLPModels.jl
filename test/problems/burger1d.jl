@@ -40,7 +40,7 @@ function burger1d(args...; n = 512, kwargs...)
 
   trian = Triangulation(model)
   degree = 1
-  quad = CellQuadrature(trian, degree)
+  quad = Measure(trian, degree)
   t_Ω = FETerm(res_pde, trian, quad)
   op_pde = FEOperator(U, V, t_Ω)
 
@@ -114,7 +114,7 @@ function burger1d_test(; udc = false)
   trian = Triangulation(model)
   @test Gridap.FESpaces.num_cells(trian) == 512
   degree = 1
-  quad = CellQuadrature(trian, degree)
+  quad = Measure(trian, degree)
   t_Ω = FETerm(res_pde, trian, quad)
   op_pde = FEOperator(U, V, t_Ω)
 

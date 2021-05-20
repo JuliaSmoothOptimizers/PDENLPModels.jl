@@ -62,7 +62,7 @@ function cellincrease(args...; x0 = [0.6, 0.1], n = 10, T = 7, kwargs...)
 
   trian = Triangulation(model)
   degree = 1
-  quad = CellQuadrature(trian, degree)
+  quad = Measure(trian, degree)
   t_Ω_nl = FETerm(res_pde_nl, trian, quad)
   t_Ω = FETerm(res_pde, trian, quad)
   Y = MultiFieldFESpace([UI, US, Ucon])

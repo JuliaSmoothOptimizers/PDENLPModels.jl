@@ -42,7 +42,7 @@ function dynamicsir(args...; x0 = [1, 2], n = 10, T = 1, kwargs...)
 
   trian = Triangulation(model)
   degree = 1
-  quad = CellQuadrature(trian, degree)
+  quad = Measure(trian, degree)
   t_Ω_nl = FETerm(res_pde_nl, trian, quad)
   t_Ω = FETerm(res_pde, trian, quad)
   op_sir = FEOperator(Ypde, Xpde, t_Ω_nl, t_Ω)

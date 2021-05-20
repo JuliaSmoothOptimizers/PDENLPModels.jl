@@ -64,7 +64,7 @@ function incompressiblenavierstokes(args...; n = 3, kwargs...)
 
   trian = Triangulation(model)
   degree = (order - 1) * 2
-  quad = CellQuadrature(trian, degree)
+  quad = Measure(trian, degree)
   t_Ω = FETerm(res, trian, quad)
   op = FEOperator(Y, X, t_Ω)
   t_with_jac_Ω = FETerm(res, ja, trian, quad)

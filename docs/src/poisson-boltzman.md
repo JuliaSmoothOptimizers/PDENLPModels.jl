@@ -51,7 +51,7 @@ The implementation as a `GridapPDENLPModel` is given as follows.
     #Integration machinery
     trian = Triangulation(model)
     degree = 1
-    quad = CellQuadrature(trian,degree)
+    quad = Measure(trian,degree)
 
     #Objective function:
     yd(x) = min(x[1]-0.25, 0.75-x[1],x[2]-0.25, 0.75-x[2])>=0. ? 10. : 5.

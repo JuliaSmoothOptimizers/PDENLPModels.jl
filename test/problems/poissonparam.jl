@@ -32,7 +32,7 @@ function poissonparam(args...; n = 3, kwargs...)
 
   trian = Triangulation(model)
   degree = 2
-  quad = CellQuadrature(trian, degree)
+  quad = Measure(trian, degree)
 
   #We deduce the rhs of the Poisson equation with our manufactured solution:
   f(x) = (2 * pi^2) * sin(2 * pi * x[1]) * x[2]

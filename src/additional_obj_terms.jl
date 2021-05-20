@@ -144,11 +144,11 @@ FETerm modeling the objective function of the optimization problem.
 ```
 where Ω is described by:
  - trian :: Triangulation
- - quad  :: CellQuadrature
+ - quad  :: Measure
 
 Constructor:
 
-`EnergyFETerm(:: Function, :: Triangulation, :: CellQuadrature)`
+`EnergyFETerm(:: Function, :: Triangulation, :: Measure)`
 
 See also: MixedEnergyFETerm, NoFETerm, `_obj_cell_integral`, `_obj_integral`,
 `_compute_gradient_k!`
@@ -156,7 +156,7 @@ See also: MixedEnergyFETerm, NoFETerm, `_obj_cell_integral`, `_obj_integral`,
 struct EnergyFETerm <: AbstractEnergyTerm
   f::Function
   trian::Triangulation
-  quad::CellQuadrature
+  quad::Measure
 end
 
 function _obj_integral(term::EnergyFETerm, κ::AbstractVector, x::FEFunctionType)
@@ -252,11 +252,11 @@ functional and discrete unknowns.
 ```
 where Ω is described by:
  - trian :: Triangulation
- - quad  :: CellQuadrature
+ - quad  :: Measure
 
 Constructor:
 
-`MixedEnergyFETerm(:: Function, :: Triangulation, :: CellQuadrature, :: Int)`
+`MixedEnergyFETerm(:: Function, :: Triangulation, :: Measure, :: Int)`
 
 See also: `EnergyFETerm`, `NoFETerm`, `_obj_cell_integral`, `_obj_integral`,
 `_compute_gradient_k!`
@@ -264,7 +264,7 @@ See also: `EnergyFETerm`, `NoFETerm`, `_obj_cell_integral`, `_obj_integral`,
 struct MixedEnergyFETerm <: AbstractEnergyTerm
   f::Function
   trian::Triangulation
-  quad::CellQuadrature
+  quad::Measure
 
   nparam::Integer #number of discrete unkonwns.
 
@@ -273,7 +273,7 @@ struct MixedEnergyFETerm <: AbstractEnergyTerm
   function MixedEnergyFETerm(
     f::Function,
     trian::Triangulation,
-    quad::CellQuadrature,
+    quad::Measure,
     n::Integer,
     inde::Bool,
   )
@@ -282,7 +282,7 @@ struct MixedEnergyFETerm <: AbstractEnergyTerm
   end
 end
 
-function MixedEnergyFETerm(f::Function, trian::Triangulation, quad::CellQuadrature, n::Integer)
+function MixedEnergyFETerm(f::Function, trian::Triangulation, quad::Measure, n::Integer)
   inde = false
   return MixedEnergyFETerm(f, trian, quad, n, inde)
 end
@@ -450,11 +450,11 @@ functional and discrete unknowns, describe as a norm and a regularizer.
 ```
 where Ω is described by:
  - trian :: Triangulation
- - quad  :: CellQuadrature
+ - quad  :: Measure
 
 Constructor:
 
-`ResidualEnergyFETerm(:: Function, :: Triangulation, :: CellQuadrature, :: Function, :: Int)`
+`ResidualEnergyFETerm(:: Function, :: Triangulation, :: Measure, :: Function, :: Int)`
 
 See also: `EnergyFETerm`, `NoFETerm`, `MixedEnergyFETerm`
 """
@@ -463,7 +463,7 @@ struct ResidualEnergyFETerm <: AbstractEnergyTerm
   #lyu      :: Function #regularizer
   #λ        :: Real
   trian::Triangulation
-  quad::CellQuadrature
+  quad::Measure
   Fk::Function
   #lk       :: Function #regularizer
   #μ        :: Real
@@ -475,7 +475,7 @@ struct ResidualEnergyFETerm <: AbstractEnergyTerm
   function ResidualEnergyFETerm(
     Fyu::Function,
     trian::Triangulation,
-    quad::CellQuadrature,
+    quad::Measure,
     Fk::Function,
     n::Integer,
   )

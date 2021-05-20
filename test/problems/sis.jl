@@ -38,7 +38,7 @@ function sis(args...; x0 = [1, 2], n = 10, a = 0.2, b = 0.7, T = 1, kwargs...)
 
   trian = Triangulation(model)
   degree = 1
-  quad = CellQuadrature(trian, degree)
+  quad = Measure(trian, degree)
   t_Ω = FETerm(res_pde, trian, quad)
   op_sis = FEOperator(Y, X, t_Ω)
 

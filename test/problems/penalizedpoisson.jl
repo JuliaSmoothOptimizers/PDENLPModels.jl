@@ -38,7 +38,7 @@ function penalizedpoisson(args...; n = 2^4, kwargs...)
 
   trian = Triangulation(model)
   degree = 2
-  quad = CellQuadrature(trian, degree)
+  quad = Measure(trian, degree)
 
   xin = zeros(Gridap.FESpaces.num_free_dofs(Ypde))
   return GridapPDENLPModel(xin, f, trian, quad, Ypde, Xpde)
@@ -96,7 +96,7 @@ function penalizedpoisson_test(; udc = false)
 
   trian = Triangulation(model)
   degree = 2
-  quad = CellQuadrature(trian, degree)
+  quad = Measure(trian, degree)
   a(u, v) = ∇(v) ⊙ ∇(u)
   w(x) = 1
   b_Ω(v) = v * w

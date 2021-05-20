@@ -10,30 +10,19 @@ function basicunconstrained(args...; n = 2^4, kwargs...)
   model = CartesianDiscreteModel(domain, partition)
 
   order = 1
-  V0 = TestFESpace(
-    reffe = :Lagrangian,
-    order = order,
-    valuetype = Float64,
-    conformity = :H1,
-    model = model,
-    dirichlet_tags = "boundary",
-  )
+  valuetype = Float64
+  reffe = ReferenceFE(lagrangian, valuetype, order)
+  V0 = TestFESpace(model, reffe; conformity = :H1, dirichlet_tags = "boundary")
   U = TrialFESpace(V0, x -> 0.0)
 
   Ypde = U
   Xpde = V0
-  Xcon = TestFESpace(
-    reffe = :Lagrangian,
-    order = order,
-    valuetype = Float64,
-    conformity = :H1,
-    model = model,
-  )
+  Xcon = TestFESpace(model, reffe; conformity = :H1)
   Ucon = TrialFESpace(Xcon)
   Ycon = Ucon
   trian = Triangulation(model)
   degree = 2
-  quad = CellQuadrature(trian, degree)
+  quad = Measure(trian, degree) # CellQuadrature(trian, degree)
 
   Y = MultiFieldFESpace([U, Ucon])
   X = MultiFieldFESpace([V0, Xcon])
@@ -41,6 +30,7 @@ function basicunconstrained(args...; n = 2^4, kwargs...)
   return GridapPDENLPModel(xin, f, trian, quad, Y, X)
 end
 
+#=GRIDAPv15
 function basicunconstrained_test(; udc = false)
   n = 10
   nlp = basicunconstrained(n = n)
@@ -124,3 +114,4 @@ function basicunconstrained_test(; udc = false)
     @test H_errs_fg[0] == Dict{Int, Dict{Tuple{Int, Int}, Float64}}()
   end
 end
+=#

@@ -44,7 +44,7 @@ function controlelasticmembrane(args...; n = 3, kargs...)
   # Integration machinery
   trian = Triangulation(model)
   degree = 1
-  quad = CellQuadrature(trian, degree)
+  quad = Measure(trian, degree)
 
   # Objective function:
   yd(x) = -x[1]^2

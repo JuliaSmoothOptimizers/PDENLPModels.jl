@@ -15,6 +15,7 @@ using PDENLPModels:
 #Testing
 using NLPModels, NLPModelsTest, Test
 
+#=GRIDAPv15
 const pde_problems = [
   "BURGER1D",
   # "CELLINCREASE",
@@ -30,6 +31,22 @@ const pde_problems = [
   "TOREBRACHISTOCHRONE",
   "CONTROLELASTICMEMBRANE",
 ]
+=#
+const pde_problems = [
+  #"BURGER1D",
+  # "CELLINCREASE",
+  # "SIS",
+  # "CONTROLSIR",
+  # "DYNAMICSIR",
+  "BASICUNCONSTRAINED",
+  "PENALIZEDPOISSON",
+  #"INCOMPRESSIBLENAVIERSTOKES", #too slow
+  #"POISSONMIXED",
+  #"POISSONPARAM",
+  #"POISSONMIXED2",
+  #"TOREBRACHISTOCHRONE",
+  #"CONTROLELASTICMEMBRANE",
+]
 # missing an example with an FESource term
 # FEOperatorsFromTerms including a LinearFETerm
 
@@ -42,6 +59,7 @@ n = 3
 #++ would be to also have a lowercase(problem)_test that test the problem with the exact solution.
 local_test = false
 
+#=GRIDAPv15
 @testset "NLP tests" begin
   for problem in pde_problems
     @info "$(problem)"
@@ -72,6 +90,9 @@ local_test = false
     end
   end
 end
+=#
 
+#=GRIDAPv15
 # Test constructors, util_functions.jl and additional_obj_terms.jl
 include("unit-test.jl")
+=#

@@ -54,7 +54,7 @@ function torebrachistochrone(args...; n = 3, kwargs...)
 
   trian = Triangulation(model)
   degree = 1
-  quad = CellQuadrature(trian, degree)
+  quad = Measure(trian, degree)
 
   return GridapPDENLPModel(
     zeros(nU0 + nU1),

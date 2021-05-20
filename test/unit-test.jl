@@ -15,7 +15,7 @@ Ypde = TrialFESpace(Xpde, u0)
 
 f(x) = dot(x, x)
 trian = Triangulation(model)
-quad = CellQuadrature(trian, 1)
+quad = Measure(trian, 1)
 
 Xcon =
   TestFESpace(reffe = :Lagrangian, order = 1, valuetype = Float64, conformity = :H1, model = model)
@@ -753,7 +753,7 @@ end
   #Integration machinery
   trian = Triangulation(model)
   degree = 1
-  quad = CellQuadrature(trian, degree)
+  quad = Measure(trian, degree)
 
   for T in (Float16, Float32, Float64)
     #Example 0:
