@@ -128,7 +128,7 @@ function controlsir_test(; x0 = [1, 2], n = 10, a = 0.2, b = 0.1, μ = 0.1, T = 
   # check the value at the solution:
   kmax = 6 #beyond is tough
   for k = 1:kmax
-    local sol_Ih, sol_Sh, h, n, nlp
+    local sol_Ih , sol_Sh , h , n , nlp
     n = 10^k
     nlp = controlsir(x0 = x0, n = n, a = a, b = b, μ = μ, T = T)
     h = T / n

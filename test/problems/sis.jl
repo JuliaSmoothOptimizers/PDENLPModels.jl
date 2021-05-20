@@ -95,7 +95,7 @@ function sis_test(; x0 = [1, 2], n = 10, a = 0.2, b = 0.7, T = 1)
   xr = rand(nlp.meta.nvar)
   # check the value at the solution:
   for k = 1:6
-    local sol_Ih, sol_Sh, h, n, nlp
+    local sol_Ih , sol_Sh , h , n , nlp
     n = 10^k
     nlp = sis(x0 = x0, n = n, a = a, b = b, T = T)
     h = T / n
