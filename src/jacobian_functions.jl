@@ -445,7 +445,7 @@ function _jac_from_term_to_terms!(
   _yuh = restrict(yu, term.trian)
 
   cellids = Gridap.FESpaces.get_cell_id(term)
-  cellvals = integrate(term.biform(_yuh, _v), term.trian, term.quad)
+  cellvals = integrate(term.biform(_yuh, _v), term.quad)
 
   Gridap.FESpaces._push_matrix_contribution!(w, r, c, cellvals, cellids)
 end
@@ -565,9 +565,9 @@ function _jac_from_term_to_terms_u!(
   function uh_to_cell_residual(uf)
     _uf = Gridap.FESpaces.restrict(uf, term.trian)
     if length(κ) > 0
-      return integrate(term.res(κ, vcat(_yh, _uf), _v), term.trian, term.quad)
+      return integrate(term.res(κ, vcat(_yh, _uf), _v), term.quad)
     else
-      return integrate(term.res(vcat(_yh, _uf), _v), term.trian, term.quad)
+      return integrate(term.res(vcat(_yh, _uf), _v), term.quad)
     end
   end
 
@@ -630,13 +630,13 @@ function _jac_from_term_to_terms_y!(
   function yh_to_cell_residual(yf) #Tanj: improved solution is to declare the function outside
     _yf = Gridap.FESpaces.restrict(yf, term.trian)
     if length(κ) > 0 && uh != nothing
-      return integrate(term.res(κ, vcat(_yf, _uh), _v), term.trian, term.quad)
+      return integrate(term.res(κ, vcat(_yf, _uh), _v), term.quad)
     elseif length(κ) > 0 #&& uh == nothing
-      return integrate(term.res(κ, _yf, _v), term.trian, term.quad)
+      return integrate(term.res(κ, _yf, _v), term.quad)
     elseif length(κ) == 0 && uh == nothing
-      return integrate(term.res(_yf, _v), term.trian, term.quad)
+      return integrate(term.res(_yf, _v), term.quad)
     else #length(κ) == 0 && uh != nothing
-      return integrate(term.res(vcat(_yf, _uh), _v), term.trian, term.quad)
+      return integrate(term.res(vcat(_yf, _uh), _v), term.quad)
     end
   end
 
@@ -668,9 +668,9 @@ function _jac_from_term_to_terms_y!(
 
   cellids = Gridap.FESpaces.get_cell_id(term)
   if length(κ) > 0
-    cellvals_y = integrate(term.jac(κ, vcat(_yh, _uh), _du, _v), term.trian, term.quad)
+    cellvals_y = integrate(term.jac(κ, vcat(_yh, _uh), _du, _v), term.quad)
   else
-    cellvals_y = integrate(term.jac(vcat(_yh, _uh), _du, _v), term.trian, term.quad)
+    cellvals_y = integrate(term.jac(vcat(_yh, _uh), _du, _v), term.quad)
   end
 
   Gridap.FESpaces._push_matrix_contribution!(w, r, c, cellvals_y, cellids)

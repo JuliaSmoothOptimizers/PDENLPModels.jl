@@ -155,20 +155,20 @@ See also: MixedEnergyFETerm, NoFETerm, `_obj_cell_integral`, `_obj_integral`,
 """
 struct EnergyFETerm <: AbstractEnergyTerm
   f::Function
-  trian::Triangulation
+  trian::Triangulation # TODO: Is this useful as it is contained in Measure?
   quad::Measure
 end
 
 function _obj_integral(term::EnergyFETerm, κ::AbstractVector, x::FEFunctionType)
   @lencheck 0 κ
-  return integrate(term.f(x), term.trian, term.quad)
+  return integrate(term.f(x), term.quad)
 end
 
 function _obj_cell_integral(term::EnergyFETerm, κ::AbstractVector, yuh::CellFieldType)
   @lencheck 0 κ
   _yuh = Gridap.FESpaces.restrict(yuh, term.trian)
 
-  return integrate(term.f(_yuh), term.trian, term.quad)
+  return integrate(term.f(_yuh), term.quad)
 end
 
 function _compute_gradient!(
@@ -290,8 +290,8 @@ end
 function _obj_integral(term::MixedEnergyFETerm, κ::AbstractVector, x::FEFunctionType)
   @lencheck term.nparam κ
   #=kf = interpolate_everywhere(term.ispace, κ)
-  return integrate(term.f(kf, x), term.trian, term.quad)=#
-  return integrate(term.f(κ, x), term.trian, term.quad)
+  return integrate(term.f(kf, x), term.quad)=#
+  return integrate(term.f(κ, x), term.quad)
 end
 
 function _obj_cell_integral(term::MixedEnergyFETerm, κ::AbstractVector, yuh::CellFieldType)
@@ -303,8 +303,8 @@ function _obj_cell_integral(term::MixedEnergyFETerm, κ::AbstractVector, yuh::Ce
   kfu    = CellField(term.ispace, cell_kf)
   _kfu = Gridap.FESpaces.restrict(kfu, term.trian)
 
-  return integrate(term.f(_kfu, _yuh), term.trian, term.quad)=#
-  return integrate(term.f(κ, _yuh), term.trian, term.quad)
+  return integrate(term.f(_kfu, _yuh), term.quad)=#
+  return integrate(term.f(κ, _yuh), term.quad)
 end
 
 #=
@@ -313,7 +313,7 @@ function _obj_cell_integral(term::MixedEnergyFETerm, κ::CellFieldType, yuh::Cel
     _yuh = Gridap.FESpaces.restrict(yuh, term.trian)
     _κ = Gridap.FESpaces.restrict(κ, term.trian)
 
-    return integrate(term.f(_κ, _yuh), term.trian, term.quad)
+    return integrate(term.f(_κ, _yuh), term.quad)
 end
 =#
 
@@ -352,7 +352,7 @@ end
 
 function _compute_gradient_k(term::MixedEnergyFETerm, κ::AbstractVector, yu::FEFunctionType)
   @lencheck term.nparam κ
-  intf = @closure k -> sum(integrate(term.f(k, yu), term.trian, term.quad))
+  intf = @closure k -> sum(integrate(term.f(k, yu), term.quad))
   return ForwardDiff.gradient(intf, κ)
 end
 
@@ -417,7 +417,7 @@ function _compute_hess_k_vals(
     @show Hxk
     =#
     #@show "2nd try:"
-    #intf = k -> ForwardDiff.gradient(x -> sum(integrate(term.f(k, x), term.trian, term.quad)), xyu)
+    #intf = k -> ForwardDiff.gradient(x -> sum(integrate(term.f(k, x), term.quad)), xyu)
     #Hxk2 = ForwardDiff.jacobian(intf, κ)
     #@show Hxk2
     #We need the gradient w.r.t. yu and then derive by k

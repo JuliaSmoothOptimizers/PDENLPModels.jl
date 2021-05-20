@@ -357,9 +357,9 @@ function hess_coord!(
         _xfh = Gridap.FESpaces.restrict(xfh, term.trian)
 
         if length(κ) > 0
-          _res = integrate(term.res(κ, _xfh, _lfh), term.trian, term.quad)
+          _res = integrate(term.res(κ, _xfh, _lfh), term.quad)
         else
-          _res = integrate(term.res(_xfh, _lfh), term.trian, term.quad)
+          _res = integrate(term.res(_xfh, _lfh), term.quad)
         end
         lag = _res
         return lag
@@ -446,9 +446,9 @@ function _from_term_to_terms!(
   _yu = restrict(yu, term.trian)
 
   if length(κ) > 0
-    cellvals = integrate(term.res(κ, _yu, _v), term.trian, term.quad)
+    cellvals = integrate(term.res(κ, _yu, _v), term.quad)
   else
-    cellvals = integrate(term.res(_yu, _v), term.trian, term.quad)
+    cellvals = integrate(term.res(_yu, _v), term.quad)
   end
   cellids = Gridap.FESpaces.get_cell_id(term)
 
