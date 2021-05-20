@@ -221,6 +221,7 @@ function _compute_hess_coo(
   cell_yu = Gridap.FESpaces.get_cell_dof_values(yu)
   cell_id_yu = Gridap.Arrays.IdentityVector(length(cell_yu))
 
+  #=
   function _cell_obj_yu(cell)
     yuh = CellField(Y, cell)
     _obj_cell_integral(tnrj, κ, yuh)
@@ -228,6 +229,8 @@ function _compute_hess_coo(
 
   #Compute the hessian with AD
   cell_r_yu = Gridap.Arrays.autodiff_array_hessian(_cell_obj_yu, cell_yu, cell_id_yu)
+  =#
+  cell_r_yu = get_array(hessian(tnrj.f, yu))
   #Assemble the matrix in the "good" space
   assem = Gridap.FESpaces.SparseMatrixAssembler(Y, X)
   (I, J, V) = assemble_hess(assem, cell_r_yu, cell_id_yu)
@@ -347,7 +350,7 @@ function _compute_gradient!(
   #Compute the gradient with AD
   cell_r_yu = Gridap.Arrays.autodiff_array_gradient(_cell_obj_yu, cell_yu, cell_id_yu)
   =#
-  cell_r_yu = get_array(gradient(tnrj.f, κ, yu))
+  cell_r_yu = get_array(gradient(x -> tnrj.f(κ, x), yu))
   #Put the result in the format expected by Gridap.FESpaces.assemble_matrix
   vecdata_yu = [[cell_r_yu], [cell_id_yu]] #TODO would replace by Tuple work?
   #Assemble the gradient in the "good" space
@@ -375,6 +378,7 @@ function _compute_hess_coo(
   cell_yu = Gridap.FESpaces.get_cell_dof_values(yu)
   cell_id_yu = Gridap.Arrays.IdentityVector(length(cell_yu))
 
+  #=
   function _cell_obj_yu(cell)
     yuh = CellField(Y, cell)
     _obj_cell_integral(term, κ, yuh)
@@ -382,6 +386,8 @@ function _compute_hess_coo(
 
   #Compute the hessian with AD
   cell_r_yu = Gridap.Arrays.autodiff_array_hessian(_cell_obj_yu, cell_yu, cell_id_yu)
+  =#
+  cell_r_yu = get_array(hessian(x -> tnrj.f(κ, x), yu))
   #Assemble the matrix in the "good" space
   assem = Gridap.FESpaces.SparseMatrixAssembler(Y, X)
   (I, J, V) = assemble_hess(assem, cell_r_yu, cell_id_yu)

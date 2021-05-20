@@ -43,9 +43,7 @@ include("additional_obj_terms.jl")
 #Set of practical functions: _split_FEFunction, _split_vector
 include("util_functions.jl")
 #Additional functions for the jacobian:
-#=GRIDAPv15
 include("jacobian_functions.jl")
-=#
 
 export AbstractEnergyTerm, EnergyFETerm, MixedEnergyFETerm, NoFETerm
 

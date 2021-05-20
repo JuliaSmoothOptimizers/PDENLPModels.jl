@@ -140,6 +140,7 @@ end
 =#
 
 #=GRIDAPv15
+# DO WE REALLY NEED THIS???
 function hess_coord(
   nlp::GridapPDENLPModel,
   x::AbstractVector{T};
@@ -176,7 +177,7 @@ function hess_coord(
 end
 =#
 
-#=GRIDAPv15
+# Shouldn't this be in the NRJ terms ??
 function hess_coord!(
   nlp::GridapPDENLPModel,
   x::AbstractVector{T},
@@ -203,21 +204,18 @@ function hess_coord!(
     a = Gridap.FESpaces.SparseMatrixAssembler(nlp.Y, nlp.X)
     ncells = num_cells(nlp.tnrj.trian)
     cell_id_yu = Gridap.Arrays.IdentityVector(ncells)
-    cell_yu = Gridap.FESpaces.get_cell_dof_values(yu)
 
-    function _cell_obj_yu(cell)
-      yuh = CellField(nlp.Y, cell)
-      _obj_cell_integral(nlp.tnrj, κ, yuh)
+    cell_r_yu = if nlp.nparam > 0
+      get_array(hessian(x -> nlp.tnrj.f(κ, x), yu))
+    else
+      get_array(hessian(nlp.tnrj.f, yu))
     end
-
-    #Compute the hessian with AD
-    cell_r_yu = Gridap.Arrays.autodiff_array_hessian(_cell_obj_yu, cell_yu, cell_id_yu)
     nini = vals_hess_coo_numeric!(vals, a, cell_r_yu, cell_id_yu, nfirst = nini)
   end
   vals .*= obj_weight
   return vals
 end
-=#
+
 
 #=GRIDAPv15
 function hprod!(

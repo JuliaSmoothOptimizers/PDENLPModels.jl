@@ -11,25 +11,14 @@
 # ∫_Ω​ (∇u ∇v - f*v)dx = 0, ∀ v ∈ Ω
 # u = 0, x ∈ ∂Ω
 function penalizedpoisson(args...; n = 2^4, kwargs...)
-  w(x) = 1
-  function f(yu) #:: Union{Gridap.MultiField.MultiFieldFEFunction, Gridap.CellData.GenericCellField}
-    y = yu
-    0.5 * ∇(y) ⊙ ∇(y) - w * y
-  end
-
   domain = (0, 1, 0, 1)
   partition = (n, n)
-  @time model = CartesianDiscreteModel(domain, partition)
+  model = CartesianDiscreteModel(domain, partition)
 
   order = 1
-  V0 = TestFESpace(
-    reffe = :Lagrangian,
-    order = order,
-    valuetype = Float64,
-    conformity = :H1,
-    model = model,
-    dirichlet_tags = "boundary",
-  )
+  valuetype = Float64
+  reffe = ReferenceFE(lagrangian, valuetype, order)
+  V0 = TestFESpace(model, reffe; conformity = :H1, dirichlet_tags = "boundary")
   y0(x) = 0.0
   U = TrialFESpace(V0, y0)
 
@@ -38,12 +27,19 @@ function penalizedpoisson(args...; n = 2^4, kwargs...)
 
   trian = Triangulation(model)
   degree = 2
-  quad = Measure(trian, degree)
+  dΩ = Measure(trian, degree)
+
+  w(x) = 1
+  function f(yu)
+    y = yu
+    ∫( 0.5 * ∇(y) ⊙ ∇(y) - w * y )*dΩ
+  end
 
   xin = zeros(Gridap.FESpaces.num_free_dofs(Ypde))
-  return GridapPDENLPModel(xin, f, trian, quad, Ypde, Xpde)
+  return GridapPDENLPModel(xin, f, trian, dΩ, Ypde, Xpde)
 end
 
+#=
 function penalizedpoisson_test(; udc = false)
   nlp = penalizedpoisson()
   x1 = vcat(rand(Gridap.FESpaces.num_free_dofs(nlp.Ypde)))
@@ -112,3 +108,4 @@ function penalizedpoisson_test(; udc = false)
   _ngxsol = norm(grad(nlp, sol))
   _ngxsol <= 1 / n
 end
+=#

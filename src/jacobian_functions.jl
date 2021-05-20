@@ -44,6 +44,7 @@ function fill_jac_coo_symbolic!(
   nini
 end
 
+#=GRIDAPv15
 function allocate_coo_jac!(
   op::Gridap.FESpaces.FEOperatorFromTerms,
   Y::FESpace,
@@ -90,6 +91,7 @@ function allocate_coo_jac!(
 
   return nini
 end
+=#
 
 #=
 This is a modified version of
@@ -126,6 +128,7 @@ function count_nnz_coo_short(a::Gridap.FESpaces.GenericSparseMatrixAssembler, ce
   n
 end
 
+#=GRIDAPv15
 function count_nnz_jac(
   op::Gridap.FESpaces.FEOperatorFromTerms,
   Y::FESpace,
@@ -155,6 +158,7 @@ function count_nnz_jac(
 
   return nini
 end
+=#
 
 function count_nnz_jac(
   op::AffineFEOperator,
@@ -192,6 +196,7 @@ function _from_terms_to_jacobian_vals!(
   return nfirst + nini
 end
 
+#=GRIDAPv15
 """
 Note:
 1) Compute the derivatives w.r.t. y and u separately.
@@ -251,7 +256,9 @@ function _from_terms_to_jacobian(
 
   return S
 end
+=#
 
+#=GRIDAPv15
 function _from_terms_to_jacobian_vals!(
   op::Gridap.FESpaces.FEOperatorFromTerms,
   x::AbstractVector{T},
@@ -297,6 +304,7 @@ function _from_terms_to_jacobian_vals!(
 
   return nini
 end
+=#
 
 #=
 Adaptation of
@@ -377,6 +385,7 @@ function _get_block_layout(a::AbstractArray)
   nothing
 end
 
+#=
 function _jac_from_term_to_terms!(
   term::Gridap.FESpaces.FETerm,
   κ::AbstractVector,
@@ -403,7 +412,9 @@ function _jac_from_term_to_terms!(
   cellids = get_cell_id(term)
   _push_matrix_contribution!(w, r, c, cellvals, cellids)
 end
+=#
 
+#=
 function _jac_from_term_to_terms_id!(
   term::Gridap.FESpaces.FETerm,
   r::AbstractVector,
@@ -419,8 +430,10 @@ function _jac_from_term_to_terms_id!(
   w = [] #just to reuse Gridap functions
   Gridap.FESpaces._push_matrix_contribution!(w, r, c, [], cellids)
 end
+=#
 
 #https://github.com/gridap/Gridap.jl/blob/758a8620756e164ba0e6b83dc8dcbb278015b3d9/src/FESpaces/FETerms.jl#L367
+#=GRIDAPv15
 function _jac_from_term_to_terms!(
   term::Union{Gridap.FESpaces.LinearFETerm, Gridap.FESpaces.AffineFETermFromIntegration},
   κ::AbstractVector,
@@ -449,7 +462,9 @@ function _jac_from_term_to_terms!(
 
   Gridap.FESpaces._push_matrix_contribution!(w, r, c, cellvals, cellids)
 end
+=#
 
+#=
 function _jac_from_term_to_terms_id!(
   term::Union{Gridap.FESpaces.LinearFETerm, Gridap.FESpaces.AffineFETermFromIntegration},
   r::AbstractVector,
@@ -464,7 +479,9 @@ function _jac_from_term_to_terms_id!(
 
   Gridap.FESpaces._push_matrix_contribution!(w, r, c, [], cellids)
 end
+=#
 
+#=
 function _jac_from_term_to_terms!(
   term::Union{Gridap.FESpaces.NonlinearFETermWithAutodiff, Gridap.FESpaces.NonlinearFETerm},
   κ::AbstractVector,
@@ -495,7 +512,9 @@ function _jac_from_term_to_terms!(
 
   _jac_from_term_to_terms_y!(term, κ, yh, uh, dy, v, wy, ry, cy)
 end
+=#
 
+#=GRIDAPv15
 function _jac_from_term_to_terms_id!(
   term::Union{Gridap.FESpaces.NonlinearFETermWithAutodiff, Gridap.FESpaces.NonlinearFETerm},
   r::AbstractVector,
@@ -508,7 +527,9 @@ function _jac_from_term_to_terms_id!(
   _jac_from_term_to_terms_u_id!(term, ru, cu)
   _jac_from_term_to_terms_y_id!(term, ry, cy)
 end
+=#
 
+#=GRIDAPv15
 #https://github.com/gridap/Gridap.jl/blob/758a8620756e164ba0e6b83dc8dcbb278015b3d9/src/FESpaces/FETerms.jl#L332
 function _jac_from_term_to_terms!(
   term::Gridap.FESpaces.FESource,
@@ -532,7 +553,9 @@ function _jac_from_term_to_terms!(
 )
   nothing
 end
+=#
 
+#=GRIDAPv15
 function _jac_from_term_to_terms_id!(
   term::Gridap.FESpaces.FESource,
   r::AbstractVector,
@@ -544,9 +567,13 @@ function _jac_from_term_to_terms_id!(
 )
   nothing
 end
+=#
 
+#=GRIDAPv15
 include("test_autodiff.jl")
+=#
 
+#=GRIDAPv15
 function _jac_from_term_to_terms_u!(
   term::Union{Gridap.FESpaces.NonlinearFETermWithAutodiff, Gridap.FESpaces.NonlinearFETerm},
   κ::AbstractVector,
@@ -586,7 +613,9 @@ function _jac_from_term_to_terms_u!(
 
   return w, r, c
 end
+=#
 
+#=GRIDAPv15
 function _jac_from_term_to_terms_u_id!(
   term::Union{Gridap.FESpaces.NonlinearFETermWithAutodiff, Gridap.FESpaces.NonlinearFETerm},
   r::AbstractVector,
@@ -598,7 +627,9 @@ function _jac_from_term_to_terms_u_id!(
 
   return r, c
 end
+=#
 
+#=GRIDAPv15
 function _jac_from_term_to_terms_y_id!(
   term::Union{Gridap.FESpaces.NonlinearFETermWithAutodiff, Gridap.FESpaces.NonlinearFETerm},
   r::AbstractVector,
@@ -610,7 +641,9 @@ function _jac_from_term_to_terms_y_id!(
 
   return r, c
 end
+=#
 
+#=GRIDAPv15
 function _jac_from_term_to_terms_y!(
   term::Gridap.FESpaces.NonlinearFETermWithAutodiff,
   κ::AbstractVector,
@@ -647,7 +680,9 @@ function _jac_from_term_to_terms_y!(
 
   return w, r, c
 end
+=#
 
+#=GRIDAPv15
 function _jac_from_term_to_terms_y!(
   term::Gridap.FESpaces.NonlinearFETerm,
   κ::AbstractVector,
@@ -677,3 +712,4 @@ function _jac_from_term_to_terms_y!(
 
   return w, r, c
 end
+=#

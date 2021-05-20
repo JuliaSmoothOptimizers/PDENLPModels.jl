@@ -406,6 +406,8 @@ end
 =#
 
 #=GRIDAPv15
+REVIEW
+=#
 function vals_hess_coo_numeric!(
   V::AbstractVector{Vi},
   a::Gridap.FESpaces.GenericSparseMatrixAssembler,
@@ -441,9 +443,10 @@ function vals_hess_coo_numeric!(
 
   nini
 end
-=#
 
 #=GRIDAPv15
+REVIEW
+=#
 @noinline function _vals_hess!(
   a::Type{M},
   nini::Integer,
@@ -465,13 +468,14 @@ end
   end
   n
 end
-=#
 
 #=
 https://github.com/gridap/Gridap.jl/blob/758a8620756e164ba0e6b83dc8dcbb278015b3d9/src/FESpaces/SparseMatrixAssemblers.jl#L463
 _fill_matrix_at_cell! may have a specific specialization
 =#
 #=GRIDAPv15
+REVIEW
+=#
 @inline function _vals_hess_at_cell!(
   ::Type{M},
   nini::Integer,
@@ -498,4 +502,3 @@ _fill_matrix_at_cell! may have a specific specialization
   end
   n
 end
-=#
