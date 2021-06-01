@@ -394,7 +394,6 @@ function hess_coord!(
 end
 =#
 
-#=GRIDAPv15
 function cons!(nlp::GridapPDENLPModel, x::AbstractVector, c::AbstractVector)
   @lencheck nlp.meta.nvar x
   @lencheck nlp.meta.ncon c
@@ -404,7 +403,6 @@ function cons!(nlp::GridapPDENLPModel, x::AbstractVector, c::AbstractVector)
 
   return c
 end
-=#
 
 #=GRIDAPv15
 function _from_terms_to_residual!(
@@ -481,7 +479,6 @@ coo_prod!(cols, rows, vals, v, res)
 - get_matrix(op) is a sparse matrix
 - Benchmark equivalent to Gridap.FESpaces.residual!(res, op_affine.op, xrand)
 =#
-#=GRIDAPv15
 function _from_terms_to_residual!(
   op::AffineFEOperator,
   x::AbstractVector,
@@ -494,9 +491,7 @@ function _from_terms_to_residual!(
 
   return res
 end
-=#
 
-#=GRIDAPv15
 function jac(nlp::GridapPDENLPModel, x::AbstractVector{T}) where {T}
   @lencheck nlp.meta.nvar x
   increment!(nlp, :neval_jac)
@@ -517,9 +512,7 @@ function jac(nlp::GridapPDENLPModel, x::AbstractVector{T}) where {T}
 
   return pde_jac
 end
-=#
 
-#=GRIDAPv15
 function jprod!(nlp::GridapPDENLPModel, x::AbstractVector, v::AbstractVector, Jv::AbstractVector)
   @lencheck nlp.meta.nvar x v
   @lencheck nlp.meta.ncon Jv
@@ -531,9 +524,7 @@ function jprod!(nlp::GridapPDENLPModel, x::AbstractVector, v::AbstractVector, Jv
 
   return Jv
 end
-=#
 
-#=GRIDAPv15
 function jtprod!(nlp::GridapPDENLPModel, x::AbstractVector, v::AbstractVector, Jtv::AbstractVector)
   @lencheck nlp.meta.nvar x Jtv
   @lencheck nlp.meta.ncon v
@@ -545,7 +536,6 @@ function jtprod!(nlp::GridapPDENLPModel, x::AbstractVector, v::AbstractVector, J
 
   return Jtv
 end
-=#
 
 function jac_structure!(
   nlp::GridapPDENLPModel,
@@ -556,7 +546,6 @@ function jac_structure!(
   return _jac_structure!(nlp.op, nlp, rows, cols)
 end
 
-#=GRIDAPv15
 function _jac_structure!(
   op::AffineFEOperator,
   nlp::GridapPDENLPModel,
@@ -571,7 +560,6 @@ function _jac_structure!(
 
   return rows, cols
 end
-=#
 
 #=GRIDAPv15
 #Adaptation of `function allocate_matrix(a::SparseMatrixAssembler,matdata) end` in Gridap.FESpaces.
@@ -615,16 +603,13 @@ function jac_k_structure!(
 end
 =#
 
-#=GRIDAPv15
 function jac_coord!(nlp::GridapPDENLPModel, x::AbstractVector, vals::AbstractVector)
   @lencheck nlp.meta.nvar x
   @lencheck nlp.meta.nnzj vals
   increment!(nlp, :neval_jac)
   return _jac_coord!(nlp.op, nlp, x, vals)
 end
-=#
 
-#=GRIDAPv15
 function _jac_coord!(
   op::AffineFEOperator,
   nlp::GridapPDENLPModel,
@@ -638,7 +623,6 @@ function _jac_coord!(
   vals .= V
   return vals
 end
-=#
 
 #=GRIDAPv15
 function _jac_coord!(
