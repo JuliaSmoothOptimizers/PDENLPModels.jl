@@ -32,16 +32,9 @@ function incompressiblenavierstokes(args...; n = 3, kwargs...)
   conv(u, ∇u) = Re * (∇u') ⋅ u
   dconv(du, ∇du, u, ∇u) = conv(u, ∇du) + conv(du, ∇u)
 
-  function a(y, x)
-    u, p = y
-    v, q = x
-    ∇(v) ⊙ ∇(u) - (∇ ⋅ v) * p + q * (∇ ⋅ u)
-  end
   a((u, p), (v, q)) = ∫( ∇(v) ⊙ ∇(u) - (∇ ⋅ v) * p + q * (∇ ⋅ u) )dΩ
 
-  # c(u, v) = v ⊙ conv(u, ∇(u))
-  # dc(u, du, v) = v ⊙ dconv(du, ∇(du), u, ∇(u))
-  c(u, v) = ∫( v ⊙ (conv ∘ (u, ∇(u))) )dΩ
+  c(u, v) = ∫( v ⊙ (conv ∘ (u, ∇(u))) )dΩ # c(u, v) = v ⊙ conv(u, ∇(u))
   dc(u, du, v) = ∫( v ⊙ (dconv ∘ (du, ∇(du), u, ∇(u))) )dΩ
 
   res((u, p), (v, q)) = a((u, p), (v, q)) + c(u, v)
@@ -49,9 +42,9 @@ function incompressiblenavierstokes(args...; n = 3, kwargs...)
 
   # t_Ω = FETerm(res, Ωₕ, dΩ)
   # op = FEOperator(Y, X, t_Ω)
-  op = FEOperator(res, X, Y) # OR FEOperator(res, Y, X) ??
+  op = FEOperator(res, Y, X)
   # t_with_jac_Ω = FETerm(res, ja, Ωₕ, dΩ)
-  op_with_jac = FEOperator(res, jac, X, Y)
+  op_with_jac = FEOperator(res, jac, Y, X)
 
   ndofs = Gridap.FESpaces.num_free_dofs(Y)
   xin = zeros(ndofs)

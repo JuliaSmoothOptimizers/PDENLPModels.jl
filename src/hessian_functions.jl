@@ -110,11 +110,12 @@ function get_nnzh(tnrj::T, op::AffineFEOperator, Y, X, nparam, nvar) where {T}
   return get_nnzh(tnrj, Y, X, nparam, nvar)
 end
 
-#=GRIDAPv15
 function get_nnzh(tnrj::T, op::Gridap.FESpaces.FEOperatorFromWeakForm, Y, X, nparam, nvar) where {T}
   nnz_hess_obj = get_nnzh(tnrj, Y, X, nparam, nvar)
 
   nnz_hess_yu = 0
+  @warn "No hessian contribution from the operator. get_nnzh L113"
+  #=GRIDAPv15
   for term in op.terms
     if typeof(term) <: Gridap.FESpaces.FESourceFromIntegration
       continue #assuming they don't depend on yu
@@ -124,6 +125,7 @@ function get_nnzh(tnrj::T, op::Gridap.FESpaces.FEOperatorFromWeakForm, Y, X, npa
     cell_id_yu = Gridap.Arrays.IdentityVector(ncells)
     nnz_hess_yu += count_hess_nnz_coo_short(a, cell_id_yu)
   end
+  =#
 
   #add the nnz w.r.t. k; by default it is:
   if nparam > 0
@@ -133,7 +135,6 @@ function get_nnzh(tnrj::T, op::Gridap.FESpaces.FEOperatorFromWeakForm, Y, X, npa
   nnzh = nnz_hess_obj + nnz_hess_yu
   return nnzh
 end
-=#
 
 function count_hess_nnz_coo_short(
   a::Gridap.FESpaces.GenericSparseMatrixAssembler,

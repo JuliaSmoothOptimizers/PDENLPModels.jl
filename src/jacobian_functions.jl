@@ -128,7 +128,6 @@ function count_nnz_coo_short(a::Gridap.FESpaces.GenericSparseMatrixAssembler, ce
   n
 end
 
-#=GRIDAPv15
 function count_nnz_jac(
   op::Gridap.FESpaces.FEOperatorFromWeakForm,
   Y::FESpace,
@@ -140,6 +139,12 @@ function count_nnz_jac(
   cu, cy = [], []
   r, c = [], []
 
+  # https://github.com/gridap/Gridap.jl/blob/9bbf92203d411e6dd9c22bf32e71f58733613c7a/src/FESpaces/FEOperatorsFromWeakForm.jl#L65
+  Y = Gridap.FESpaces.get_trial(op)
+  uh = FEFunction(Y, zeros(Gridap.FESpaces.num_free_dofs(Y)))
+  A = Gridap.FESpaces.allocate_jacobian(op, uh)
+
+  #=GRIDAPv15
   for term in op.terms
     _jac_from_term_to_terms_id!(term, r, c, ru, cu, ry, cy)
   end
@@ -155,10 +160,10 @@ function count_nnz_jac(
 
   assem = Gridap.FESpaces.SparseMatrixAssembler(Y, Xpde)
   nini += count_nnz_coo_short(assem, (r, c))
+  =#
 
-  return nini
+  return nnz(A)
 end
-=#
 
 function count_nnz_jac(
   op::AffineFEOperator,
