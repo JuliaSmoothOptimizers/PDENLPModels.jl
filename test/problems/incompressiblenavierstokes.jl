@@ -9,24 +9,12 @@ function incompressiblenavierstokes(args...; n = 3, kwargs...)
 
   D = 2
   order = 2
-  V = TestFESpace(
-    reffe = :Lagrangian,
-    conformity = :H1,
-    valuetype = VectorValue{D, Float64},
-    model = model,
-    labels = labels,
-    order = order,
-    dirichlet_tags = ["diri0", "diri1"],
-  )
+  valuetype = VectorValue{D, Float64}
+  reffeᵤ = ReferenceFE(lagrangian, valuetype, order)
+  V = TestFESpace(model, reffeᵤ, conformity=:H1, labels=labels, dirichlet_tags=["diri0","diri1"])
 
-  Q = TestFESpace(
-    reffe = :PLagrangian,
-    conformity = :L2,
-    valuetype = Float64,
-    model = model,
-    order = order - 1,
-    constraint = :zeromean,
-  )
+  reffeₚ = ReferenceFE(lagrangian, Float64, order-1; space=:P)
+  Q = TestFESpace(model, reffeₚ, conformity=:L2, constraint=:zeromean)
 
   uD0 = VectorValue(0, 0)
   uD1 = VectorValue(1, 0)
@@ -36,47 +24,43 @@ function incompressiblenavierstokes(args...; n = 3, kwargs...)
   X = MultiFieldFESpace([V, Q])
   Y = MultiFieldFESpace([U, P])
 
+  degree = order # degree = (order - 1) * 2
+  Ωₕ = Triangulation(model)
+  dΩ = Measure(Ωₕ, degree)
+
   Re = 10.0
-  @law conv(u, ∇u) = Re * (∇u') ⋅ u
-  @law dconv(du, ∇du, u, ∇u) = conv(u, ∇du) + conv(du, ∇u)
+  conv(u, ∇u) = Re * (∇u') ⋅ u
+  dconv(du, ∇du, u, ∇u) = conv(u, ∇du) + conv(du, ∇u)
 
   function a(y, x)
     u, p = y
     v, q = x
     ∇(v) ⊙ ∇(u) - (∇ ⋅ v) * p + q * (∇ ⋅ u)
   end
+  a((u, p), (v, q)) = ∫( ∇(v) ⊙ ∇(u) - (∇ ⋅ v) * p + q * (∇ ⋅ u) )dΩ
 
-  c(u, v) = v ⊙ conv(u, ∇(u))
-  dc(u, du, v) = v ⊙ dconv(du, ∇(du), u, ∇(u))
+  # c(u, v) = v ⊙ conv(u, ∇(u))
+  # dc(u, du, v) = v ⊙ dconv(du, ∇(du), u, ∇(u))
+  c(u, v) = ∫( v ⊙ (conv ∘ (u, ∇(u))) )dΩ
+  dc(u, du, v) = ∫( v ⊙ (dconv ∘ (du, ∇(du), u, ∇(u))) )dΩ
 
-  function res(y, x)
-    u, p = y
-    v, q = x
-    a(y, x) + c(u, v)
-  end
+  res((u, p), (v, q)) = a((u, p), (v, q)) + c(u, v)
+  jac((u, p), (du, dp), (v, q)) = a((du, dp), (v, q)) + dc(u, du, v)
 
-  function ja(y, dy, x)
-    u, p = y
-    v, q = x
-    du, dp = dy
-    a(dy, x) + dc(u, du, v)
-  end
-
-  trian = Triangulation(model)
-  degree = (order - 1) * 2
-  quad = Measure(trian, degree)
-  t_Ω = FETerm(res, trian, quad)
-  op = FEOperator(Y, X, t_Ω)
-  t_with_jac_Ω = FETerm(res, ja, trian, quad)
-  op_with_jac = FEOperator(Y, X, t_with_jac_Ω)
+  # t_Ω = FETerm(res, Ωₕ, dΩ)
+  # op = FEOperator(Y, X, t_Ω)
+  op = FEOperator(res, X, Y) # OR FEOperator(res, Y, X) ??
+  # t_with_jac_Ω = FETerm(res, ja, Ωₕ, dΩ)
+  op_with_jac = FEOperator(res, jac, X, Y)
 
   ndofs = Gridap.FESpaces.num_free_dofs(Y)
   xin = zeros(ndofs)
   # Ycon, Xcon = nothing, nothing
-  # @time nlp = GridapPDENLPModel(xin, x->0.0, trian, quad, Y, Ycon, X, Xcon, op)
-  return GridapPDENLPModel(xin, x -> 0.0, trian, quad, Y, X, op)
+  # @time nlp = GridapPDENLPModel(xin, x->0.0, Ωₕ, dΩ, Y, Ycon, X, Xcon, op)
+  return GridapPDENLPModel(xin, x -> 0.0, Ωₕ, dΩ, Y, X, op)
 end
 
+#=
 function incompressiblenavierstokes_test(; udc = false)
   nlp = incompressiblenavierstokes()
   xin = nlp.meta.x0
@@ -174,3 +158,4 @@ function incompressiblenavierstokes_test(; udc = false)
   # H_errs_fg = hessian_check_from_grad(nlp)
   # @test H_errs_fg[0] == Dict{Int, Dict{Tuple{Int,Int}, Float64}}()
 end
+=#

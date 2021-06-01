@@ -79,7 +79,7 @@ Different variants:
 objective function only.   
 - `get_nnzh(tnrj :: T, op :: AffineFEOperator, Y, X, nparam, nvar)`: consider 
 the hessian of the objective function only.    
-- `get_nnzh(tnrj :: T, op :: Gridap.FESpaces.FEOperatorFromTerms, Y, X, nparam, nvar)`: 
+- `get_nnzh(tnrj :: T, op :: Gridap.FESpaces.FEOperatorFromWeakForm, Y, X, nparam, nvar)`: 
 concatenate non-zeros of the objective-hessian and the hessian of each term composing `op`.    
 
 TODO: Do not handle non-linear discrete parameters in the constraints.
@@ -111,7 +111,7 @@ function get_nnzh(tnrj::T, op::AffineFEOperator, Y, X, nparam, nvar) where {T}
 end
 
 #=GRIDAPv15
-function get_nnzh(tnrj::T, op::Gridap.FESpaces.FEOperatorFromTerms, Y, X, nparam, nvar) where {T}
+function get_nnzh(tnrj::T, op::Gridap.FESpaces.FEOperatorFromWeakForm, Y, X, nparam, nvar) where {T}
   nnz_hess_obj = get_nnzh(tnrj, Y, X, nparam, nvar)
 
   nnz_hess_yu = 0

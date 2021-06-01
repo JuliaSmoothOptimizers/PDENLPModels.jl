@@ -46,7 +46,7 @@ end
 
 #=GRIDAPv15
 function allocate_coo_jac!(
-  op::Gridap.FESpaces.FEOperatorFromTerms,
+  op::Gridap.FESpaces.FEOperatorFromWeakForm,
   Y::FESpace,
   Xpde::FESpace,
   Ypde::FESpace,
@@ -130,7 +130,7 @@ end
 
 #=GRIDAPv15
 function count_nnz_jac(
-  op::Gridap.FESpaces.FEOperatorFromTerms,
+  op::Gridap.FESpaces.FEOperatorFromWeakForm,
   Y::FESpace,
   Xpde::FESpace,
   Ypde::FESpace,
@@ -209,7 +209,7 @@ Note:
 - LinearFETerm <: AffineFETerm (not implemented)
 """
 function _from_terms_to_jacobian(
-  op::Gridap.FESpaces.FEOperatorFromTerms,
+  op::Gridap.FESpaces.FEOperatorFromWeakForm,
   x::AbstractVector{T},
   Y::FESpace,
   Xpde::FESpace,
@@ -260,7 +260,7 @@ end
 
 #=GRIDAPv15
 function _from_terms_to_jacobian_vals!(
-  op::Gridap.FESpaces.FEOperatorFromTerms,
+  op::Gridap.FESpaces.FEOperatorFromWeakForm,
   x::AbstractVector{T},
   Y::FESpace,
   Xpde::FESpace,

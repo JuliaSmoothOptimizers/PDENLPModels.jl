@@ -267,7 +267,7 @@ function hess_structure!(
   if nlp.meta.ncon > 0
     ##########################################################
     # Isolate in a function
-    if typeof(nlp.op) <: Gridap.FESpaces.FEOperatorFromTerms
+    if typeof(nlp.op) <: Gridap.FESpaces.FEOperatorFromWeakForm
       for term in nlp.op.terms
         if !(
           typeof(term) <:
@@ -334,7 +334,7 @@ function hess_coord!(
   nini = nnzh_obj
   ##########################################################
   # Isolate in a function
-  if typeof(nlp.op) <: Gridap.FESpaces.FEOperatorFromTerms
+  if typeof(nlp.op) <: Gridap.FESpaces.FEOperatorFromWeakForm
     for term in nlp.op.terms
       if !(
         typeof(term) <:
@@ -406,7 +406,7 @@ end
 
 #=GRIDAPv15
 function _from_terms_to_residual!(
-  op::Gridap.FESpaces.FEOperatorFromTerms,
+  op::Gridap.FESpaces.FEOperatorFromWeakForm,
   x::AbstractVector,
   nlp::GridapPDENLPModel,
   res::AbstractVector,
@@ -564,7 +564,7 @@ end
 #=GRIDAPv15
 #Adaptation of `function allocate_matrix(a::SparseMatrixAssembler,matdata) end` in Gridap.FESpaces.
 function _jac_structure!(
-  op::Gridap.FESpaces.FEOperatorFromTerms,
+  op::Gridap.FESpaces.FEOperatorFromWeakForm,
   nlp::GridapPDENLPModel,
   rows::AbstractVector{<:Integer},
   cols::AbstractVector{<:Integer},
@@ -626,7 +626,7 @@ end
 
 #=GRIDAPv15
 function _jac_coord!(
-  op::Gridap.FESpaces.FEOperatorFromTerms,
+  op::Gridap.FESpaces.FEOperatorFromWeakForm,
   nlp::GridapPDENLPModel,
   x::AbstractVector{T},
   vals::AbstractVector,
