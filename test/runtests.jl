@@ -3,6 +3,7 @@ using LinearAlgebra, SparseArrays
 using Gridap
 #PDENLPModels
 using PDENLPModels
+#=GRIDAPv15
 using PDENLPModels:
   FEFunctionType,
   _split_vector,
@@ -12,6 +13,7 @@ using PDENLPModels:
   _compute_gradient_k,
   _compute_gradient!,
   _compute_hess_coo
+=#
 #Testing
 using NLPModels, NLPModelsTest, Test
 
@@ -33,19 +35,19 @@ const pde_problems = [
 ]
 =#
 const pde_problems = [
-  #"BURGER1D",
-  # "CELLINCREASE",
-  # "SIS",
-  # "CONTROLSIR",
-  # "DYNAMICSIR",
-  "BASICUNCONSTRAINED",
-  "PENALIZEDPOISSON",
-  #"INCOMPRESSIBLENAVIERSTOKES", #too slow
-  #"POISSONMIXED",
-  #"POISSONPARAM",
-  #"POISSONMIXED2",
-  #"TOREBRACHISTOCHRONE",
-  #"CONTROLELASTICMEMBRANE",
+  # "BURGER1D", # TODO
+  # "CELLINCREASE", # TODO
+  # "SIS", # TODO
+  # "CONTROLSIR", # TODO
+  # "DYNAMICSIR", # TODO
+  "BASICUNCONSTRAINED", # OK
+  "PENALIZEDPOISSON", # OK
+  "INCOMPRESSIBLENAVIERSTOKES", #too slow # TODO
+  #"POISSONMIXED", # TODO
+  #"POISSONPARAM", # TODO
+  #"POISSONMIXED2", # TODO
+  "TOREBRACHISTOCHRONE", # TODO
+  "CONTROLELASTICMEMBRANE", # OK
 ]
 # missing an example with an FESource term
 # FEOperatorsFromTerms including a LinearFETerm
@@ -59,14 +61,21 @@ n = 3
 #++ would be to also have a lowercase(problem)_test that test the problem with the exact solution.
 local_test = false
 
-#=GRIDAPv15
 @testset "NLP tests" begin
   for problem in pde_problems
     @info "$(problem)"
     @time nlp = eval(Meta.parse("$(lowercase(problem))(n=$(n))"))
     @testset "Test problem scenario" begin
       # local_test || eval(Meta.parse("$(lowercase(problem))_test()"))
+      obj(nlp, nlp.meta.x0)
+      grad(nlp, nlp.meta.x0)
+      hess_coord(nlp, nlp.meta.x0)
+      if nlp.meta.ncon > 0
+        cons(nlp, nlp.meta.x0)
+        jac(nlp, nlp.meta.x0)
+      end
     end
+    #=GRIDAPv15
     @testset "Problem $(nlp.meta.name)" begin
       @info "$(problem) consistency"
       @testset "Consistency" begin
@@ -88,9 +97,9 @@ local_test = false
         @time coord_memory_nlp(nlp)
       end
     end
+    =#
   end
 end
-=#
 
 #=GRIDAPv15
 # Test constructors, util_functions.jl and additional_obj_terms.jl

@@ -24,7 +24,7 @@ function torebrachistochrone(args...; n = 3, kwargs...)
   #Pas de carré disponible, donc: `x*x` vaut pour x^2, et `∇(φ) ⊙ ∇(φ)` vaut `φ'^2` (la dérivée au carré)
   function f(x)
     φ, θ = x
-    ∫( a * a * ∇(φ) ⊙ ∇(φ) + (c + a * operate(cos, φ)) * (c + a * operate(cos, φ)) * ∇(θ) ⊙ ∇(θ) )dΩ
+    ∫( a * a * ∇(φ) ⊙ ∇(φ) + (c + a * (cos ∘ φ)) * (c + a * (cos ∘ φ)) * ∇(θ) ⊙ ∇(θ) )dΩ
   end
 
   labels = get_face_labeling(model)
