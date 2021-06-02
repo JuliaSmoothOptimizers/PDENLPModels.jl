@@ -4,64 +4,38 @@ function dynamicsir(args...; x0 = [1, 2], n = 10, T = 1, kwargs...)
   add_tag_from_tags!(labels, "diri0", [1]) #initial time condition
 
   #If we rewrite it as one? and then split yu = bf, cf
-  VI = TestFESpace(
-    reffe = :Lagrangian,
-    conformity = :H1,
-    valuetype = Float64,
-    model = model,
-    labels = labels,
-    order = 1,
-    dirichlet_tags = ["diri0"],
-  )
+  valuetype = Float64
+  reffe = ReferenceFE(lagrangian, valuetype, 1)
+  VI = TestFESpace(model, reffe; conformity = :H1, labels = labels, dirichlet_tags = ["diri0"])
   UI = TrialFESpace(VI, x0[1])
-  VS = TestFESpace(
-    reffe = :Lagrangian,
-    conformity = :H1,
-    valuetype = Float64,
-    model = model,
-    labels = labels,
-    order = 1,
-    dirichlet_tags = ["diri0"],
-  )
+  VS = TestFESpace(model, reffe; conformity = :H1, labels = labels, dirichlet_tags = ["diri0"])
   US = TrialFESpace(VS, x0[2])
   Xpde = MultiFieldFESpace([VI, VS])
   Ypde = MultiFieldFESpace([UI, US])
 
-  @law conv(u, ∇u) = (∇u ⋅ one(∇u)) ⊙ u
+  conv(u, ∇u) = (∇u ⋅ one(∇u)) ⊙ u
   c(u, v) = conv(v, ∇(u)) #v⊙conv(u,∇(u))
   function res_pde_nl(yu, v)
     I, S, bf, cf = yu
     p, q = v
-    c(I, p) + c(S, q)
+    ∫( c(I, p) + c(S, q) )dΩ
   end
   function res_pde(yu, v)
     I, S, bf, cf = yu
     p, q = v
-    -p * (bf * S * I - cf * I) + q * bf * S * I
+    ∫( -p * (bf * S * I - cf * I) + q * bf * S * I )dΩ
   end
 
   trian = Triangulation(model)
   degree = 1
-  quad = Measure(trian, degree)
-  t_Ω_nl = FETerm(res_pde_nl, trian, quad)
-  t_Ω = FETerm(res_pde, trian, quad)
+  dΩ = Measure(trian, degree)
+  t_Ω_nl = FETerm(res_pde_nl, trian, dΩ)
+  t_Ω = FETerm(res_pde, trian, dΩ)
   op_sir = FEOperator(Ypde, Xpde, t_Ω_nl, t_Ω)
 
-  Xbcon = TestFESpace(
-    reffe = :Lagrangian,
-    order = 1,
-    valuetype = Float64,
-    conformity = :H1,
-    model = model,
-  )
+  Xbcon = TestFESpace(model, reffe; conformity = :H1)
   Ybcon = TrialFESpace(Xbcon)
-  Xccon = TestFESpace(
-    reffe = :Lagrangian,
-    order = 1,
-    valuetype = Float64,
-    conformity = :H1,
-    model = model,
-  )
+  Xccon = TestFESpace(model, reffe; conformity = :H1)
   Yccon = TrialFESpace(Xccon)
   Xcon = MultiFieldFESpace([Xbcon, Xccon])
   Ycon = MultiFieldFESpace([Ybcon, Yccon])
@@ -72,14 +46,15 @@ function dynamicsir(args...; x0 = [1, 2], n = 10, T = 1, kwargs...)
   #we need to be smart to avoid divisions
   function f(yu) #:: Union{Gridap.MultiField.MultiFieldFEFunction, Gridap.CellData.GenericCellField}
     I, S, bf, cf = yu
-    0.5 * ((bf ⋅ w0) - w1) ⋅ ((bf ⋅ w0) - w1) + 0.5 * ((cf ⋅ w0) - w2) ⋅ ((cf ⋅ w0) - w2)
+    ∫( 0.5 * ((bf ⋅ w0) - w1) ⋅ ((bf ⋅ w0) - w1) + 0.5 * ((cf ⋅ w0) - w2) ⋅ ((cf ⋅ w0) - w2) )dΩ
   end
 
   ndofs = Gridap.FESpaces.num_free_dofs(Ypde) + Gridap.FESpaces.num_free_dofs(Ycon)
   xin = zeros(ndofs)
-  return GridapPDENLPModel(xin, f, trian, quad, Ypde, Ycon, Xpde, Xcon, op_sir)
+  return GridapPDENLPModel(xin, f, trian, dΩ, Ypde, Ycon, Xpde, Xcon, op_sir)
 end
 
+#=
 function dynamicsir_test(; x0 = [1, 2], n = 10, T = 1)
   h = T / n
   N = sum(x0)
@@ -159,3 +134,4 @@ function dynamicsir_test(; x0 = [1, 2], n = 10, T = 1)
   ymp2 = hessian_check_from_grad(nlp, x = xr, atol = atol, rtol = rtol) #uses the jacobian
   @test !any(x -> x != Dict{Tuple{Int64, Int64}, Float64}(), values(ymp2))
 end
+=#

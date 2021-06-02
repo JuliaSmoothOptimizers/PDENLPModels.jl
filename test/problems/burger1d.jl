@@ -7,25 +7,18 @@ function burger1d(args...; n = 512, kwargs...)
   add_tag_from_tags!(labels, "diri1", [2])
   add_tag_from_tags!(labels, "diri0", [1])
 
-  D = 1
   order = 1
-  V = TestFESpace(
-    reffe = :Lagrangian,
-    conformity = :H1,
-    valuetype = Float64,
-    model = model,
-    labels = labels,
-    order = order,
-    dirichlet_tags = ["diri0", "diri1"],
-  )
+  valuetype = Float64
+  reffe = ReferenceFE(lagrangian, valuetype, 1)
+  V = TestFESpace(model, reffe; conformity = :H1, labels = labels, dirichlet_tags = ["diri0", "diri1"])
 
   h(x) = 2 * (nu + x[1]^3)
   uD0 = VectorValue(0)
   uD1 = VectorValue(-1)
   U = TrialFESpace(V, [uD0, uD1])
 
-  @law conv(u, ∇u) = (∇u ⋅ one(∇u)) ⊙ u
-  @law dconv(du, ∇du, u, ∇u) = conv(u, ∇du) + conv(du, ∇u)
+  conv(u, ∇u) = (∇u ⋅ one(∇u)) ⊙ u
+  dconv(du, ∇du, u, ∇u) = conv(u, ∇du) + conv(du, ∇u)
 
   function a(u, v)
     ∇(v) ⊙ ∇(u)
@@ -35,13 +28,13 @@ function burger1d(args...; n = 512, kwargs...)
   nu = 0.08
   function res_pde(u, v)
     z(x) = 0.5
-    -nu * (∇(v) ⊙ ∇(u)) + c(u, v) - v * z - v * h
+    ∫( -nu * (∇(v) ⊙ ∇(u)) + c(u, v) - v * z - v * h )dΩ
   end
 
   trian = Triangulation(model)
   degree = 1
-  quad = Measure(trian, degree)
-  t_Ω = FETerm(res_pde, trian, quad)
+  dΩ = Measure(trian, degree)
+  t_Ω = FETerm(res_pde, trian, dΩ)
   op_pde = FEOperator(U, V, t_Ω)
 
   # Now we move to the optimization:
@@ -52,14 +45,14 @@ function burger1d(args...; n = 512, kwargs...)
   f(u, z) = 0.5 * (ud - u) * (ud - u) + 0.5 * α * z * z
   function f(yu) #:: Union{Gridap.MultiField.MultiFieldFEFunction, Gridap.CellData.GenericCellField}
     u, z = yu
-    f(u, z)
+    ∫( f(u, z) )dΩ
   end
 
   function res(yu, v) #u is the solution of the PDE and z the control
     u, z = yu
-    -nu * (∇(v) ⊙ ∇(u)) + c(u, v) - v * z - v * h
+    ∫( -nu * (∇(v) ⊙ ∇(u)) + c(u, v) - v * z - v * h )dΩ
   end
-  t_Ω = FETerm(res, trian, quad)
+  t_Ω = FETerm(res, trian, dΩ)
   op = FEOperator(U, V, t_Ω)
 
   Xcon = TestFESpace(
@@ -73,7 +66,7 @@ function burger1d(args...; n = 512, kwargs...)
 
   Y = MultiFieldFESpace([U, Ycon])
   xin = zeros(Gridap.FESpaces.num_free_dofs(Y))
-  return GridapPDENLPModel(xin, f, trian, quad, U, Ycon, V, Xcon, op)
+  return GridapPDENLPModel(xin, f, trian, dΩ, U, Ycon, V, Xcon, op)
 end
 
 function burger1d_test(; udc = false)
@@ -114,8 +107,8 @@ function burger1d_test(; udc = false)
   trian = Triangulation(model)
   @test Gridap.FESpaces.num_cells(trian) == 512
   degree = 1
-  quad = Measure(trian, degree)
-  t_Ω = FETerm(res_pde, trian, quad)
+  dΩ = Measure(trian, degree)
+  t_Ω = FETerm(res_pde, trian, dΩ)
   op_pde = FEOperator(U, V, t_Ω)
 
   # Check resolution for z given.
@@ -159,3 +152,4 @@ function burger1d_test(; udc = false)
   Hvo = hprod(nlp, sol_gridap, zeros(nlp.meta.ncon), rand(nlp.meta.nvar), obj_weight = 0.0)
   @test Hvo == zeros(1024)
 end
+=#

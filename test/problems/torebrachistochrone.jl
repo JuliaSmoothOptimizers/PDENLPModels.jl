@@ -14,35 +14,27 @@ function torebrachistochrone(args...; n = 3, kwargs...)
   #La fonction objectif f:
   a = 1
   c = 3
+
+  model = CartesianDiscreteModel(domain, n)
+  trian = Triangulation(model)
+  degree = 1
+  dΩ = Measure(trian, degree)
+
   #Pour utiliser la fonction cos: `operate(cos, x)` vaut cos(x)
   #Pas de carré disponible, donc: `x*x` vaut pour x^2, et `∇(φ) ⊙ ∇(φ)` vaut `φ'^2` (la dérivée au carré)
   function f(x)
     φ, θ = x
-    a * a * ∇(φ) ⊙ ∇(φ) + (c + a * operate(cos, φ)) * (c + a * operate(cos, φ)) * ∇(θ) ⊙ ∇(θ)
+    ∫( a * a * ∇(φ) ⊙ ∇(φ) + (c + a * operate(cos, φ)) * (c + a * operate(cos, φ)) * ∇(θ) ⊙ ∇(θ) )dΩ
   end
-
-  model = CartesianDiscreteModel(domain, n)
 
   labels = get_face_labeling(model)
   add_tag_from_tags!(labels, "diri1", [2])
   add_tag_from_tags!(labels, "diri0", [1])
 
-  V0 = TestFESpace(
-    reffe = :Lagrangian,
-    order = 1,
-    valuetype = Float64,
-    conformity = :H1,
-    model = model,
-    dirichlet_tags = ["diri0", "diri1"],
-  )
-  V1 = TestFESpace(
-    reffe = :Lagrangian,
-    order = 1,
-    valuetype = Float64,
-    conformity = :H1,
-    model = model,
-    dirichlet_tags = ["diri0", "diri1"],
-  )
+  valuetype = Float64
+  reffe = ReferenceFE(lagrangian, valuetype, 1)
+  V0 = TestFESpace(model, reffe; conformity = :H1, labels = labels, dirichlet_tags = ["diri0", "diri1"])
+  V1 = TestFESpace(model, reffe; conformity = :H1, labels = labels, dirichlet_tags = ["diri0", "diri1"])
 
   U0 = TrialFESpace(V0, [x0[1], xf[1]])
   U1 = TrialFESpace(V0, [x0[2], xf[2]])
@@ -52,15 +44,11 @@ function torebrachistochrone(args...; n = 3, kwargs...)
   nU0 = Gridap.FESpaces.num_free_dofs(U0)
   nU1 = Gridap.FESpaces.num_free_dofs(U1)
 
-  trian = Triangulation(model)
-  degree = 1
-  quad = Measure(trian, degree)
-
   return GridapPDENLPModel(
     zeros(nU0 + nU1),
     f,
     trian,
-    quad,
+    dΩ,
     U,
     V,
     lvar = xmin * ones(nU0 + nU1),

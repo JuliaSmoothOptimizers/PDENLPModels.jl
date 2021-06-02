@@ -4,30 +4,16 @@ function controlsir(args...; x0 = [1, 2], n = 10, a = 0.2, b = 0.1, μ = 0.1, T 
   labels = get_face_labeling(model)
   add_tag_from_tags!(labels, "diri0", [1]) #initial time condition
 
-  VI = TestFESpace(
-    reffe = :Lagrangian,
-    conformity = :H1,
-    valuetype = Float64,
-    model = model,
-    labels = labels,
-    order = 1,
-    dirichlet_tags = ["diri0"],
-  )
+  valuetype = Float64
+  reffe = ReferenceFE(lagrangian, valuetype, 1)
+  VI = TestFESpace(model, reffe; conformity = :H1, labels = labels, dirichlet_tags = ["diri0"])
   UI = TrialFESpace(VI, x0[1])
-  VS = TestFESpace(
-    reffe = :Lagrangian,
-    conformity = :H1,
-    valuetype = Float64,
-    model = model,
-    labels = labels,
-    order = 1,
-    dirichlet_tags = ["diri0"],
-  )
+  VS = TestFESpace(model, reffe; conformity = :H1, labels = labels, dirichlet_tags = ["diri0"])
   US = TrialFESpace(VS, x0[2])
   X = MultiFieldFESpace([VI, VS])
   Y = MultiFieldFESpace([UI, US])
 
-  @law conv(u, ∇u) = (∇u ⋅ one(∇u)) ⊙ u
+  conv(u, ∇u) = (∇u ⋅ one(∇u)) ⊙ u
   c(u, v) = conv(v, ∇(u)) #v⊙conv(u,∇(u))
   _a(x) = a
   _b(x) = b
@@ -35,25 +21,26 @@ function controlsir(args...; x0 = [1, 2], n = 10, a = 0.2, b = 0.1, μ = 0.1, T 
   function res_pde(u, v)
     I, S = u
     p, q = v
-    c(I, p) + c(S, q) - p * (_a * S * I - _b * I) - q * (_μ - _b * I - _a * S * I)
+    ∫( c(I, p) + c(S, q) - p * (_a * S * I - _b * I) - q * (_μ - _b * I - _a * S * I) )dΩ
   end
 
   trian = Triangulation(model)
   degree = 1
-  quad = Measure(trian, degree)
-  t_Ω = FETerm(res_pde, trian, quad)
+  dΩ = Measure(trian, degree)
+  t_Ω = FETerm(res_pde, trian, dΩ)
   op_sis = FEOperator(Y, X, t_Ω)
 
   function f(u) #:: Union{Gridap.MultiField.MultiFieldFEFunction, Gridap.CellData.GenericCellField}
     I, S = u
-    0.5 * I * I
+    ∫( 0.5 * I * I )dΩ
   end
 
   ndofs = Gridap.FESpaces.num_free_dofs(Y)
   xin = zeros(ndofs)
-  return GridapPDENLPModel(xin, f, trian, quad, Y, X, op_sis)
+  return GridapPDENLPModel(xin, f, trian, dΩ, Y, X, op_sis)
 end
 
+#=
 function controlsir_test(; x0 = [1, 2], n = 10, a = 0.2, b = 0.1, μ = 0.1, T = 1)
   #=
   # The usual SIR:
@@ -161,3 +148,4 @@ function controlsir_test(; x0 = [1, 2], n = 10, a = 0.2, b = 0.1, μ = 0.1, T = 
   ymp2 = hessian_check_from_grad(nlp, x = xr, atol = atol, rtol = rtol)
   @test !any(x -> x != Dict{Tuple{Int64, Int64}, Float64}(), values(ymp2))
 end
+=#
