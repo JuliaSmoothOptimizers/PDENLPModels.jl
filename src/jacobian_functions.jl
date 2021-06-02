@@ -201,7 +201,6 @@ function _from_terms_to_jacobian_vals!(
   return nfirst + nini
 end
 
-#=GRIDAPv15
 """
 Note:
 1) Compute the derivatives w.r.t. y and u separately.
@@ -228,6 +227,34 @@ function _from_terms_to_jacobian(
   κ, xyu = x[1:nparam], x[(nparam + 1):nvar]
   yu = FEFunction(Y, xyu)
 
+#######################"
+# WORKS WITHOUT CONTROL
+  # Gridap.FESpaces.jacobian(nlp.op, FEFunction(nlp.Y, x))
+  # Split the call of: b = allocate_jacobian(op, u)
+  du = Gridap.FESpaces.get_cell_shapefuns_trial(Gridap.FESpaces.get_trial(op))
+  v = Gridap.FESpaces.get_cell_shapefuns(Gridap.FESpaces.get_test(op))
+  
+  if nparam == 0
+    matdata = Gridap.FESpaces.collect_cell_matrix(op.jac(yu, du, v))
+  else
+    matdata = Gridap.FESpaces.collect_cell_matrix(op.jac(κ, yu, du, v))
+  end
+  Ay = Gridap.FESpaces.allocate_matrix(op.assem, matdata)
+  # res = allocate_vector(op.assem, vecdata) # already done somewhere
+  # Split the call of: jacobian!(A,op,u)
+  Gridap.FESpaces.assemble_matrix!(Ay, op.assem, matdata)
+#######################"
+#######################"
+
+  if Ycon != VoidFESpace()
+    @warn "jac doesn't work with control"
+    # assem_u = Gridap.FESpaces.SparseMatrixAssembler(Ycon, Xpde)
+    # Au = Gridap.FESpaces.assemble_matrix(assem_u, (wu, ru, cu))
+  else
+    Au = zeros(Gridap.FESpaces.num_free_dofs(Ypde), 0)
+  end
+
+  #=GRIDAPv15
   dy = Gridap.FESpaces.get_cell_basis(Ypde)
   du = Ycon != VoidFESpace() ? Gridap.FESpaces.get_cell_basis(Ycon) : nothing #use only jac is furnished
   dyu = Gridap.FESpaces.get_cell_basis(Y)
@@ -258,10 +285,11 @@ function _from_terms_to_jacobian(
   #doesn't work as we may not have the good sparsity pattern.
   #Gridap.FESpaces.assemble_matrix_add!(S, assem, (w, r, c))
   S += Gridap.FESpaces.assemble_matrix(assem, (w, r, c))
+  =#
+  S = hcat(Ay, Au)
 
   return S
 end
-=#
 
 #=GRIDAPv15
 function _from_terms_to_jacobian_vals!(

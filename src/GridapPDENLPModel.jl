@@ -413,18 +413,6 @@ function _from_terms_to_residual!(
   κ, xyu = x[1:(nlp.nparam)], x[(nlp.nparam + 1):(nlp.meta.nvar)]
   yu = FEFunction(nlp.Y, xyu)
 
-  #=GRIDAPv15
-  v = Gridap.FESpaces.get_cell_basis(nlp.Xpde) #Tanj: is it really Xcon ?
-
-  w, r = [], []
-  for term in op.terms
-    w, r = _from_term_to_terms!(term, κ, yu, v, w, r)
-  end
-
-  assem_y = Gridap.FESpaces.SparseMatrixAssembler(nlp.Ypde, nlp.Xpde)
-  Gridap.FESpaces.assemble_vector!(res, assem_y, (w, r))
-  =#
-
   # Gridap.FESpaces.residual(nlp.op, FEFunction(nlp.Y, x))
   # Split the call of: b = allocate_residual(op, u)
   V = Gridap.FESpaces.get_test(op)
@@ -440,49 +428,6 @@ function _from_terms_to_residual!(
 
   return res
 end
-
-#=GRIDAPv15
-function _from_term_to_terms!(
-  term::Union{Gridap.FESpaces.NonlinearFETermWithAutodiff, Gridap.FESpaces.NonlinearFETerm},
-  κ::AbstractVector,
-  yu::FEFunctionType,
-  v::CellFieldType,
-  w::AbstractVector,
-  r::AbstractVector,
-)
-  _v = restrict(v, term.trian)
-  _yu = restrict(yu, term.trian)
-
-  if length(κ) > 0
-    cellvals = integrate(term.res(κ, _yu, _v), term.quad)
-  else
-    cellvals = integrate(term.res(_yu, _v), term.quad)
-  end
-  cellids = Gridap.FESpaces.get_cell_id(term)
-
-  Gridap.FESpaces._push_vector_contribution!(w, r, cellvals, cellids)
-
-  return w, r
-end
-=#
-
-#=GRIDAPv15
-function _from_term_to_terms!(
-  term::Gridap.FESpaces.FETerm, #FESource, AffineFETerm
-  κ::AbstractVector,
-  yu::FEFunctionType,
-  v::CellFieldType,
-  w::AbstractVector,
-  r::AbstractVector,
-)
-  cellvals = Gridap.FESpaces.get_cell_residual(term, yu, v)
-  cellids = Gridap.FESpaces.get_cell_id(term)
-
-  Gridap.FESpaces._push_vector_contribution!(w, r, cellvals, cellids)
-
-  return w, r
-end
-=#
 
 #=
 Note:
