@@ -404,7 +404,6 @@ function cons!(nlp::GridapPDENLPModel, x::AbstractVector, c::AbstractVector)
   return c
 end
 
-#=GRIDAPv15
 function _from_terms_to_residual!(
   op::Gridap.FESpaces.FEOperatorFromWeakForm,
   x::AbstractVector,
@@ -413,6 +412,8 @@ function _from_terms_to_residual!(
 )
   κ, xyu = x[1:(nlp.nparam)], x[(nlp.nparam + 1):(nlp.meta.nvar)]
   yu = FEFunction(nlp.Y, xyu)
+
+  #=GRIDAPv15
   v = Gridap.FESpaces.get_cell_basis(nlp.Xpde) #Tanj: is it really Xcon ?
 
   w, r = [], []
@@ -422,10 +423,23 @@ function _from_terms_to_residual!(
 
   assem_y = Gridap.FESpaces.SparseMatrixAssembler(nlp.Ypde, nlp.Xpde)
   Gridap.FESpaces.assemble_vector!(res, assem_y, (w, r))
+  =#
+
+  # Gridap.FESpaces.residual(nlp.op, FEFunction(nlp.Y, x))
+  # Split the call of: b = allocate_residual(op, u)
+  V = Gridap.FESpaces.get_test(op)
+  v = Gridap.FESpaces.get_cell_shapefuns(V)
+  if nlp.nparam == 0
+    vecdata = Gridap.FESpaces.collect_cell_vector(op.res(yu, v))
+  else
+    vecdata = Gridap.FESpaces.collect_cell_vector(op.res(κ, yu, v))
+  end
+  # res = allocate_vector(op.assem, vecdata) # already done somewhere
+  # Split the call of: residual!(b,op,u)
+  Gridap.FESpaces.assemble_vector!(res, op.assem, vecdata)
 
   return res
 end
-=#
 
 #=GRIDAPv15
 function _from_term_to_terms!(
