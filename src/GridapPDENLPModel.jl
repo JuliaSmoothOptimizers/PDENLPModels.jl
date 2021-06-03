@@ -592,7 +592,6 @@ function _jac_coord!(
   return vals
 end
 
-#=GRIDAPv15
 function _jac_coord!(
   op::Gridap.FESpaces.FEOperatorFromWeakForm,
   nlp::GridapPDENLPModel,
@@ -632,7 +631,6 @@ function _jac_coord!(
   end
   return vals
 end
-=#
 
 #=GRIDAPv15
 function hprod!(

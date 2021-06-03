@@ -207,7 +207,7 @@ function GridapPDENLPModel(
     nln = setdiff(1:ncon, lin)
   end
   nnz_jac_k = nparam > 0 ? ncon * nparam : 0
-  nnzj = count_nnz_jac(c, Y, Xpde, Ypde, Ycon) + nnz_jac_k
+  nnzj = count_nnz_jac(c, Y, Xpde, Ypde, Ycon, x0) + nnz_jac_k
 
   meta = NLPModelMeta{T, S}(
     nvar,
