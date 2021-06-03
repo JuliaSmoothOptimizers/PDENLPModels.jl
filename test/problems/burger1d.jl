@@ -7,6 +7,10 @@ function burger1d(args...; n = 512, kwargs...)
   add_tag_from_tags!(labels, "diri1", [2])
   add_tag_from_tags!(labels, "diri0", [1])
 
+  trian = Triangulation(model)
+  degree = 1
+  dΩ = Measure(trian, degree)
+
   order = 1
   valuetype = Float64
   reffe = ReferenceFE(lagrangian, valuetype, 1)
@@ -18,24 +22,8 @@ function burger1d(args...; n = 512, kwargs...)
   U = TrialFESpace(V, [uD0, uD1])
 
   conv(u, ∇u) = (∇u ⋅ one(∇u)) ⊙ u
-  dconv(du, ∇du, u, ∇u) = conv(u, ∇du) + conv(du, ∇u)
-
-  function a(u, v)
-    ∇(v) ⊙ ∇(u)
-  end
-
-  c(u, v) = v ⊙ conv(u, ∇(u))
+  c(u, v) = v⊙(conv∘(u,∇(u)))
   nu = 0.08
-  function res_pde(u, v)
-    z(x) = 0.5
-    ∫( -nu * (∇(v) ⊙ ∇(u)) + c(u, v) - v * z - v * h )dΩ
-  end
-
-  trian = Triangulation(model)
-  degree = 1
-  dΩ = Measure(trian, degree)
-  t_Ω = FETerm(res_pde, trian, dΩ)
-  op_pde = FEOperator(U, V, t_Ω)
 
   # Now we move to the optimization:
   ud(x) = -x[1]^2
@@ -48,20 +36,13 @@ function burger1d(args...; n = 512, kwargs...)
     ∫( f(u, z) )dΩ
   end
 
-  function res(yu, v) #u is the solution of the PDE and z the control
-    u, z = yu
-    ∫( -nu * (∇(v) ⊙ ∇(u)) + c(u, v) - v * z - v * h )dΩ
+  function res(y, u, v) #u is the solution of the PDE and z the control
+    ∫( -nu * (∇(v) ⊙ ∇(y)) + c(y, v) - v * u - v * h )dΩ
   end
-  t_Ω = FETerm(res, trian, dΩ)
-  op = FEOperator(U, V, t_Ω)
+  op = FEOperator(res, U, V)
 
-  Xcon = TestFESpace(
-    reffe = :Lagrangian,
-    order = 1,
-    valuetype = Float64,
-    conformity = :H1,
-    model = model,
-  )
+  Xcon = TestFESpace(model, reffe; conformity = :H1)
+  Ycon = TrialFESpace(Xcon)
   Ycon = TrialFESpace(Xcon)
 
   Y = MultiFieldFESpace([U, Ycon])

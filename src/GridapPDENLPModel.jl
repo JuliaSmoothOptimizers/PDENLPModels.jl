@@ -412,15 +412,24 @@ function _from_terms_to_residual!(
 )
   κ, xyu = x[1:(nlp.nparam)], x[(nlp.nparam + 1):(nlp.meta.nvar)]
   yu = FEFunction(nlp.Y, xyu)
+  y, u = _split_FEFunction(xyu, nlp.Ypde, nlp.Ycon)
 
   # Gridap.FESpaces.residual(nlp.op, FEFunction(nlp.Y, x))
   # Split the call of: b = allocate_residual(op, u)
   V = Gridap.FESpaces.get_test(op)
   v = Gridap.FESpaces.get_cell_shapefuns(V)
   if nlp.nparam == 0
-    vecdata = Gridap.FESpaces.collect_cell_vector(op.res(yu, v))
+    if typeof(nlp.Ycon) <: VoidFESpace
+      vecdata = Gridap.FESpaces.collect_cell_vector(op.res(y, v))
+    else
+      vecdata = Gridap.FESpaces.collect_cell_vector(op.res(y, u, v))
+    end
   else
-    vecdata = Gridap.FESpaces.collect_cell_vector(op.res(κ, yu, v))
+    if typeof(nlp.Ycon) <: VoidFESpace
+      vecdata = Gridap.FESpaces.collect_cell_vector(op.res(κ, y, v))
+    else
+      vecdata = Gridap.FESpaces.collect_cell_vector(op.res(κ, y, u, v))
+    end
   end
   # res = allocate_vector(op.assem, vecdata) # already done somewhere
   # Split the call of: residual!(b,op,u)
