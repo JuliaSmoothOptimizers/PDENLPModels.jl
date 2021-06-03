@@ -198,7 +198,7 @@ function GridapPDENLPModel(
   @lencheck nvar lvar uvar
   @lencheck ncon ucon y0
 
-  nnzh = get_nnzh(tnrj, c, Y, X, nparam, nvar) #nvar * (nvar + 1) / 2
+  nnzh = get_nnzh(tnrj, c, Y, Ypde, X, nparam, nvar) #nvar * (nvar + 1) / 2
 
   if typeof(c) <: AffineFEOperator #Here we expect ncon = nvar_pde
     nln = Int[]

@@ -106,15 +106,15 @@ function get_nnzh(tnrj::T, Y, X, nparam, nvar) where {T}
   return nnzh
 end
 
-function get_nnzh(tnrj::T, op::AffineFEOperator, Y, X, nparam, nvar) where {T}
+function get_nnzh(tnrj::T, op::AffineFEOperator, Y, Ypde, X, nparam, nvar) where {T}
   return get_nnzh(tnrj, Y, X, nparam, nvar)
 end
 
-function get_nnzh(tnrj::T, op::Gridap.FESpaces.FEOperatorFromWeakForm, Y, X, nparam, nvar) where {T}
+function get_nnzh(tnrj::T, op::Gridap.FESpaces.FEOperatorFromWeakForm, Y, Ypde, X, nparam, nvar) where {T}
   nnz_hess_obj = get_nnzh(tnrj, Y, X, nparam, nvar)
 
   nnz_hess_yu = 0
-  @warn "No hessian contribution from the operator. get_nnzh L113"
+  @warn "Hessian contribution from the operator to be reviewed. get_nnzh L113"
   #=GRIDAPv15
   for term in op.terms
     if typeof(term) <: Gridap.FESpaces.FESourceFromIntegration
@@ -126,6 +126,29 @@ function get_nnzh(tnrj::T, op::Gridap.FESpaces.FEOperatorFromWeakForm, Y, X, npa
     nnz_hess_yu += count_hess_nnz_coo_short(a, cell_id_yu)
   end
   =#
+###################################################################################
+  λ = zeros(Gridap.FESpaces.num_free_dofs(Ypde))
+  λf = FEFunction(Ypde, λ) # or Ypde
+  x = zeros(nvar)
+  xh = FEFunction(Y, x)
+  
+  function split_res(x, λ)
+    if Gridap.FESpaces.num_free_dofs(Ypde) == nvar - nparam
+      return op.res(x, λ)
+    else
+      y, u = x
+      return op.res(y, u, λ)
+    end
+  end
+  luh = split_res(xh, λf)
+
+  lag_hess = Gridap.FESpaces._hessian(x->split_res(x, λf), xh, luh)
+  matdata = Gridap.FESpaces.collect_cell_matrix(lag_hess)
+  assem = SparseMatrixAssembler(Y, X)
+  A = Gridap.FESpaces.allocate_matrix(assem, matdata)
+
+  nnz_hess_yu += nnz(A)
+###################################################################################
 
   #add the nnz w.r.t. k; by default it is:
   if nparam > 0

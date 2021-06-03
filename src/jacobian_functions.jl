@@ -287,7 +287,6 @@ function _from_terms_to_jacobian(
   Gridap.FESpaces.assemble_matrix!(Ay, assem, matdata_y)
 
   if Ycon != VoidFESpace()
-    @warn "jac doesn't work with control"
     # assem_u = Gridap.FESpaces.SparseMatrixAssembler(Ycon, Xpde)
     # Au = Gridap.FESpaces.assemble_matrix(assem_u, (wu, ru, cu))
     du = Gridap.FESpaces.get_cell_shapefuns_trial(Ycon)

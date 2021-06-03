@@ -308,6 +308,47 @@ function hess_structure!(
 end
 =#
 
+function hess(
+  nlp::GridapPDENLPModel,
+  x::AbstractVector{T},
+  λ::AbstractVector;
+  obj_weight::Real = one(T),
+) where {T}
+  @lencheck nlp.meta.nvar x
+  @lencheck nlp.meta.ncon λ
+  increment!(nlp, :neval_hess)
+
+  # nnzh_obj = get_nnzh(nlp.tnrj, nlp.Y, nlp.X, nlp.nparam, nlp.meta.nvar)
+  # hess_coord!(nlp, x, vals, obj_weight = obj_weight) # @view vals[1:nnzh_obj]
+  # decrement!(nlp, :neval_hess)
+
+  if typeof(nlp.op) <: Gridap.FESpaces.FEOperatorFromWeakForm
+    # λ = zeros(Gridap.FESpaces.num_free_dofs(nlp.Ypde))
+    λf = FEFunction(nlp.Xpde, λ) # or Ypde
+    xh = FEFunction(nlp.Y, x)
+    
+    function split_res(x, λ)
+      if typeof(nlp.Ycon) <: VoidFESpace
+        return nlp.op.res(x, λ)
+      else
+        y, u = x
+        return nlp.op.res(y, u, λ)
+      end
+    end
+    luh = obj_weight * nlp.tnrj.f(xh) + split_res(xh, λf)
+
+    lag_hess = Gridap.FESpaces._hessian(x->obj_weight * nlp.tnrj.f(x) + split_res(x, λf), xh, luh)
+    matdata = Gridap.FESpaces.collect_cell_matrix(lag_hess)
+    assem = SparseMatrixAssembler(nlp.Y, nlp.X)
+    A = Gridap.FESpaces.allocate_matrix(assem, matdata)
+    Gridap.FESpaces.assemble_matrix!(A, assem, matdata)
+  else
+    A = hess_coord(nlp, x, obj_weight = obj_weight)
+  end
+
+  return A
+end
+
 #=GRIDAPv15
 function hess_coord!(
   nlp::GridapPDENLPModel,

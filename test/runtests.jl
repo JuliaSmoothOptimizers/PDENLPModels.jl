@@ -67,12 +67,15 @@ local_test = false
     @time nlp = eval(Meta.parse("$(lowercase(problem))(n=$(n))"))
     @testset "Test problem scenario" begin
       # local_test || eval(Meta.parse("$(lowercase(problem))_test()"))
-      obj(nlp, nlp.meta.x0)
-      grad(nlp, nlp.meta.x0)
-      hess_coord(nlp, nlp.meta.x0)
+      x = rand(nlp.meta.nvar)
+      obj(nlp, x)
+      grad(nlp, x)
+      hess_coord(nlp, x)
       if nlp.meta.ncon > 0
-        cons(nlp, nlp.meta.x0)
-        jac(nlp, nlp.meta.x0)
+        y = rand(nlp.meta.ncon)
+        cons(nlp, x)
+        jac(nlp, x)
+        hess(nlp, x, y)
       end
     end
     #=GRIDAPv15
