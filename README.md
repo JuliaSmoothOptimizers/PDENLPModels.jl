@@ -1,10 +1,10 @@
 # PDENLPModels
 
 [![Project Status: WIP – Initial development is in progress, but there has not yet been a stable, usable release suitable for the public.](https://www.repostatus.org/badges/latest/wip.svg)](https://www.repostatus.org/#wip)
-![CI](https://github.com/tmigot/PDENLPModels.jl/workflows/CI/badge.svg?branch=master)
-[![codecov.io](http://codecov.io/github/tmigot/PDENLPModels.jl/coverage.svg?branch=master)](http://codecov.io/github/tmigot/PDENLPModels.jl?branch=master)
-[![](https://img.shields.io/badge/docs-stable-blue.svg)](https://tmigot.github.io/PDENLPModels.jl/stable)
-[![](https://img.shields.io/badge/docs-dev-blue.svg)](https://tmigot.github.io/PDENLPModels.jl/dev)
+![CI](https://github.com/JuliaSmoothOptimizers/PDENLPModels.jl/workflows/CI/badge.svg?branch=master)
+[![codecov.io](http://codecov.io/github/JuliaSmoothOptimizers/PDENLPModels.jl/coverage.svg?branch=master)](http://codecov.io/github/JuliaSmoothOptimizers/PDENLPModels.jl?branch=master)
+[![](https://img.shields.io/badge/docs-stable-blue.svg)](https://JuliaSmoothOptimizers.github.io/PDENLPModels.jl/stable)
+[![](https://img.shields.io/badge/docs-dev-blue.svg)](https://JuliaSmoothOptimizers.github.io/PDENLPModels.jl/dev)
 
 PDENLPModels specializes the [NLPModel API](https://github.com/JuliaSmoothOptimizers/NLPModels.jl) to optimization problem with partial differential equation in the constraints. The package relies on [Gridap.jl](https://github.com/gridap/Gridap.jl) for the modeling and the computation of the derivatives. Find tutorials for using Gridap [here](https://github.com/gridap/Tutorials).
 
@@ -21,7 +21,7 @@ s.t.     y solution of a PDE(κ,u)=0
 ## Installation
 
 ```
-] add github.com/tmigot/PDENLPModels.jl 
+] add github.com/JuliaSmoothOptimizers/PDENLPModels.jl 
 ```
 The current version of PDENLPModels relies on Gridap v0.14.
 

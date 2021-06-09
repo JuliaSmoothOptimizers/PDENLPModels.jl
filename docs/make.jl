@@ -18,4 +18,4 @@ makedocs(
   pages = pages,
 )
 
-deploydocs(repo = "github.com/tmigot/PDENLPModels.jl.git", push_preview = true)
+deploydocs(repo = "github.com/JuliaSmoothOptimizers/PDENLPModels.jl.git", push_preview = true)
