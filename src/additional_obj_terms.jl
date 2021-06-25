@@ -298,7 +298,7 @@ function _obj_integral(term::MixedEnergyFETerm, κ::AbstractVector, x::FEFunctio
   @lencheck term.nparam κ
   #=kf = interpolate_everywhere(term.ispace, κ)
   return integrate(term.f(kf, x), term.quad)=#
-  return integrate(term.f(κ, x), term.quad)
+  return term.f(κ, x) # integrate(term.f(κ, x), term.quad)
 end
 
 #= REMOVE
@@ -350,7 +350,7 @@ function _compute_gradient!(
   #Compute the gradient with AD
   cell_r_yu = Gridap.Arrays.autodiff_array_gradient(_cell_obj_yu, cell_yu, cell_id_yu)
   =#
-  cell_r_yu = get_array(gradient(x -> tnrj.f(κ, x), yu))
+  cell_r_yu = get_array(gradient(x -> term.f(κ, x), yu))
   #Put the result in the format expected by Gridap.FESpaces.assemble_matrix
   vecdata_yu = [[cell_r_yu], [cell_id_yu]] #TODO would replace by Tuple work?
   #Assemble the gradient in the "good" space
@@ -364,7 +364,7 @@ end
 
 function _compute_gradient_k(term::MixedEnergyFETerm, κ::AbstractVector, yu::FEFunctionType)
   @lencheck term.nparam κ
-  intf = @closure k -> sum(integrate(term.f(k, yu), term.quad))
+  intf = @closure k -> sum(term.f(k, yu)) # sum(integrate(term.f(k, yu), term.quad))
   return ForwardDiff.gradient(intf, κ)
 end
 
@@ -387,7 +387,7 @@ function _compute_hess_coo(
   #Compute the hessian with AD
   cell_r_yu = Gridap.Arrays.autodiff_array_hessian(_cell_obj_yu, cell_yu, cell_id_yu)
   =#
-  cell_r_yu = get_array(hessian(x -> tnrj.f(κ, x), yu))
+  cell_r_yu = get_array(hessian(x -> term.f(κ, x), yu))
   #Assemble the matrix in the "good" space
   assem = Gridap.FESpaces.SparseMatrixAssembler(Y, X)
   (I, J, V) = assemble_hess(assem, cell_r_yu, cell_id_yu)

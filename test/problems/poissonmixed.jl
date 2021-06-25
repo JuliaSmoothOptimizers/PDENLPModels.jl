@@ -22,7 +22,7 @@ function poissonmixed(args...; n = 3, kwargs...)
   valuetype = Float64
   reffe = ReferenceFE(lagrangian, valuetype, 1)
   V0 = TestFESpace(model, reffe; conformity = :H1, dirichlet_tags = "boundary")
-  Ug = TrialFESpace(V0, sol)
+  Ug = TrialFESpace(V0, x->0.0) # sol
   trian = Triangulation(model)
   degree = 2
   dΩ = Measure(trian, degree)
@@ -33,8 +33,7 @@ function poissonmixed(args...; n = 3, kwargs...)
   function res(k, y, v)
     ∫( k[1] * ∇(v) ⊙ ∇(y) - v * f * k[2] )dΩ
   end
-  t_Ω = FETerm(res, trian, dΩ)
-  op = FEOperator(Ug, V0, t_Ω)
+  op = FEOperator(res, Ug, V0)
 
   function fk(k, y)
     ∫( 0.5 * (sol - y) * (sol - y) +

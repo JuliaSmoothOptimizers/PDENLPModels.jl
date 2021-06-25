@@ -13,16 +13,26 @@ end
 function _compute_hess_structure(tnrj, op, Y, Ypde, X, x0, nparam)
   robj, cobj, nobj = _compute_hess_structure(tnrj, Y, X, x0, nparam)
   # we should also add the derivative w.r.t. to the parameter
-  # rck, cck, nck = ...
+  rck, cck, nck = _compute_hess_structure_k(op, Y, X, x0, nparam)
+  # p, n = nparam, length(x0)
+  # nnz_hess_k = Int(p * (p + 1) / 2) + (n - p) * p
+
   rc, cc, nc = _compute_hess_structure(op, Y, Ypde, X, x0, nparam)
-  return vcat(robj, rc), vcat(cobj, cc), nobj + nc
+  return vcat(robj, rck, rc), vcat(cobj, cck, cc), nobj + nck + nc
 end
 
 function _compute_hess_structure_obj(tnrj, Y, X, x0, nparam)
   nini = 0
-  xh = FEFunction(Y, x0)
-  luh = tnrj.f(xh)
-  lag_hess = Gridap.FESpaces._hessian(tnrj.f, xh, luh)
+  nvar = length(x0)
+  κ, xyu = x0[1:nparam], x0[(nparam + 1):nvar]
+  xh = FEFunction(Y, xyu)
+  if nparam > 0
+    luh = tnrj.f(κ, xh)
+    lag_hess = Gridap.FESpaces._hessian(x -> tnrj.f(κ, x), xh, luh)
+  else
+    luh = tnrj.f(xh)
+    lag_hess = Gridap.FESpaces._hessian(tnrj.f, xh, luh)
+  end
   matdata = Gridap.FESpaces.collect_cell_matrix(lag_hess)
   assem = SparseMatrixAssembler(Y, X)
   A = Gridap.FESpaces.allocate_matrix(assem, matdata)
@@ -68,26 +78,46 @@ end
 function _compute_hess_structure(op::Gridap.FESpaces.FEOperatorFromWeakForm, Y, Ypde, X, x0, nparam) where {T}
   λ = zeros(Gridap.FESpaces.num_free_dofs(Ypde))
   λf = FEFunction(Ypde, λ) # or Ypde
-  xh = FEFunction(Y, x0)
   nvar = length(x0)
+  κ, xyu = x0[1:nparam], x0[(nparam + 1):nvar]
+  xh = FEFunction(Y, xyu)
+  nvar = length(xyu)
   
   function split_res(x, λ)
-    if Gridap.FESpaces.num_free_dofs(Ypde) == nvar - nparam
-      return op.res(x, λ)
+    if Gridap.FESpaces.num_free_dofs(Ypde) == Gridap.FESpaces.num_free_dofs(Y)
+      if nparam > 0
+        return op.res(κ, x, λ)
+      else
+        return op.res(x, λ)
+      end
     else
       y, u = x
-      return op.res(y, u, λ)
+      if nparam > 0
+        return op.res(κ, y, u, λ)
+      else
+        return op.res(y, u, λ)
+      end
     end
   end
   luh = split_res(xh, λf)
 
-  lag_hess = Gridap.FESpaces._hessian(x->split_res(x, λf), xh, luh)
+  lag_hess = Gridap.FESpaces._hessian(x -> split_res(x, λf), xh, luh)
   matdata = Gridap.FESpaces.collect_cell_matrix(lag_hess)
   assem = SparseMatrixAssembler(Y, X)
   A = Gridap.FESpaces.allocate_matrix(assem, matdata)
   rows, cols, _ = findnz(A)
 
   return rows .+ nparam, cols .+ nparam, length(rows)
+end
+
+function _compute_hess_structure_k(op, Y, X, x0, nparam)
+  n, p = length(x0), nparam
+  nnz_hess_k = Int(p * (p + 1) / 2) + (n - p) * p
+  I = ((i, j) for i = 1:n, j = 1:p if j ≤ i)
+  rows = getindex.(I, 1)[:]
+  cols = getindex.(I, 2)[:]
+
+  return rows, cols, nnz_hess_k
 end
 
 #=
