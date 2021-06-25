@@ -42,6 +42,7 @@ include("hessian_functions.jl")
 include("additional_obj_terms.jl")
 #Set of practical functions: _split_FEFunction, _split_vector
 include("util_functions.jl")
+include("hessian_struct_nnzh_functions.jl")
 #Additional functions for the jacobian:
 include("jacobian_functions.jl")
 

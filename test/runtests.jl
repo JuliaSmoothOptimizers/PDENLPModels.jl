@@ -35,19 +35,19 @@ const pde_problems = [
 ]
 =#
 const pde_problems = [
-  "BURGER1D", # TODO
+  # "BURGER1D", # OK
   # "CELLINCREASE", # TODO
   # "SIS", # TODO
   # "CONTROLSIR", # TODO
   # "DYNAMICSIR", # TODO
   "BASICUNCONSTRAINED", # OK
-  "PENALIZEDPOISSON", # OK
-  "INCOMPRESSIBLENAVIERSTOKES", #too slow # OK (except lagrangian-hess)
+  # "PENALIZEDPOISSON", # OK
+  # "INCOMPRESSIBLENAVIERSTOKES", #too slow # OK (except lagrangian-hess)
   #"POISSONMIXED", # TODO
   #"POISSONPARAM", # TODO
   #"POISSONMIXED2", # TODO
-  "TOREBRACHISTOCHRONE", # OK
-  "CONTROLELASTICMEMBRANE", # OK
+  # "TOREBRACHISTOCHRONE", # OK
+  # "CONTROLELASTICMEMBRANE", # OK
 ]
 # missing an example with an FESource term
 # FEOperatorsFromTerms including a LinearFETerm
@@ -70,6 +70,7 @@ local_test = false
       x = rand(nlp.meta.nvar)
       obj(nlp, x)
       grad(nlp, x)
+      hess_structure(nlp)
       hess_coord(nlp, x)
       if nlp.meta.ncon > 0
         y = rand(nlp.meta.ncon)

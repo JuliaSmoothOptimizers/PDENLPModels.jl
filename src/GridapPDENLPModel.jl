@@ -191,7 +191,6 @@ function hess_coord!(
   κ, xyu = x[1:(nlp.nparam)], x[(nlp.nparam + 1):(nlp.meta.nvar)]
   yu = FEFunction(nlp.Y, xyu)
 
-  #Right now V1 cannot be computed separately
   if (typeof(nlp.tnrj) <: MixedEnergyFETerm && nlp.tnrj.inde) || typeof(nlp.tnrj) <: NoFETerm
     nnz_hess_k = Int(nlp.nparam * (nlp.nparam + 1) / 2)
   else
@@ -262,6 +261,11 @@ function hess_structure!(
   rows[1:nnz_hess_k] .= getindex.(I, 1)[:]
   cols[1:nnz_hess_k] .= getindex.(I, 2)[:]
 
+  r, c, nini = _compute_hess_structure(nlp.Y, nlp.X, nlp.tnrj, nlp.meta.x0, nlp.nparam)
+  rows[nnz_hess_k+1:end] .= r
+  cols[nnz_hess_k+1:end] .= c
+
+  #=GRIDAPv15
   nini = hess_yu_obj_structure!(nlp, rows, cols, nfirst = nnz_hess_k)
 
   if nlp.meta.ncon > 0
@@ -303,10 +307,10 @@ function hess_structure!(
   if nlp.meta.nnzh != nini
     @warn "hess_structure!: Size of vals and number of assignements didn't match $(nlp.meta.nnzh) vs $(nini)"
   end
+  =#
 
   (rows, cols)
 end
-=#
 
 function hess(
   nlp::GridapPDENLPModel,

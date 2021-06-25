@@ -20,7 +20,7 @@ function GridapPDENLPModel(
 
   @assert nparam ≥ 0 throw(DimensionError("x0", nvar_pde, nvar))
 
-  nnzh = get_nnzh(tnrj, Ypde, Xpde, nparam, nvar) #nvar * (nvar + 1) / 2
+  rows, cols, nnzh = _compute_hess_structure(Y, X, tnrj, x0, nparam)
 
   if NRJ <: NoFETerm && typeof(lvar) <: AbstractVector && typeof(uvar) <: AbstractVector
     lv, uv = lvar, uvar
