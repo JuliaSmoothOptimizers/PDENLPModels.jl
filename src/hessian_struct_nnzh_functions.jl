@@ -4,13 +4,21 @@ in the hessian w.r.t. y and u of the objective function.
 
 The rows and cols returned by _compute_hess_structure_obj are already shifter by `nparam`.
 """
-function _compute_hess_structure(Y, X, tnrj, x0, nparam)
-  rk, ck, nk = _compute_hess_structure_k(Y, X, tnrj, x0, nparam)
-  ro, co, no = _compute_hess_structure_obj(Y, X, tnrj, x0, nparam)
+function _compute_hess_structure(tnrj, Y, X, x0, nparam)
+  rk, ck, nk = _compute_hess_structure_k(tnrj, Y, X, x0, nparam)
+  ro, co, no = _compute_hess_structure_obj(tnrj, Y, X, x0, nparam)
   return vcat(rk, ro), vcat(ck, co), nk + no
 end
 
-function _compute_hess_structure_obj(Y, X, tnrj, x0, nparam)
+function _compute_hess_structure(tnrj, op, Y, Ypde, X, x0, nparam)
+  robj, cobj, nobj = _compute_hess_structure(tnrj, Y, X, x0, nparam)
+  # we should also add the derivative w.r.t. to the parameter
+  # rck, cck, nck = ...
+  rc, cc, nc = _compute_hess_structure(op, Y, Ypde, X, x0, nparam)
+  return vcat(robj, rc), vcat(cobj, cc), nobj + nc
+end
+
+function _compute_hess_structure_obj(tnrj, Y, X, x0, nparam)
   nini = 0
   xh = FEFunction(Y, x0)
   luh = tnrj.f(xh)
@@ -23,12 +31,11 @@ function _compute_hess_structure_obj(Y, X, tnrj, x0, nparam)
   return rows .+ nparam, cols .+ nparam, nini
 end
 
-function _compute_hess_structure_obj(Y, X, tnrj::NoFETerm, x0, nparam)
-  nini = 0
-  return Int[], Int[], nini
+function _compute_hess_structure_obj(tnrj::NoFETerm, Y, X, x0, nparam)
+  return Int[], Int[], 0
 end
 
-function _compute_hess_structure_k(Y, X, tnrj, x0, nparam)
+function _compute_hess_structure_k(tnrj, Y, X, x0, nparam)
   n, p = length(x0), nparam
   prows = n
   nnz_hess_k =
@@ -43,6 +50,35 @@ function _compute_hess_structure_k(Y, X, tnrj, x0, nparam)
   cols = getindex.(I, 2)[:]
 
   return rows, cols, nnz_hess_k
+end
+
+function _compute_hess_structure(op::AffineFEOperator, Y, Ypde, X, x0, nparam) where {T}
+  return Int[], Int[], 0
+end
+
+function _compute_hess_structure(op::Gridap.FESpaces.FEOperatorFromWeakForm, Y, Ypde, X, x0, nparam) where {T}
+  λ = zeros(Gridap.FESpaces.num_free_dofs(Ypde))
+  λf = FEFunction(Ypde, λ) # or Ypde
+  xh = FEFunction(Y, x0)
+  nvar = length(x0)
+  
+  function split_res(x, λ)
+    if Gridap.FESpaces.num_free_dofs(Ypde) == nvar - nparam
+      return op.res(x, λ)
+    else
+      y, u = x
+      return op.res(y, u, λ)
+    end
+  end
+  luh = split_res(xh, λf)
+
+  lag_hess = Gridap.FESpaces._hessian(x->split_res(x, λf), xh, luh)
+  matdata = Gridap.FESpaces.collect_cell_matrix(lag_hess)
+  assem = SparseMatrixAssembler(Y, X)
+  A = Gridap.FESpaces.allocate_matrix(assem, matdata)
+  rows, cols, _ = findnz(A)
+
+  return rows .+ nparam, cols .+ nparam, length(rows)
 end
 
 #=

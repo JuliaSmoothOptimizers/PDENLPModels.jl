@@ -35,19 +35,19 @@ const pde_problems = [
 ]
 =#
 const pde_problems = [
-  # "BURGER1D", # OK
+  "BURGER1D", # OK
   # "CELLINCREASE", # TODO
   # "SIS", # TODO
   # "CONTROLSIR", # TODO
   # "DYNAMICSIR", # TODO
   "BASICUNCONSTRAINED", # OK
-  # "PENALIZEDPOISSON", # OK
-  # "INCOMPRESSIBLENAVIERSTOKES", #too slow # OK (except lagrangian-hess)
+  "PENALIZEDPOISSON", # OK
+  "INCOMPRESSIBLENAVIERSTOKES", #too slow # OK (except lagrangian-hess)
   #"POISSONMIXED", # TODO
   #"POISSONPARAM", # TODO
   #"POISSONMIXED2", # TODO
-  # "TOREBRACHISTOCHRONE", # OK
-  # "CONTROLELASTICMEMBRANE", # OK
+  "TOREBRACHISTOCHRONE", # OK
+  "CONTROLELASTICMEMBRANE", # OK
 ]
 # missing an example with an FESource term
 # FEOperatorsFromTerms including a LinearFETerm

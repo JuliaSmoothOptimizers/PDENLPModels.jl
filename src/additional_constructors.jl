@@ -20,7 +20,7 @@ function GridapPDENLPModel(
 
   @assert nparam ≥ 0 throw(DimensionError("x0", nvar_pde, nvar))
 
-  rows, cols, nnzh = _compute_hess_structure(Y, X, tnrj, x0, nparam)
+  rows, cols, nnzh = _compute_hess_structure(tnrj, Y, X, x0, nparam)
 
   if NRJ <: NoFETerm && typeof(lvar) <: AbstractVector && typeof(uvar) <: AbstractVector
     lv, uv = lvar, uvar
@@ -198,7 +198,8 @@ function GridapPDENLPModel(
   @lencheck nvar lvar uvar
   @lencheck ncon ucon y0
 
-  nnzh = get_nnzh(tnrj, c, Y, Ypde, X, nparam, nvar) #nvar * (nvar + 1) / 2
+  # nnzh = get_nnzh(tnrj, c, Y, Ypde, X, nparam, nvar) #nvar * (nvar + 1) / 2
+  rows, cols, nnzh = _compute_hess_structure(tnrj, c, Y, Ypde, X, x0, nparam)
 
   if typeof(c) <: AffineFEOperator #Here we expect ncon = nvar_pde
     nln = Int[]

@@ -200,6 +200,21 @@ function hess_coord!(
   vals[1:nnz_hess_k] .= _compute_hess_k_vals(nlp, nlp.tnrj, κ, xyu)
 
   if typeof(nlp.tnrj) != NoFETerm
+    if nlp.nparam > 0
+      luh = nlp.tnrj.f(κ, yu)
+      lag_hess = Gridap.FESpaces._hessian(x -> nlp.tnrj.f(κ, x), yu, luh)
+    else
+      luh = nlp.tnrj.f(yu)
+      lag_hess = Gridap.FESpaces._hessian(nlp.tnrj.f, yu, luh)
+    end
+    matdata = Gridap.FESpaces.collect_cell_matrix(lag_hess)
+    assem = SparseMatrixAssembler(nlp.Y, nlp.X)
+    A = Gridap.FESpaces.allocate_matrix(assem, matdata)
+    Gridap.FESpaces.assemble_matrix!(A, assem, matdata)
+  end
+
+  #= DOESN'T WORK?
+  if typeof(nlp.tnrj) != NoFETerm
     a = Gridap.FESpaces.SparseMatrixAssembler(nlp.Y, nlp.X)
     ncells = num_cells(nlp.tnrj.trian)
     cell_id_yu = Gridap.Arrays.IdentityVector(ncells)
@@ -211,6 +226,7 @@ function hess_coord!(
     end
     nini = vals_hess_coo_numeric!(vals, a, cell_r_yu, cell_id_yu, nfirst = nini)
   end
+  =#
   vals .*= obj_weight
   return vals
 end
@@ -246,7 +262,8 @@ function hess_structure!(
   rows::AbstractVector{<:Integer},
   cols::AbstractVector{<:Integer},
 )
-  @lencheck nlp.meta.nnzh rows cols
+@lencheck nlp.meta.nnzh rows cols
+#=
   n, p = nlp.meta.nvar, nlp.nparam
   prows = n
   nnz_hess_k =
@@ -261,9 +278,15 @@ function hess_structure!(
   rows[1:nnz_hess_k] .= getindex.(I, 1)[:]
   cols[1:nnz_hess_k] .= getindex.(I, 2)[:]
 
-  r, c, nini = _compute_hess_structure(nlp.Y, nlp.X, nlp.tnrj, nlp.meta.x0, nlp.nparam)
+  r, c, nini = _compute_hess_structure(nlp.tnrj, nlp.Y, nlp.X, nlp.meta.x0, nlp.nparam)
   rows[nnz_hess_k+1:end] .= r
   cols[nnz_hess_k+1:end] .= c
+  =#
+  if nlp.meta.ncon > 0
+    rows, cols, _ = _compute_hess_structure(nlp.tnrj, nlp.op, nlp.Y, nlp.Ypde, nlp.X, nlp.meta.x0, nlp.nparam)
+  else
+    rows, cols, _ = _compute_hess_structure(nlp.tnrj, nlp.Y, nlp.X, nlp.meta.x0, nlp.nparam)
+  end
 
   #=GRIDAPv15
   nini = hess_yu_obj_structure!(nlp, rows, cols, nfirst = nnz_hess_k)
