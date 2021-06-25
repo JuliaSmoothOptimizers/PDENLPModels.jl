@@ -52,6 +52,15 @@ function _compute_hess_structure_k(tnrj, Y, X, x0, nparam)
   return rows, cols, nnz_hess_k
 end
 
+function get_nnz_hess_k(tnrj, nvar, nparam)
+  if (typeof(tnrj) <: MixedEnergyFETerm && tnrj.inde) || typeof(tnrj) <: NoFETerm
+    nnz_hess_k = Int(nparam * (nparam + 1) / 2)
+  else
+    nnz_hess_k = Int(nparam * (nparam + 1) / 2) + (nvar - nparam) * nparam
+  end
+  return nnz_hess_k
+end
+
 function _compute_hess_structure(op::AffineFEOperator, Y, Ypde, X, x0, nparam) where {T}
   return Int[], Int[], 0
 end
