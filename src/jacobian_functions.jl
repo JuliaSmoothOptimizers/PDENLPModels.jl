@@ -310,6 +310,22 @@ function _from_terms_to_jacobian(
   return S
 end
 
+function _from_terms_to_jacobian_vals!(
+  op::Gridap.FESpaces.FEOperatorFromWeakForm,
+  x::AbstractVector{T},
+  Y::FESpace,
+  Xpde::FESpace,
+  Ypde::FESpace,
+  Ycon::FESpace,
+  vals::AbstractVector{T};
+  nfirst::Integer = 0,
+) where {T <: Number}
+  A = _from_terms_to_jacobian(op, x, Y, Xpde, Ypde, Ycon)
+  _, _, v = findnz(A)
+  nini = nfirst + length(v)
+  vals[nfirst+1:nini] .= v
+  return nini
+end
 #=GRIDAPv15
 function _from_terms_to_jacobian_vals!(
   op::Gridap.FESpaces.FEOperatorFromWeakForm,

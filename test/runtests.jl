@@ -35,22 +35,51 @@ const pde_problems = [
 ]
 =#
 const pde_problems = [
-  # "BURGER1D", # OK
+  "BURGER1D", # OK
   # "CELLINCREASE", # TODO
   # "SIS", # TODO
   # "CONTROLSIR", # TODO
   # "DYNAMICSIR", # TODO
-  # "BASICUNCONSTRAINED", # OK
-  # "PENALIZEDPOISSON", # OK
-  # "INCOMPRESSIBLENAVIERSTOKES", #too slow # OK (except lagrangian-hess)
-  "POISSONMIXED", # TODO
+  "BASICUNCONSTRAINED", # OK
+  "PENALIZEDPOISSON", # OK
+  "INCOMPRESSIBLENAVIERSTOKES", #too slow # OK (except lagrangian-hess)
+  # "POISSONMIXED", # TODO
   # "POISSONPARAM", # TODO
   #"POISSONMIXED2", # TODO
-  # "TOREBRACHISTOCHRONE", # OK
-  # "CONTROLELASTICMEMBRANE", # OK
+  "TOREBRACHISTOCHRONE", # OK
+  "CONTROLELASTICMEMBRANE", # OK
 ]
 # missing an example with an FESource term
 # FEOperatorsFromTerms including a LinearFETerm
+
+#=
+Issue when computing derivatives with parameter.
+
+typeof(xyu) = Vector{ForwardDiff.Dual{ForwardDiff.Tag{PDENLPModels.var"#89#91"{PDENLPModels.var"#_cons#90", GridapPDENLPModel{MixedEnergyFETerm}, Vector{Float64}}, Float64}, Float64, 2}}
+Test problem scenario: Error During Test at /home/tmigot/.julia/dev/PDENLPModels.jl/test/runtests.jl:68
+  Got exception outside of a @test
+  AssertionError: 
+  
+  The entries stored in free_values and dirichlet_values should be of the same type.
+  
+  This error shows up e.g. when trying to build a FEFunction from a vector of integers
+  if the Dirichlet values of the underlying space are of type Float64, or when the
+  given free values are Float64 and the Dirichlet values ComplexF64.
+  
+  Stacktrace:
+    [1] macro expansion
+      @ ~/.julia/packages/Gridap/EZQEK/src/Helpers/Macros.jl:60 [inlined]
+    [2] scatter_free_and_dirichlet_values(f::Gridap.FESpaces.UnconstrainedFESpace{Vector{Float64}}, free_values::Vector{ForwardDiff.Dual{ForwardDiff.Tag{PDENLPModels.var"#89#91"{PDENLPModels.var"#_cons#90", GridapPDENLPModel{MixedEnergyFETerm}, Vector{Float64}}, Float64}, Float64, 2}}, dirichlet_values::Vector{Float64})
+      @ Gridap.FESpaces ~/.julia/packages/Gridap/EZQEK/src/FESpaces/UnconstrainedFESpaces.jl:38
+    [3] scatter_free_and_dirichlet_values
+      @ ~/.julia/packages/Gridap/EZQEK/src/FESpaces/TrialFESpaces.jl:108 [inlined]
+    [4] FEFunction(fs::TrialFESpace{Gridap.FESpaces.UnconstrainedFESpace{Vector{Float64}}}, free_values::Vector{ForwardDiff.Dual{ForwardDiff.Tag{PDENLPModels.var"#89#91"{PDENLPModels.var"#_cons#90", GridapPDENLPModel{MixedEnergyFETerm}, Vector{Float64}}, Float64}, Float64, 2}}, dirichlet_values::Vector{Float64})
+      @ Gridap.FESpaces ~/.julia/packages/Gridap/EZQEK/src/FESpaces/SingleFieldFESpaces.jl:160
+    [5] FEFunction(fe::TrialFESpace{Gridap.FESpaces.UnconstrainedFESpace{Vector{Float64}}}, free_values::Vector{ForwardDiff.Dual{ForwardDiff.Tag{PDENLPModels.var"#89#91"{PDENLPModels.var"#_cons#90", GridapPDENLPModel{MixedEnergyFETerm}, Vector{Float64}}, Float64}, Float64, 2}})
+      @ Gridap.FESpaces ~/.julia/packages/Gridap/EZQEK/src/FESpaces/SingleFieldFESpaces.jl:167
+    [6] _from_terms_to_residual!(op::Gridap.FESpaces.FEOperatorFromWeakForm, x::Vector{ForwardDiff.Dual{ForwardDiff.Tag{PDENLPModels.var"#89#91"{PDENLPModels.var"#_cons#90", GridapPDENLPModel{MixedEnergyFETerm}, Vector{Float64}}, Float64}, Float64, 2}}, nlp::GridapPDENLPModel{MixedEnergyFETerm}, res::Vector{ForwardDiff.Dual{ForwardDiff.Tag{PDENLPModels.var"#89#91"{PDENLPModels.var"#_cons#90", GridapPDENLPModel{MixedEnergyFETerm}, Vector{Float64}}, Float64}, Float64, 2}})
+      @ PDENLPModels ~/.julia/dev/PDENLPModels.jl/src/GridapPDENLPModel.jl:348
+=#
 
 for problem in pde_problems
   include("problems/$(lowercase(problem)).jl")
@@ -81,7 +110,6 @@ local_test = false
         hess_coord(nlp, x, y)
       end
     end
-    #=GRIDAPv15
     @testset "Problem $(nlp.meta.name)" begin
       @info "$(problem) consistency"
       @testset "Consistency" begin
@@ -103,7 +131,6 @@ local_test = false
         @time coord_memory_nlp(nlp)
       end
     end
-    =#
   end
 end
 

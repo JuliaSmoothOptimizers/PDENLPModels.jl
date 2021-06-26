@@ -108,6 +108,12 @@ function grad!(nlp::GridapPDENLPModel, x::AbstractVector, g::AbstractVector)
   return _compute_gradient!(g, nlp.tnrj, κ, yu, nlp.Y, nlp.X)
 end
 
+function hess_coord(nlp::AbstractNLPModel, x::AbstractVector; obj_weight::Real = one(eltype(x)))
+  @lencheck nlp.meta.nvar x
+  vals = zeros(eltype(x), nlp.meta.nnzh) # Vector{eltype(x)}(undef, nlp.meta.nnzh)
+  return hess_coord!(nlp, x, vals; obj_weight = obj_weight)
+end
+
 function hess_coord!(
   nlp::GridapPDENLPModel,
   x::AbstractVector{T},
@@ -136,7 +142,7 @@ function hess_coord!(
     assem = SparseMatrixAssembler(nlp.Y, nlp.X)
     A = Gridap.FESpaces.allocate_matrix(assem, matdata)
     Gridap.FESpaces.assemble_matrix!(A, assem, matdata)
-    _, _, v = findnz(A)
+    _, _, v = findnz(tril(A))
     vals[nnz_hess_k+1:nnz_hess_k+length(v)] .= v
   end
 
@@ -158,8 +164,6 @@ function hess_coord!(
   return vals
 end
 
-
-#=GRIDAPv15
 function hprod!(
   nlp::GridapPDENLPModel,
   x::AbstractVector{T},
@@ -296,7 +300,7 @@ function hess_coord!(
     assem = SparseMatrixAssembler(nlp.Y, nlp.X)
     A = Gridap.FESpaces.allocate_matrix(assem, matdata)
     Gridap.FESpaces.assemble_matrix!(A, assem, matdata)
-    _, _, v = findnz(A)
+    _, _, v = findnz(tril(A))
     vals[nini+1:end] .= v
   end
 
@@ -438,7 +442,6 @@ function _jac_structure!(
   return rows, cols
 end
 
-#=GRIDAPv15
 #Adaptation of `function allocate_matrix(a::SparseMatrixAssembler,matdata) end` in Gridap.FESpaces.
 function _jac_structure!(
   op::Gridap.FESpaces.FEOperatorFromWeakForm,
@@ -446,22 +449,13 @@ function _jac_structure!(
   rows::AbstractVector{<:Integer},
   cols::AbstractVector{<:Integer},
 )
-  nini = jac_k_structure!(nlp, rows, cols)
-  nini = allocate_coo_jac!(
-    op,
-    nlp.Y,
-    nlp.Xpde,
-    nlp.Ypde,
-    nlp.Ycon,
-    rows,
-    cols,
-    nfirst = nini,
-    nparam = nlp.nparam,
-  )
+  A = _from_terms_to_jacobian(op, nlp.meta.x0, nlp.Y, nlp.Xpde, nlp.Ypde, nlp.Ycon)
+  r, c, _ = findnz(A)
+  rows .= r
+  cols .= c
 
   return rows, cols
 end
-=#
 
 #=GRIDAPv15
 function jac_k_structure!(
@@ -541,7 +535,6 @@ function _jac_coord!(
   return vals
 end
 
-#=GRIDAPv15
 function hprod!(
   nlp::GridapPDENLPModel,
   x::AbstractVector,
@@ -565,4 +558,3 @@ function hprod!(
 
   return Hv
 end
-=#

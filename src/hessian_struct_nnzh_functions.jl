@@ -36,7 +36,7 @@ function _compute_hess_structure_obj(tnrj, Y, X, x0, nparam)
   matdata = Gridap.FESpaces.collect_cell_matrix(lag_hess)
   assem = SparseMatrixAssembler(Y, X)
   A = Gridap.FESpaces.allocate_matrix(assem, matdata)
-  rows, cols, _ = findnz(A)
+  rows, cols, _ = findnz(tril(A))
   nini = length(rows)
   return rows .+ nparam, cols .+ nparam, nini
 end
@@ -105,7 +105,7 @@ function _compute_hess_structure(op::Gridap.FESpaces.FEOperatorFromWeakForm, Y, 
   matdata = Gridap.FESpaces.collect_cell_matrix(lag_hess)
   assem = SparseMatrixAssembler(Y, X)
   A = Gridap.FESpaces.allocate_matrix(assem, matdata)
-  rows, cols, _ = findnz(A)
+  rows, cols, _ = findnz(tril(A))
 
   return rows .+ nparam, cols .+ nparam, length(rows)
 end
