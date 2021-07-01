@@ -35,8 +35,7 @@ function poissonmixed2(args...; n = 3, kwargs...)
   function res(k, y, v)
     ∫( k[1] * ∇(v) ⊙ ∇(y) - v * f * k[2] )dΩ
   end
-  t_Ω = FETerm(res, trian, dΩ)
-  op = FEOperator(Ug, V0, t_Ω)
+  op = FEOperator(res, Ug, V0)
 
   function fk(k, y)
     k1(x) = k[1]
