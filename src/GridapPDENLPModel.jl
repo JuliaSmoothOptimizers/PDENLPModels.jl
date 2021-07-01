@@ -114,6 +114,20 @@ function hess_coord(nlp::AbstractNLPModel, x::AbstractVector; obj_weight::Real =
   return hess_coord!(nlp, x, vals; obj_weight = obj_weight)
 end
 
+function jac_coord(nlp::AbstractNLPModel, x::AbstractVector)
+  @lencheck nlp.meta.nvar x
+  vals = zeros(eltype(x), nlp.meta.nnzj) # Vector{eltype(x)}(undef, nlp.meta.nnzh)
+  return jac_coord!(nlp, x, vals)
+end
+
+#=
+function hess_coord(nlp::AbstractNLPModel, x::AbstractVector, y::AbstractVector; obj_weight::Real = one(eltype(x)))
+  @lencheck nlp.meta.nvar x
+  vals = zeros(eltype(x), nlp.meta.nnzh) # Vector{eltype(x)}(undef, nlp.meta.nnzh)
+  return hess_coord!(nlp, x, y, vals; obj_weight = obj_weight)
+end
+=#
+
 function hess_coord!(
   nlp::GridapPDENLPModel,
   x::AbstractVector{T},
@@ -287,10 +301,18 @@ function hess_coord!(
     
     function split_res(x, λ)
       if typeof(nlp.Ycon) <: VoidFESpace
-        return nlp.op.res(x, λ)
+        if nlp.nparam > 0
+          return nlp.op.res(κ, x, λ)
+        else
+          return nlp.op.res(x, λ)
+        end
       else
         y, u = x
-        return nlp.op.res(y, u, λ)
+        if nlp.nparam > 0
+          return nlp.op.res(κ, y, u, λ)
+        else
+          return nlp.op.res(y, u, λ)
+        end
       end
     end
     luh = split_res(xh, λf)
@@ -424,7 +446,14 @@ function jac_structure!(
   cols::AbstractVector{<:Integer},
 )
   @lencheck nlp.meta.nnzj rows cols
-  return _jac_structure!(nlp.op, nlp, rows, cols)
+  nini = nlp.nparam > 0 ? jac_k_structure!(nlp, rows, cols) : 0
+  _jac_structure!(
+    nlp.op, 
+    nlp,
+    view(rows, (nini+1):nlp.meta.nnzj),
+    view(cols, (nini+1):nlp.meta.nnzj),
+    )
+  return rows, cols
 end
 
 function _jac_structure!(
@@ -437,7 +466,7 @@ function _jac_structure!(
   #In this case, the jacobian matrix is constant:
   I, J, V = findnz(get_matrix(op))
   rows .= I
-  cols .= J
+  cols .= J .+ nlp.nparam
 
   return rows, cols
 end
@@ -452,12 +481,11 @@ function _jac_structure!(
   A = _from_terms_to_jacobian(op, nlp.meta.x0, nlp.Y, nlp.Xpde, nlp.Ypde, nlp.Ycon)
   r, c, _ = findnz(A)
   rows .= r
-  cols .= c
+  cols .= c .+ nlp.nparam
 
   return rows, cols
 end
 
-#=GRIDAPv15
 function jac_k_structure!(
   nlp::GridapPDENLPModel,
   rows::AbstractVector{<:Integer},
@@ -472,7 +500,6 @@ function jac_k_structure!(
 
   return nnz_jac_k
 end
-=#
 
 function jac_coord!(nlp::GridapPDENLPModel, x::AbstractVector, vals::AbstractVector)
   @lencheck nlp.meta.nvar x
