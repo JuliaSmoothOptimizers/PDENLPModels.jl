@@ -9,6 +9,31 @@ using NLPModels
 #PDE modeling
 using Gridap
 
+function Gridap.Arrays.testargs(k::Gridap.Arrays.PosNegReindex,i::Integer)
+  # @check length(k.values_pos) !=0 || length(k.values_neg) != 0 "This map has empty domain"
+  if !(eltype(k.values_pos) == eltype(k.values_neg))
+    #@show typeof(k.values_pos), typeof(k.values_neg)
+    #@show one(i)
+    #@show eltype(k.values_pos), eltype(k.values_neg)
+  end
+  # @check eltype(k.values_pos) == eltype(k.values_neg) "This map is type-instable"
+  length(k.values_pos) !=0 ? (one(i),) : (-one(i))
+end
+
+function Gridap.FESpaces.scatter_free_and_dirichlet_values(f::Gridap.FESpaces.UnconstrainedFESpace,free_values,dirichlet_values)
+  #=
+  @check eltype(free_values) == eltype(dirichlet_values) """\n
+  The entries stored in free_values and dirichlet_values should be of the same type.
+
+  This error shows up e.g. when trying to build a FEFunction from a vector of integers
+  if the Dirichlet values of the underlying space are of type Float64, or when the
+  given free values are Float64 and the Dirichlet values ComplexF64.
+  """
+  =#
+  cell_dof_ids = get_cell_dof_ids(f)
+  lazy_map(Broadcasting(Gridap.Arrays.PosNegReindex(free_values,dirichlet_values)),cell_dof_ids)
+end
+
 #Regroup the different types of FEFunction
 const FEFunctionType =
   Union{Gridap.FESpaces.SingleFieldFEFunction, Gridap.MultiField.MultiFieldFEFunction}
