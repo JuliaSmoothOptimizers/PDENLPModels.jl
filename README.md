@@ -1,10 +1,21 @@
 # PDENLPModels
 
-[![Project Status: WIP – Initial development is in progress, but there has not yet been a stable, usable release suitable for the public.](https://www.repostatus.org/badges/latest/wip.svg)](https://www.repostatus.org/#wip)
-![CI](https://github.com/JuliaSmoothOptimizers/PDENLPModels.jl/workflows/CI/badge.svg?branch=master)
-[![codecov.io](http://codecov.io/github/JuliaSmoothOptimizers/PDENLPModels.jl/coverage.svg?branch=master)](http://codecov.io/github/JuliaSmoothOptimizers/PDENLPModels.jl?branch=master)
-[![](https://img.shields.io/badge/docs-stable-blue.svg)](https://JuliaSmoothOptimizers.github.io/PDENLPModels.jl/stable)
-[![](https://img.shields.io/badge/docs-dev-blue.svg)](https://JuliaSmoothOptimizers.github.io/PDENLPModels.jl/dev)
+| **Documentation** | **CI** | **Coverage** | **Release** | **DOI** |
+|:-----------------:|:------:|:------------:|:-----------:|:-------:|
+| [![docs-stable][docs-stable-img]][docs-stable-url] [![docs-dev][docs-dev-img]][docs-dev-url] | [![build-ci][build-ci-img]][build-ci-url] | [![codecov][codecov-img]][codecov-url] | [![release][release-img]][release-url] | [![doi][doi-img]][doi-url] |
+
+[docs-stable-img]: https://img.shields.io/badge/docs-stable-blue.svg
+[docs-stable-url]: https://JuliaSmoothOptimizers.github.io/PDENLPModels.jl/stable
+[docs-dev-img]: https://img.shields.io/badge/docs-dev-purple.svg
+[docs-dev-url]: https://JuliaSmoothOptimizers.github.io/PDENLPModels.jl/dev
+[build-ci-img]: https://github.com/JuliaSmoothOptimizers/PDENLPModels.jl/workflows/CI/badge.svg?branch=master
+[build-ci-url]: https://github.com/JuliaSmoothOptimizers/PDENLPModels.jl/actions
+[codecov-img]: https://codecov.io/gh/JuliaSmoothOptimizers/PDENLPModels.jl/branch/master/graph/badge.svg
+[codecov-url]: https://codecov.io/gh/JuliaSmoothOptimizers/PDENLPModels.jl
+[release-img]: https://img.shields.io/github/v/release/JuliaSmoothOptimizers/PDENLPModels.jl.svg?style=flat-square
+[release-url]: https://github.com/JuliaSmoothOptimizers/PDENLPModels.jl/releases
+[doi-img]: https://zenodo.org/badge/DOI/10.5281/zenodo.5056629.svg
+[doi-url]: https://doi.org/10.5281/zenodo.5056629
 
 PDENLPModels specializes the [NLPModel API](https://github.com/JuliaSmoothOptimizers/NLPModels.jl) to optimization problem with partial differential equation in the constraints. The package relies on [Gridap.jl](https://github.com/gridap/Gridap.jl) for the modeling and the computation of the derivatives. Find tutorials for using Gridap [here](https://github.com/gridap/Tutorials).
 
@@ -93,3 +104,7 @@ using Gridap, PDENLPModels
 > Gridap: An extensible Finite Element toolbox in Julia.
 > Journal of Open Source Software, 5(52), 2520 (2020).
 > [10.21105/joss.02520](https://doi.org/10.21105/joss.02520)
+
+## How to Cite
+
+If you use PDENLPModels.jl in your work, please cite using the format given in [CITATION.bib](https://github.com/JuliaSmoothOptimizers/PDENLPModels.jl/blob/master/CITATION.bib).
