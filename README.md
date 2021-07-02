@@ -104,3 +104,7 @@ using Gridap, PDENLPModels
 > Gridap: An extensible Finite Element toolbox in Julia.
 > Journal of Open Source Software, 5(52), 2520 (2020).
 > [10.21105/joss.02520](https://doi.org/10.21105/joss.02520)
+
+## How to Cite
+
+If you use PDENLPModels.jl in your work, please cite using the format given in [CITATION.bib](https://github.com/JuliaSmoothOptimizers/PDENLPModels.jl/blob/master/CITATION.bib).
