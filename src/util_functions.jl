@@ -16,6 +16,12 @@ function _split_FEFunction(x::AbstractVector, Ypde::FESpace, Ycon::FESpace)
   return yh, uh
 end
 
+function _split_FEFunction(x, Ypde::FESpace, Ycon::FESpace)
+  y = [x[i] for i=1:length(Ypde.spaces)]  # the Function x[1:2] is missing I believe
+  u = [x[i] for i=length(Ypde.spaces)+1:length(Ycon.spaces)+length(Ypde.spaces)] 
+  return y, u
+end
+
 function _split_FEFunction(x::AbstractVector, Ypde::FESpace, Ycon::VoidFESpace)
   nvar_pde = Gridap.FESpaces.num_free_dofs(Ypde)
   yh = FEFunction(Ypde, x[1:nvar_pde])

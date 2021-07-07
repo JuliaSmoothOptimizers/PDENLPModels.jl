@@ -10,14 +10,14 @@ function _compute_hess_structure(tnrj::AbstractEnergyTerm, Y, X, x0, nparam)
   return vcat(rk, ro), vcat(ck, co), nk + no
 end
 
-function _compute_hess_structure(tnrj::AbstractEnergyTerm, op, Y, Ypde, X, x0, nparam)
+function _compute_hess_structure(tnrj::AbstractEnergyTerm, op, Y, Ypde, Ycon, X, x0, nparam)
   robj, cobj, nobj = _compute_hess_structure(tnrj, Y, X, x0, nparam)
   # we should also add the derivative w.r.t. to the parameter
   rck, cck, nck = _compute_hess_structure_k(op, Y, X, x0, nparam)
   # p, n = nparam, length(x0)
   # nnz_hess_k = Int(p * (p + 1) / 2) + (n - p) * p
 
-  rc, cc, nc = _compute_hess_structure(op, Y, Ypde, X, x0, nparam)
+  rc, cc, nc = _compute_hess_structure(op, Y, Ypde, Ycon, X, x0, nparam)
   return vcat(robj, rck, rc), vcat(cobj, cck, cc), nobj + nck + nc
 end
 
@@ -71,11 +71,11 @@ function get_nnz_hess_k(tnrj::AbstractEnergyTerm, nvar, nparam)
   return nnz_hess_k
 end
 
-function _compute_hess_structure(op::AffineFEOperator, Y, Ypde, X, x0, nparam) where {T}
+function _compute_hess_structure(op::AffineFEOperator, Y, Ypde, Ycon, X, x0, nparam) where {T}
   return Int[], Int[], 0
 end
 
-function _compute_hess_structure(op::Gridap.FESpaces.FEOperatorFromWeakForm, Y, Ypde, X, x0, nparam) where {T}
+function _compute_hess_structure(op::Gridap.FESpaces.FEOperatorFromWeakForm, Y, Ypde, Ycon, X, x0, nparam) where {T}
   λ = zeros(Gridap.FESpaces.num_free_dofs(Ypde))
   λf = FEFunction(Ypde, λ) # or Ypde
   nvar = length(x0)
@@ -84,14 +84,14 @@ function _compute_hess_structure(op::Gridap.FESpaces.FEOperatorFromWeakForm, Y, 
   nvar = length(xyu)
   
   function split_res(x, λ)
-    if Gridap.FESpaces.num_free_dofs(Ypde) == Gridap.FESpaces.num_free_dofs(Y)
+    if typeof(Ycon) <: VoidFESpace
       if nparam > 0
         return op.res(κ, x, λ)
       else
         return op.res(x, λ)
       end
     else
-      y, u = x
+      y, u = _split_FEFunction(x, Ypde, Ycon)
       if nparam > 0
         return op.res(κ, y, u, λ)
       else
