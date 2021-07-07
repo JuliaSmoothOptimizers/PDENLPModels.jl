@@ -17,8 +17,10 @@ function _split_FEFunction(x::AbstractVector, Ypde::FESpace, Ycon::FESpace)
 end
 
 function _split_FEFunction(x, Ypde::FESpace, Ycon::FESpace)
-  y = [x[i] for i=1:length(Ypde.spaces)]  # the Function x[1:2] is missing I believe
-  u = [x[i] for i=length(Ypde.spaces)+1:length(Ycon.spaces)+length(Ypde.spaces)] 
+  ny = typeof(Ypde) <: MultiFieldFESpace ? length(Ypde.spaces) : 1
+  nu = typeof(Ycon) <: MultiFieldFESpace ? length(Ycon.spaces) : 1
+  y = ny == 1 ? x[1] : [x[i] for i=1:ny]  # the Function x[1:2] is missing I believe
+  u = nu == 1 ? x[ny+1] : [x[i] for i=ny+1:nu+ny] 
   return y, u
 end
 
