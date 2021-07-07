@@ -4,13 +4,13 @@ in the hessian w.r.t. y and u of the objective function.
 
 The rows and cols returned by _compute_hess_structure_obj are already shifter by `nparam`.
 """
-function _compute_hess_structure(tnrj, Y, X, x0, nparam)
+function _compute_hess_structure(tnrj::AbstractEnergyTerm, Y, X, x0, nparam)
   rk, ck, nk = _compute_hess_structure_k(tnrj, Y, X, x0, nparam)
   ro, co, no = _compute_hess_structure_obj(tnrj, Y, X, x0, nparam)
   return vcat(rk, ro), vcat(ck, co), nk + no
 end
 
-function _compute_hess_structure(tnrj, op, Y, Ypde, X, x0, nparam)
+function _compute_hess_structure(tnrj::AbstractEnergyTerm, op, Y, Ypde, X, x0, nparam)
   robj, cobj, nobj = _compute_hess_structure(tnrj, Y, X, x0, nparam)
   # we should also add the derivative w.r.t. to the parameter
   rck, cck, nck = _compute_hess_structure_k(op, Y, X, x0, nparam)
@@ -21,7 +21,7 @@ function _compute_hess_structure(tnrj, op, Y, Ypde, X, x0, nparam)
   return vcat(robj, rck, rc), vcat(cobj, cck, cc), nobj + nck + nc
 end
 
-function _compute_hess_structure_obj(tnrj, Y, X, x0, nparam)
+function _compute_hess_structure_obj(tnrj::AbstractEnergyTerm, Y, X, x0, nparam)
   nini = 0
   nvar = length(x0)
   κ, xyu = x0[1:nparam], x0[(nparam + 1):nvar]
@@ -45,7 +45,7 @@ function _compute_hess_structure_obj(tnrj::NoFETerm, Y, X, x0, nparam)
   return Int[], Int[], 0
 end
 
-function _compute_hess_structure_k(tnrj, Y, X, x0, nparam)
+function _compute_hess_structure_k(tnrj::AbstractEnergyTerm, Y, X, x0, nparam)
   n, p = length(x0), nparam
   prows = n
   nnz_hess_k =
@@ -62,7 +62,7 @@ function _compute_hess_structure_k(tnrj, Y, X, x0, nparam)
   return rows, cols, nnz_hess_k
 end
 
-function get_nnz_hess_k(tnrj, nvar, nparam)
+function get_nnz_hess_k(tnrj::AbstractEnergyTerm, nvar, nparam)
   if (typeof(tnrj) <: MixedEnergyFETerm && tnrj.inde) || typeof(tnrj) <: NoFETerm
     nnz_hess_k = Int(nparam * (nparam + 1) / 2)
   else
@@ -110,7 +110,7 @@ function _compute_hess_structure(op::Gridap.FESpaces.FEOperatorFromWeakForm, Y, 
   return rows .+ nparam, cols .+ nparam, length(rows)
 end
 
-function _compute_hess_structure_k(op, Y, X, x0, nparam)
+function _compute_hess_structure_k(op::FEOperator, Y, X, x0, nparam)
   n, p = length(x0), nparam
   nnz_hess_k = Int(p * (p + 1) / 2) + (n - p) * p
   I = ((i, j) for i = 1:n, j = 1:p if j ≤ i)
