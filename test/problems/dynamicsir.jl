@@ -13,6 +13,7 @@ function dynamicsir(args...; x0 = [1, 2], n = 10, T = 1, kwargs...)
   Xpde = MultiFieldFESpace([VI, VS])
   Ypde = MultiFieldFESpace([UI, US])
 
+  #=
   conv(u, ∇u) = (∇u ⋅ one(∇u)) ⊙ u
   c(u, v) = conv(v, ∇(u)) #v⊙conv(u,∇(u))
   function res_pde_nl(yu, v)
@@ -25,13 +26,22 @@ function dynamicsir(args...; x0 = [1, 2], n = 10, T = 1, kwargs...)
     p, q = v
     ∫( -p * (bf * S * I - cf * I) + q * bf * S * I )dΩ
   end
+  =#
+  conv(u, ∇u) = (∇u ⋅ one(∇u)) ⊙ u
+  c(u, v) = conv∘(v, ∇(u))
+  function res(y, u, v)
+    I, S = y
+    bf, cf = u
+    p, q = v
+    ∫( c(I, p) + c(S, q) -p * (bf * S * I - cf * I) + q * bf * S * I )dΩ
+  end
 
   trian = Triangulation(model)
   degree = 1
   dΩ = Measure(trian, degree)
-  t_Ω_nl = FETerm(res_pde_nl, trian, dΩ)
-  t_Ω = FETerm(res_pde, trian, dΩ)
-  op_sir = FEOperator(Ypde, Xpde, t_Ω_nl, t_Ω)
+  #t_Ω_nl = FETerm(res_pde_nl, trian, dΩ)
+  #t_Ω = FETerm(res_pde, trian, dΩ)
+  op_sir = FEOperator(res, Ypde, Xpde)
 
   Xbcon = TestFESpace(model, reffe; conformity = :H1)
   Ybcon = TrialFESpace(Xbcon)

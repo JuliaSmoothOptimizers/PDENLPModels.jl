@@ -14,11 +14,11 @@ function controlsir(args...; x0 = [1, 2], n = 10, a = 0.2, b = 0.1, μ = 0.1, T 
   Y = MultiFieldFESpace([UI, US])
 
   conv(u, ∇u) = (∇u ⋅ one(∇u)) ⊙ u
-  c(u, v) = conv(v, ∇(u)) #v⊙conv(u,∇(u))
+  c(u, v) = conv∘(v, ∇(u))
   _a(x) = a
   _b(x) = b
   _μ(x) = μ
-  function res_pde(u, v)
+  function res(u, v)
     I, S = u
     p, q = v
     ∫( c(I, p) + c(S, q) - p * (_a * S * I - _b * I) - q * (_μ - _b * I - _a * S * I) )dΩ
@@ -27,8 +27,7 @@ function controlsir(args...; x0 = [1, 2], n = 10, a = 0.2, b = 0.1, μ = 0.1, T 
   trian = Triangulation(model)
   degree = 1
   dΩ = Measure(trian, degree)
-  t_Ω = FETerm(res_pde, trian, dΩ)
-  op_sis = FEOperator(Y, X, t_Ω)
+  op_sis = FEOperator(res, Y, X)
 
   function f(u) #:: Union{Gridap.MultiField.MultiFieldFEFunction, Gridap.CellData.GenericCellField}
     I, S = u

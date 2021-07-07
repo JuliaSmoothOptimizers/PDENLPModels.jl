@@ -12,21 +12,21 @@ function sis(args...; x0 = [1, 2], n = 10, a = 0.2, b = 0.7, T = 1, kwargs...)
   X = MultiFieldFESpace([VI, VS])
   Y = MultiFieldFESpace([UI, US])
 
+  trian = Triangulation(model)
+  degree = 1
+  dΩ = Measure(trian, degree)
+
   conv(u, ∇u) = (∇u ⋅ one(∇u)) ⊙ u
-  c(u, v) = conv(v, ∇(u)) #v⊙conv(u,∇(u))
+  c(u, v) = conv∘(v, ∇(u)) #v⊙conv(u,∇(u))
   _a(x) = a
   _b(x) = b
-  function res_pde(u, v)
+  function res(u, v)
     I, S = u
     p, q = v
     ∫( c(I, p) + c(S, q) - p * (_a * S * I - _b * I) - q * (_b * I - _a * S * I) )dΩ
   end
 
-  trian = Triangulation(model)
-  degree = 1
-  dΩ = Measure(trian, degree)
-  t_Ω = FETerm(res_pde, trian, dΩ)
-  op_sis = FEOperator(Y, X, t_Ω)
+  op_sis = FEOperator(res, Y, X)
 
   ndofs = Gridap.FESpaces.num_free_dofs(Y)
   xin = zeros(ndofs)

@@ -26,28 +26,21 @@ function cellincrease(args...; x0 = [0.6, 0.1], n = 10, T = 7, kwargs...)
   Xpde = MultiFieldFESpace([VI, VS])
   Ypde = MultiFieldFESpace([UI, US])
 
-  conv(u, ∇u) = (∇u ⋅ one(∇u)) ⊙ u
-  c(u, v) = conv(v, ∇(u)) #v⊙conv(u,∇(u))
-  function res_pde_nl(yu, v)
-    cf, pf, uf = yu
-    p, q = v
-    #eq. (2) page 3
-    ∫( c(cf, p) + c(pf, q) - p * (kp * pf * (1.0 - cf) - kr * cf * (1.0 - cf - pf)) )dΩ
-  end
-  function res_pde(yu, v)
-    cf, pf, uf = yu
-    p, q = v
-    #eq. (2) page 3
-    ∫( q * (uf * kr * cf * (1.0 - cf - pf) - kp * pf * pf) )dΩ
-  end
-
   trian = Triangulation(model)
   degree = 1
   dΩ = Measure(trian, degree)
-  t_Ω_nl = FETerm(res_pde_nl, trian, dΩ)
-  t_Ω = FETerm(res_pde, trian, dΩ)
+  
+  conv(u, ∇u) = (∇u ⋅ one(∇u)) ⊙ u
+  c(u, v) = conv∘(v, ∇(u)) #v⊙conv(u,∇(u))
+
+  function res(y, u, v)
+    cf, pf = y
+    p, q = v
+    ∫( - p * (kp * pf * (1.0 - cf) - kr * cf * (1.0 - cf - pf)) )dΩ #  c(cf, p) + c(pf, q) )dΩ  + q * (u * kr * cf * (1.0 - cf - pf) - kp * pf * pf)
+  end
+
   Y = MultiFieldFESpace([UI, US, Ucon])
-  op_sir = FEOperator(Ypde, Xpde, t_Ω_nl, t_Ω)
+  op_sir = FEOperator(res, Ypde, Xpde)
 
   xin = zeros(Gridap.FESpaces.num_free_dofs(Y))
   return GridapPDENLPModel(xin, f, trian, dΩ, Ypde, Ycon, Xpde, Xcon, op_sir)
