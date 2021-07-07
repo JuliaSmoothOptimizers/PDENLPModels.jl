@@ -209,7 +209,7 @@ function hess_structure!(
 )
   @lencheck nlp.meta.nnzh rows cols
   if nlp.meta.ncon > 0
-    rows, cols, _ = _compute_hess_structure(nlp.tnrj, nlp.op, nlp.Y, nlp.Ypde, nlp.X, nlp.meta.x0, nlp.nparam)
+    rows, cols, _ = _compute_hess_structure(nlp.tnrj, nlp.op, nlp.Y, nlp.Ypde, nlp.Ycon, nlp.X, nlp.meta.x0, nlp.nparam)
   else
     rows, cols, _ = _compute_hess_structure(nlp.tnrj, nlp.Y, nlp.X, nlp.meta.x0, nlp.nparam)
   end
@@ -307,7 +307,7 @@ function hess_coord!(
           return nlp.op.res(x, λ)
         end
       else
-        y, u = x
+        y, u = _split_FEFunction(x, nlp.Ypde, nlp.Ycon)
         if nlp.nparam > 0
           return nlp.op.res(κ, y, u, λ)
         else
