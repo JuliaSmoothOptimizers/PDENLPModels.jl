@@ -59,41 +59,36 @@ function burger1d_test(; udc = false)
   add_tag_from_tags!(labels, "diri1", [2])
   add_tag_from_tags!(labels, "diri0", [1])
 
-  D = 1
   order = 1
-  V = TestFESpace(
-    reffe = :Lagrangian,
-    conformity = :H1,
-    valuetype = Float64,
-    model = model,
-    labels = labels,
-    order = order,
-    dirichlet_tags = ["diri0", "diri1"],
-  )
+  valuetype = Float64
+  reffe = ReferenceFE(lagrangian, valuetype, order)
+  V = TestFESpace(model, reffe; conformity = :H1, labels = labels, dirichlet_tags = ["diri0", "diri1"])
+
 
   h(x) = 2 * (nu + x[1]^3)
   uD0 = VectorValue(0)
   uD1 = VectorValue(-1)
   U = TrialFESpace(V, [uD0, uD1])
 
-  @law conv(u, ∇u) = (∇u ⋅ one(∇u)) ⊙ u
-  @law dconv(du, ∇du, u, ∇u) = conv(u, ∇du) + conv(du, ∇u)
-  c(u, v) = v ⊙ conv(u, ∇(u))
+  conv(u, ∇u) = (∇u ⋅ one(∇u)) ⊙ u
+  dconv(du, ∇du, u, ∇u) = conv∘(u, ∇du) + conv∘(du, ∇u)
+  c(u, v) = v ⊙ conv∘(u, ∇(u))
   nu = 0.08
-  function res_pde(u, v)
-    z(x) = 0.5
-    -nu * (∇(v) ⊙ ∇(u)) + c(u, v) - v * z - v * h
-  end
 
   trian = Triangulation(model)
   @test Gridap.FESpaces.num_cells(trian) == 512
   degree = 1
   dΩ = Measure(trian, degree)
-  t_Ω = FETerm(res_pde, trian, dΩ)
-  op_pde = FEOperator(U, V, t_Ω)
 
+  function res(y, v) #u is the solution of the PDE and z the control
+    z(x) = 0.5
+    ∫( -nu * (∇(v) ⊙ ∇(y)) + c(y, v) - v * z - v * h )dΩ
+  end
+  op_pde = FEOperator(res, U, V)
+
+  #=
   # Check resolution for z given.
-  nls = NLSolver(show_trace = true, method = :newton) #, linesearch=BackTracking()
+  nls = NLSolver(show_trace = true, method = :newton)
   solver = FESolver(nls)
 
   uh = solve(solver, op_pde)
@@ -132,5 +127,5 @@ function burger1d_test(; udc = false)
   @test Hv[512:1024] == zeros(513)
   Hvo = hprod(nlp, sol_gridap, zeros(nlp.meta.ncon), rand(nlp.meta.nvar), obj_weight = 0.0)
   @test Hvo == zeros(1024)
+  =#
 end
-=#

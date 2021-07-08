@@ -39,7 +39,6 @@ function controlsir(args...; x0 = [1, 2], n = 10, a = 0.2, b = 0.1, μ = 0.1, T 
   return GridapPDENLPModel(xin, f, trian, dΩ, Y, X, op_sis)
 end
 
-#=
 function controlsir_test(; x0 = [1, 2], n = 10, a = 0.2, b = 0.1, μ = 0.1, T = 1)
   #=
   # The usual SIR:
@@ -147,4 +146,3 @@ function controlsir_test(; x0 = [1, 2], n = 10, a = 0.2, b = 0.1, μ = 0.1, T = 
   ymp2 = hessian_check_from_grad(nlp, x = xr, atol = atol, rtol = rtol)
   @test !any(x -> x != Dict{Tuple{Int64, Int64}, Float64}(), values(ymp2))
 end
-=#

@@ -13,7 +13,7 @@ using PDENLPModels:
   _compute_gradient!,
   _compute_hess_coo
 #Testing
-using NLPModels, NLPModelsTest, Test
+using NLPModels, NLPModelsIpopt, NLPModelsTest, Test
 
 const pde_problems = [
   "BURGER1D",
@@ -45,7 +45,7 @@ local_test = false
     @info "$(problem)"
     @time nlp = eval(Meta.parse("$(lowercase(problem))(n=$(n))"))
     @testset "Test problem scenario" begin
-      # local_test || eval(Meta.parse("$(lowercase(problem))_test()"))
+      local_test || eval(Meta.parse("$(lowercase(problem))_test()"))
       x = rand(nlp.meta.nvar)
       obj(nlp, x)
       grad(nlp, x)

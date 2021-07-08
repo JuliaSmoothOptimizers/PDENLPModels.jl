@@ -64,7 +64,6 @@ function dynamicsir(args...; x0 = [1, 2], n = 10, T = 1, kwargs...)
   return GridapPDENLPModel(xin, f, trian, dΩ, Ypde, Ycon, Xpde, Xcon, op_sir)
 end
 
-#=
 function dynamicsir_test(; x0 = [1, 2], n = 10, T = 1)
   h = T / n
   N = sum(x0)
@@ -144,4 +143,3 @@ function dynamicsir_test(; x0 = [1, 2], n = 10, T = 1)
   ymp2 = hessian_check_from_grad(nlp, x = xr, atol = atol, rtol = rtol) #uses the jacobian
   @test !any(x -> x != Dict{Tuple{Int64, Int64}, Float64}(), values(ymp2))
 end
-=#

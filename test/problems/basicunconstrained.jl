@@ -31,7 +31,6 @@ function basicunconstrained(args...; n = 2^4, kwargs...)
   return GridapPDENLPModel(xin, f, trian, dΩ, Y, X)
 end
 
-#=GRIDAPv15
 function basicunconstrained_test(; udc = false)
   n = 10
   nlp = basicunconstrained(n = n)
@@ -41,25 +40,14 @@ function basicunconstrained_test(; udc = false)
   model = CartesianDiscreteModel(domain, partition)
 
   order = 1
-  V0 = TestFESpace(
-    reffe = :Lagrangian,
-    order = order,
-    valuetype = Float64,
-    conformity = :H1,
-    model = model,
-    dirichlet_tags = "boundary",
-  )
+  valuetype = Float64
+  reffe = ReferenceFE(lagrangian, valuetype, order)
+  V0 = TestFESpace(model, reffe; conformity = :H1, dirichlet_tags = "boundary")
   U = TrialFESpace(V0, x -> 0.0)
 
   Ypde = U
   Xpde = V0
-  Xcon = TestFESpace(
-    reffe = :Lagrangian,
-    order = order,
-    valuetype = Float64,
-    conformity = :H1,
-    model = model,
-  )
+  Xcon = TestFESpace(model, reffe; conformity = :H1)
   Ucon = TrialFESpace(Xcon)
   Ycon = Ucon
   trian = Triangulation(model)
@@ -84,8 +72,8 @@ function basicunconstrained_test(; udc = false)
   # Check the solution:
   cell_xs = get_cell_coordinates(trian)
   midpoint(xs) = sum(xs) / length(xs)
-  cell_xm = apply(midpoint, cell_xs) #this is a vector of size num_cells(trian)
-  cell_ubis = apply(ubis, cell_xm) #this is a vector of size num_cells(trian)
+  cell_xm = lazy_map(midpoint, cell_xs) #this is a vector of size num_cells(trian)
+  cell_ubis = lazy_map(ubis, cell_xm) #this is a vector of size num_cells(trian)
   # Warning: `interpolate(fs::SingleFieldFESpace, object)` is deprecated, use `interpolate(object, fs::SingleFieldFESpace)` instead.
   solu = get_free_values(Gridap.FESpaces.interpolate(cell_ubis, Ucon))
   soly = get_free_values(zero(Ypde))
@@ -115,4 +103,3 @@ function basicunconstrained_test(; udc = false)
     @test H_errs_fg[0] == Dict{Int, Dict{Tuple{Int, Int}, Float64}}()
   end
 end
-=#

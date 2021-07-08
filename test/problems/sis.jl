@@ -33,7 +33,6 @@ function sis(args...; x0 = [1, 2], n = 10, a = 0.2, b = 0.7, T = 1, kwargs...)
   return GridapPDENLPModel(xin, NoFETerm(), Y, X, op_sis)
 end
 
-#=
 function sis_test(; x0 = [1, 2], n = 10, a = 0.2, b = 0.7, T = 1)
   h = T / n
   N = sum(x0)
@@ -111,4 +110,3 @@ function sis_test(; x0 = [1, 2], n = 10, a = 0.2, b = 0.7, T = 1)
   ymp2 = hessian_check_from_grad(nlp, x = xr, atol = atol, rtol = rtol)
   @test !any(x -> x != Dict{Tuple{Int64, Int64}, Float64}(), values(ymp2))
 end
-=#

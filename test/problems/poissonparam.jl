@@ -46,7 +46,6 @@ function poissonparam(args...; n = 3, kwargs...)
   return GridapPDENLPModel(xs, nrj, Ug, V0, op)
 end
 
-#=
 function poissonparam_test()
   nlp = poissonparam(n = 5)
 
@@ -81,4 +80,3 @@ function poissonparam_test()
   @test hprod(nlp, x1, l, zeros(nUg + 1)) == zeros(nUg + 1)
   @test hprod(nlp, x1, l, vr) ≈ Symmetric(hess(nlp, x1, l), :L) * vr atol = 1e-14
 end
-=#

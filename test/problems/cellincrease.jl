@@ -48,7 +48,6 @@ end
 
 ################################################################
 # Testing:
-#=
 function cellincrease_test(args...; x0 = [0.6, 0.1], n = 10, T = 7, kwargs...)
   atol, rtol = √eps(), √eps()
   n = 10
@@ -65,4 +64,3 @@ function cellincrease_test(args...; x0 = [0.6, 0.1], n = 10, T = 7, kwargs...)
   ymp2 = hessian_check_from_grad(nlp, x = xr, atol = atol, rtol = rtol) #uses the jacobian
   @test !any(x -> x != Dict{Tuple{Int64, Int64}, Float64}(), values(ymp2))
 end
-=#

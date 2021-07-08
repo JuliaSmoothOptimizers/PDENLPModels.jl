@@ -53,7 +53,6 @@ function incompressiblenavierstokes(args...; n = 3, kwargs...)
   return GridapPDENLPModel(xin, x -> ∫( 0.0 )dΩ, Ωₕ, dΩ, Y, X, op)
 end
 
-#=
 function incompressiblenavierstokes_test(; udc = false)
   nlp = incompressiblenavierstokes()
   xin = nlp.meta.x0
@@ -151,4 +150,3 @@ function incompressiblenavierstokes_test(; udc = false)
   # H_errs_fg = hessian_check_from_grad(nlp)
   # @test H_errs_fg[0] == Dict{Int, Dict{Tuple{Int,Int}, Float64}}()
 end
-=#

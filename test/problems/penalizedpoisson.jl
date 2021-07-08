@@ -39,7 +39,6 @@ function penalizedpoisson(args...; n = 2^4, kwargs...)
   return GridapPDENLPModel(xin, f, trian, dΩ, Ypde, Xpde)
 end
 
-#=
 function penalizedpoisson_test(; udc = false)
   nlp = penalizedpoisson()
   x1 = vcat(rand(Gridap.FESpaces.num_free_dofs(nlp.Ypde)))
@@ -79,26 +78,20 @@ function penalizedpoisson_test(; udc = false)
   model = CartesianDiscreteModel(domain, partition)
 
   order = 1
-  V0 = TestFESpace(
-    reffe = :Lagrangian,
-    order = order,
-    valuetype = Float64,
-    conformity = :H1,
-    model = model,
-    dirichlet_tags = "boundary",
-  )
+  valuetype = Float64
+  reffe = ReferenceFE(lagrangian, valuetype, order)
+  V0 = TestFESpace(model, reffe; conformity = :H1, dirichlet_tags = "boundary")
   y0(x) = 0.0
   U = TrialFESpace(V0, y0)
 
   trian = Triangulation(model)
   degree = 2
-  quad = Measure(trian, degree)
-  a(u, v) = ∇(v) ⊙ ∇(u)
+  dΩ = Measure(trian, degree)
+  a(u, v) = ∫( ∇(v) ⊙ ∇(u) )*dΩ
   w(x) = 1
-  b_Ω(v) = v * w
-  t_Ω = AffineFETerm(a, b_Ω, trian, quad)
+  b_Ω(v) = ∫( v * w )*dΩ
 
-  op_pde = AffineFEOperator(U, V0, t_Ω)
+  op_pde = AffineFEOperator(a, b_Ω, U, V0)
   ls = LUSolver()
   solver = LinearFESolver(ls)
   uh = solve(solver, op_pde)
@@ -108,4 +101,3 @@ function penalizedpoisson_test(; udc = false)
   _ngxsol = norm(grad(nlp, sol))
   _ngxsol <= 1 / n
 end
-=#
