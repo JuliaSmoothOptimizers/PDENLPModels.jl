@@ -32,9 +32,9 @@ s.t.     y solution of a PDE(κ,u)=0
 ## Installation
 
 ```
-] add github.com/JuliaSmoothOptimizers/PDENLPModels.jl 
+] add PDENLPModels
 ```
-The current version of PDENLPModels relies on Gridap v0.14.
+The current version of PDENLPModels relies on Gridap v0.15.5.
 
 ## Example
 
