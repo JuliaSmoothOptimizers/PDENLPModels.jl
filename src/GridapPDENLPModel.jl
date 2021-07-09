@@ -237,27 +237,6 @@ function hprod!(
   return Hv
 end
 
-function hess_op!(
-  nlp::GridapPDENLPModel,
-  x::AbstractVector,
-  Hv::AbstractVector;
-  obj_weight::Real = one(eltype(x)),
-)
-  @lencheck nlp.meta.nvar x Hv
-
-  rows, cols = hess_structure(nlp)
-  vals = hess_coord(nlp, x, obj_weight = obj_weight)
-  decrement!(nlp, :neval_hess)
-  prod = @closure v -> coo_sym_prod!(cols, rows, vals, v, Hv)
-  return LinearOperator{eltype(x)}(nlp.meta.nvar, nlp.meta.nvar, true, true, prod, prod, prod)
-end
-
-function hess_op(nlp::GridapPDENLPModel, x::AbstractVector; obj_weight::Real = one(eltype(x)))
-  @lencheck nlp.meta.nvar x
-  Hv = similar(x)
-  return hess_op!(nlp, x, Hv, obj_weight = obj_weight)
-end
-
 function hess_structure!(
   nlp::GridapPDENLPModel,
   rows::AbstractVector{<:Integer},
@@ -542,27 +521,6 @@ function jtprod!(nlp::GridapPDENLPModel, x::AbstractVector, v::AbstractVector, J
   mul!(Jtv, Jx', v)
 
   return Jtv
-end
-
-function jac_op(nlp::GridapPDENLPModel, x::AbstractVector{T}) where {T <: Number}
-  @lencheck nlp.meta.nvar x
-
-  Jv = Array{T, 1}(undef, nlp.meta.ncon)
-  Jtv = Array{T, 1}(undef, nlp.meta.nvar)
-
-  return jac_op!(nlp, x, Jv, Jtv)
-end
-
-function jac_op!(nlp::GridapPDENLPModel, x::AbstractVector, Jv::AbstractVector, Jtv::AbstractVector)
-  @lencheck nlp.meta.nvar x Jtv
-  @lencheck nlp.meta.ncon Jv
-
-  Jx = jac(nlp, x)
-  decrement!(nlp, :neval_jac)
-
-  prod = @closure v -> mul!(Jv, Jx, v)
-  ctprod = @closure v -> mul!(Jtv, Jx', v)
-  return LinearOperator{eltype(x)}(nlp.meta.ncon, nlp.meta.nvar, false, false, prod, ctprod, ctprod)
 end
 
 function jac_structure!(
