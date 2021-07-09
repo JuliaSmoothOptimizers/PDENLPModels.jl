@@ -115,7 +115,7 @@ function basicunconstrained_test(; udc = false)
   if udc
     println("derivatives check. This may take approx. 5 minutes.")
     #Check derivatives using NLPModels tools:
-    #https://github.com/JuliaSmoothOptimizers/NLPModels.jl/blob/master/src/dercheck.jl
+    #https://github.com/JuliaSmoothOptimizers/NLPModels.jl/blob/main/src/dercheck.jl
     @test gradient_check(nlp) == Dict{Int64, Float64}()
     @test jacobian_check(nlp) == Dict{Tuple{Int64, Int64}, Float64}() #not a surprise as there are no constraints...
     H_errs = hessian_check(nlp) #slow

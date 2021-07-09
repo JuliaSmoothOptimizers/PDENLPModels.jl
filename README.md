@@ -8,9 +8,9 @@
 [docs-stable-url]: https://JuliaSmoothOptimizers.github.io/PDENLPModels.jl/stable
 [docs-dev-img]: https://img.shields.io/badge/docs-dev-purple.svg
 [docs-dev-url]: https://JuliaSmoothOptimizers.github.io/PDENLPModels.jl/dev
-[build-ci-img]: https://github.com/JuliaSmoothOptimizers/PDENLPModels.jl/workflows/CI/badge.svg?branch=master
+[build-ci-img]: https://github.com/JuliaSmoothOptimizers/PDENLPModels.jl/workflows/CI/badge.svg?branch=main
 [build-ci-url]: https://github.com/JuliaSmoothOptimizers/PDENLPModels.jl/actions
-[codecov-img]: https://codecov.io/gh/JuliaSmoothOptimizers/PDENLPModels.jl/branch/master/graph/badge.svg
+[codecov-img]: https://codecov.io/gh/JuliaSmoothOptimizers/PDENLPModels.jl/branch/main/graph/badge.svg
 [codecov-url]: https://codecov.io/gh/JuliaSmoothOptimizers/PDENLPModels.jl
 [release-img]: https://img.shields.io/github/v/release/JuliaSmoothOptimizers/PDENLPModels.jl.svg?style=flat-square
 [release-url]: https://github.com/JuliaSmoothOptimizers/PDENLPModels.jl/releases
@@ -107,4 +107,4 @@ using Gridap, PDENLPModels
 
 ## How to Cite
 
-If you use PDENLPModels.jl in your work, please cite using the format given in [CITATION.bib](https://github.com/JuliaSmoothOptimizers/PDENLPModels.jl/blob/master/CITATION.bib).
+If you use PDENLPModels.jl in your work, please cite using the format given in [CITATION.bib](https://github.com/JuliaSmoothOptimizers/PDENLPModels.jl/blob/main/CITATION.bib).

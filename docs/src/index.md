@@ -17,7 +17,7 @@ We consider optimization problems of the form: find functions (y,u) and κ ∈ �
 ## Installation
 
 ```
-] add github.com/tmigot/PDENLPModels.jl#master 
+] add github.com/tmigot/PDENLPModels.jl#main 
 ```
 The current version of PDENLPModels relies on Gridap v0.14.
 
