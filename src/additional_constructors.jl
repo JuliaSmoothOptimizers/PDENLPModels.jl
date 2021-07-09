@@ -1,13 +1,14 @@
 function GridapPDENLPModel(
-  x0::AbstractVector{T},
+  x0::S,
   tnrj::NRJ,
   Ypde::FESpace,
   Xpde::FESpace;
-  lvar::AbstractVector = -T(Inf) * ones(T, length(x0)), #Union{AbstractVector, Function}
-  uvar::AbstractVector = T(Inf) * ones(T, length(x0)), #Union{AbstractVector, Function}
+  lvar::S = fill!(similar(x0), -eltype(S)(Inf)),
+  uvar::S = fill!(similar(x0), eltype(S)(Inf)),
   name::String = "Generic",
-) where {T, NRJ <: AbstractEnergyTerm}
+) where {S, NRJ <: AbstractEnergyTerm}
   nvar = length(x0)
+  T = eltype(S)
 
   #_xpde = typeof(Xpde) <: MultiFieldFESpace ? Xpde : MultiFieldFESpace([Xpde])
   X = Xpde #_xpde
@@ -29,7 +30,7 @@ function GridapPDENLPModel(
 
   @lencheck nvar x0 lv uv
 
-  meta = NLPModelMeta(
+  meta = NLPModelMeta{T, S}(
     nvar,
     x0 = x0,
     lvar = lv,
@@ -58,16 +59,16 @@ function GridapPDENLPModel(
 end
 
 function GridapPDENLPModel(
-  x0::AbstractVector{T},
+  x0::S,
   f::Function,
   trian::Triangulation,
   quad::CellQuadrature,
   Ypde::FESpace,
   Xpde::FESpace;
-  lvar::AbstractVector = -T(Inf) * ones(T, length(x0)), #Union{AbstractVector, Function}
-  uvar::AbstractVector = T(Inf) * ones(T, length(x0)), #Union{AbstractVector, Function}
+  lvar::S = fill!(similar(x0), -eltype(S)(Inf)),
+  uvar::S = fill!(similar(x0), eltype(S)(Inf)),
   name::String = "Generic",
-) where {T}
+) where {S}
   nvar_pde = Gridap.FESpaces.num_free_dofs(Ypde)
   nparam = length(x0) - nvar_pde
 
@@ -77,17 +78,17 @@ function GridapPDENLPModel(
 end
 
 function GridapPDENLPModel(
-  x0::AbstractVector{T},
+  x0::S,
   f::Function,
   trian::Triangulation,
   quad::CellQuadrature,
   Ypde::FESpace,
   Xpde::FESpace,
   c::FEOperator;
-  lvar::AbstractVector = -T(Inf) * ones(T, length(x0)), #Union{AbstractVector, Function}
-  uvar::AbstractVector = T(Inf) * ones(T, length(x0)), #Union{AbstractVector, Function}
+  lvar::S = fill!(similar(x0), -eltype(S)(Inf)),
+  uvar::S = fill!(similar(x0), eltype(S)(Inf)),
   name::String = "Generic",
-) where {T}
+) where {S}
   nvar_pde = Gridap.FESpaces.num_free_dofs(Ypde)
   nparam = length(x0) - nvar_pde
 
@@ -97,16 +98,16 @@ function GridapPDENLPModel(
 end
 
 function GridapPDENLPModel(
-  x0::AbstractVector{T},
+  x0::S,
   tnrj::NRJ,
   Ypde::FESpace,
   Xpde::FESpace,
   c::FEOperator;
-  lvar::AbstractVector = -T(Inf) * ones(T, length(x0)), #Union{AbstractVector, Function}
-  uvar::AbstractVector = T(Inf) * ones(T, length(x0)), #Union{AbstractVector, Function}
+  lvar::S = fill!(similar(x0), -eltype(S)(Inf)),
+  uvar::S = fill!(similar(x0), eltype(S)(Inf)),
   name::String = "Generic",
   lin::AbstractVector{<:Integer} = Int[],
-) where {T, NRJ <: AbstractEnergyTerm}
+) where {S, NRJ <: AbstractEnergyTerm}
   npde = Gridap.FESpaces.num_free_dofs(Ypde)
   ndisc = length(x0) - npde
 
@@ -128,29 +129,28 @@ function GridapPDENLPModel(
 end
 
 function GridapPDENLPModel(
-  x0::AbstractVector{T},
+  x0::S,
   tnrj::NRJ,
   Ypde::FESpace,
   Ycon::FESpace,
   Xpde::FESpace,
   Xcon::FESpace,
   c::FEOperator;
-  lvary::AbstractVector = -T(Inf) * ones(T, num_free_dofs(Ypde)), #Union{AbstractVector, Function}
-  uvary::AbstractVector = T(Inf) * ones(T, num_free_dofs(Ypde)), #Union{AbstractVector, Function}
-  lvaru::AbstractVector = -T(Inf) * ones(T, num_free_dofs(Ycon)), #Union{AbstractVector, Function}
-  uvaru::AbstractVector = T(Inf) * ones(T, num_free_dofs(Ycon)), #Union{AbstractVector, Function}
-  lvark::AbstractVector = -T(Inf) *
-                          ones(T, max(length(x0) - num_free_dofs(Ypde) - num_free_dofs(Ycon), 0)),
-  uvark::AbstractVector = T(Inf) *
-                          ones(T, max(length(x0) - num_free_dofs(Ypde) - num_free_dofs(Ycon), 0)),
-  lcon::AbstractVector = zeros(T, num_free_dofs(Ypde)),
-  ucon::AbstractVector = zeros(T, num_free_dofs(Ypde)),
-  y0::AbstractVector = zeros(T, num_free_dofs(Ypde)),
+  lvary::AbstractVector = fill!(S(undef, num_free_dofs(Ypde)), -eltype(S)(Inf)),
+  uvary::AbstractVector = fill!(S(undef, num_free_dofs(Ypde)), eltype(S)(Inf)),
+  lvaru::AbstractVector = fill!(S(undef, num_free_dofs(Ycon)), -eltype(S)(Inf)),
+  uvaru::AbstractVector = fill!(S(undef, num_free_dofs(Ycon)), eltype(S)(Inf)),
+  lvark::AbstractVector = fill!(S(undef, max(length(x0) - num_free_dofs(Ypde) - num_free_dofs(Ycon), 0)), -eltype(S)(Inf)),
+  uvark::AbstractVector = fill!(S(undef, max(length(x0) - num_free_dofs(Ypde) - num_free_dofs(Ycon), 0)), eltype(S)(Inf)),
+  lcon::S = fill!(S(undef, num_free_dofs(Ypde)), zero(eltype(S))),
+  ucon::S = fill!(S(undef, num_free_dofs(Ypde)), zero(eltype(S))),
+  y0::S = fill!(S(undef, num_free_dofs(Ypde)), zero(eltype(S))),
   name::String = "Generic",
   lin::AbstractVector{<:Integer} = Int[],
-) where {T, NRJ <: AbstractEnergyTerm}
+) where {S, NRJ <: AbstractEnergyTerm}
   nvar = length(x0)
   ncon = length(lcon)
+  T = eltype(S)
 
   nvar_pde = num_free_dofs(Ypde)
   nvar_con = num_free_dofs(Ycon)
@@ -203,7 +203,7 @@ function GridapPDENLPModel(
   nnz_jac_k = nparam > 0 ? ncon * nparam : 0
   nnzj = count_nnz_jac(c, Y, Xpde, Ypde, Ycon) + nnz_jac_k
 
-  meta = NLPModelMeta(
+  meta = NLPModelMeta{T, S}(
     nvar,
     x0 = x0,
     lvar = lvar,
@@ -239,7 +239,7 @@ function GridapPDENLPModel(
 end
 
 function GridapPDENLPModel(
-  x0::AbstractVector{T},
+  x0::S,
   f::Function,
   trian::Triangulation,
   quad::CellQuadrature,
@@ -248,20 +248,18 @@ function GridapPDENLPModel(
   Xpde::FESpace,
   Xcon::FESpace,
   c::FEOperator;
-  lvary::AbstractVector = -T(Inf) * ones(T, num_free_dofs(Ypde)), #Union{AbstractVector, Function}
-  uvary::AbstractVector = T(Inf) * ones(T, num_free_dofs(Ypde)), #Union{AbstractVector, Function}
-  lvaru::AbstractVector = -T(Inf) * ones(T, num_free_dofs(Ycon)), #Union{AbstractVector, Function}
-  uvaru::AbstractVector = T(Inf) * ones(T, num_free_dofs(Ycon)), #Union{AbstractVector, Function}
-  lvark::AbstractVector = -T(Inf) *
-                          ones(T, max(length(x0) - num_free_dofs(Ypde) - num_free_dofs(Ycon), 0)),
-  uvark::AbstractVector = T(Inf) *
-                          ones(T, max(length(x0) - num_free_dofs(Ypde) - num_free_dofs(Ycon), 0)),
-  lcon::AbstractVector = zeros(T, num_free_dofs(Ypde)),
-  ucon::AbstractVector = zeros(T, num_free_dofs(Ypde)),
-  y0::AbstractVector = zeros(T, num_free_dofs(Ypde)),
+  lvary::AbstractVector = fill!(S(undef, num_free_dofs(Ypde)), -eltype(S)(Inf)),
+  uvary::AbstractVector = fill!(S(undef, num_free_dofs(Ypde)), eltype(S)(Inf)),
+  lvaru::AbstractVector = fill!(S(undef, num_free_dofs(Ycon)), -eltype(S)(Inf)),
+  uvaru::AbstractVector = fill!(S(undef, num_free_dofs(Ycon)), eltype(S)(Inf)),
+  lvark::AbstractVector = fill!(S(undef, max(length(x0) - num_free_dofs(Ypde) - num_free_dofs(Ycon), 0)), -eltype(S)(Inf)),
+  uvark::AbstractVector = fill!(S(undef, max(length(x0) - num_free_dofs(Ypde) - num_free_dofs(Ycon), 0)), eltype(S)(Inf)),
+  lcon::S = fill!(S(undef, num_free_dofs(Ypde)), zero(eltype(S))),
+  ucon::S = fill!(S(undef, num_free_dofs(Ypde)), zero(eltype(S))),
+  y0::S = fill!(S(undef, num_free_dofs(Ypde)), zero(eltype(S))),
   name::String = "Generic",
   lin::AbstractVector{<:Integer} = Int[],
-) where {T}
+) where {S}
   nvar = length(x0)
   nvar_pde = num_free_dofs(Ypde)
   nvar_con = num_free_dofs(Ycon)

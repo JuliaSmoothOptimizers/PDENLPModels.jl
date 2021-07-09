@@ -58,8 +58,8 @@ Notes:
  - If lcon and ucon are not given, they are assumed zeros.
  - If the type can't be deduced from the argument, it is Float64.
 """
-mutable struct GridapPDENLPModel{NRJ <: AbstractEnergyTerm} <: AbstractNLPModel
-  meta::NLPModelMeta
+mutable struct GridapPDENLPModel{T, S, NRJ <: AbstractEnergyTerm} <: AbstractNLPModel{T, S}
+  meta::NLPModelMeta{T, S}
 
   counters::Counters
 
