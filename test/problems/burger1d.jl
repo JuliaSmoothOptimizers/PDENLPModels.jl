@@ -76,8 +76,6 @@ function burger1d(args...; n = 512, kwargs...)
   return GridapPDENLPModel(xin, f, trian, quad, U, Ycon, V, Xcon, op)
 end
 
-#using LineSearches: BackTracking
-
 function burger1d_test(; udc = false)
   n = 512
   domain = (0, 1)

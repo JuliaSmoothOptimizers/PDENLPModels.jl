@@ -4,7 +4,7 @@ module PDENLPModels
 using ForwardDiff, LinearAlgebra, SparseArrays, FastClosures
 
 #JSO packages
-using NLPModels, LinearOperators
+using NLPModels
 
 #PDE modeling
 using Gridap
