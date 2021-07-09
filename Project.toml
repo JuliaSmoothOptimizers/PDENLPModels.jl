@@ -1,7 +1,7 @@
 name = "PDENLPModels"
 uuid = "80da258d-c172-4540-9646-64f172512520"
 authors = ["tmigot <tangi.migot@gmail.com>"]
-version = "0.1.0"
+version = "0.1.1"
 
 [deps]
 FastClosures = "9aa1b823-49e4-5ca5-8b0f-3971ec8bab6a"
