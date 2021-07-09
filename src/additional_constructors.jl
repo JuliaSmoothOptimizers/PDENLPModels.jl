@@ -140,8 +140,14 @@ function GridapPDENLPModel(
   uvary::AbstractVector = fill!(S(undef, num_free_dofs(Ypde)), eltype(S)(Inf)),
   lvaru::AbstractVector = fill!(S(undef, num_free_dofs(Ycon)), -eltype(S)(Inf)),
   uvaru::AbstractVector = fill!(S(undef, num_free_dofs(Ycon)), eltype(S)(Inf)),
-  lvark::AbstractVector = fill!(S(undef, max(length(x0) - num_free_dofs(Ypde) - num_free_dofs(Ycon), 0)), -eltype(S)(Inf)),
-  uvark::AbstractVector = fill!(S(undef, max(length(x0) - num_free_dofs(Ypde) - num_free_dofs(Ycon), 0)), eltype(S)(Inf)),
+  lvark::AbstractVector = fill!(
+    S(undef, max(length(x0) - num_free_dofs(Ypde) - num_free_dofs(Ycon), 0)),
+    -eltype(S)(Inf),
+  ),
+  uvark::AbstractVector = fill!(
+    S(undef, max(length(x0) - num_free_dofs(Ypde) - num_free_dofs(Ycon), 0)),
+    eltype(S)(Inf),
+  ),
   lcon::S = fill!(S(undef, num_free_dofs(Ypde)), zero(eltype(S))),
   ucon::S = fill!(S(undef, num_free_dofs(Ypde)), zero(eltype(S))),
   y0::S = fill!(S(undef, num_free_dofs(Ypde)), zero(eltype(S))),
@@ -252,8 +258,14 @@ function GridapPDENLPModel(
   uvary::AbstractVector = fill!(S(undef, num_free_dofs(Ypde)), eltype(S)(Inf)),
   lvaru::AbstractVector = fill!(S(undef, num_free_dofs(Ycon)), -eltype(S)(Inf)),
   uvaru::AbstractVector = fill!(S(undef, num_free_dofs(Ycon)), eltype(S)(Inf)),
-  lvark::AbstractVector = fill!(S(undef, max(length(x0) - num_free_dofs(Ypde) - num_free_dofs(Ycon), 0)), -eltype(S)(Inf)),
-  uvark::AbstractVector = fill!(S(undef, max(length(x0) - num_free_dofs(Ypde) - num_free_dofs(Ycon), 0)), eltype(S)(Inf)),
+  lvark::AbstractVector = fill!(
+    S(undef, max(length(x0) - num_free_dofs(Ypde) - num_free_dofs(Ycon), 0)),
+    -eltype(S)(Inf),
+  ),
+  uvark::AbstractVector = fill!(
+    S(undef, max(length(x0) - num_free_dofs(Ypde) - num_free_dofs(Ycon), 0)),
+    eltype(S)(Inf),
+  ),
   lcon::S = fill!(S(undef, num_free_dofs(Ypde)), zero(eltype(S))),
   ucon::S = fill!(S(undef, num_free_dofs(Ypde)), zero(eltype(S))),
   y0::S = fill!(S(undef, num_free_dofs(Ypde)), zero(eltype(S))),
