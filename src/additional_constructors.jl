@@ -279,6 +279,8 @@ function GridapPDENLPModel(
     uvary = uvary,
     lvaru = lvaru,
     uvaru = uvaru,
+    lvark = lvark,
+    uvark = uvark,
     lcon = lcon,
     ucon = ucon,
     y0 = y0,
