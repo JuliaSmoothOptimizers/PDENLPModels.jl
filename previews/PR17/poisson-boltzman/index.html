@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>PDE-constrained optimization · PDENLPModels.jl</title><script data-outdated-warner src="../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.039/juliamono-regular.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.11/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../">PDENLPModels.jl</a></span></div><form class="docs-search" action="../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../">Introduction</a></li><li><a class="tocitem" href="../tore/">Calculus of Variations</a></li><li class="is-active"><a class="tocitem" href>PDE-constrained optimization</a><ul class="internal"><li><a class="tocitem" href="#Poisson-Boltzman-problem"><span>Poisson-Boltzman problem</span></a></li></ul></li><li><a class="tocitem" href="../KrylovforLinearPDE/">Krylov.jl to solve linear PDE</a></li><li><a class="tocitem" href="../reference/">Reference</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>PDE-constrained optimization</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>PDE-constrained optimization</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/JuliaSmoothOptimizers/PDENLPModels.jl/blob/master/docs/src/poisson-boltzman.md" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="PDE-contrained-optimization"><a class="docs-heading-anchor" href="#PDE-contrained-optimization">PDE-contrained optimization</a><a id="PDE-contrained-optimization-1"></a><a class="docs-heading-anchor-permalink" href="#PDE-contrained-optimization" title="Permalink"></a></h1><h2 id="Poisson-Boltzman-problem"><a class="docs-heading-anchor" href="#Poisson-Boltzman-problem">Poisson-Boltzman problem</a><a id="Poisson-Boltzman-problem-1"></a><a class="docs-heading-anchor-permalink" href="#Poisson-Boltzman-problem" title="Permalink"></a></h2><p>We consider here a 2D Poisson-Boltzmann problem</p><p class="math-container">\[\left\lbrace
+\begin{aligned}
+\min\limits_{y \in H_0^1(\Omega), u \in L^2(\Omega) } \  &amp; \frac{1}{2}\int_{\Omega} |y - y_d(x)|^2 + \frac{1}{2}\alpha \int_\Omega |u|^2dx, \\
+\text{ s.t. } &amp; -\Delta y + \sinh{y} = h + u, \quad \text{in } \Omega:=(-1,1)^2,\\
+                  &amp; y = 0, \quad \text{in } \partial\Omega,
+\end{aligned}
+\right.\]</p><p>with the forcing term <span>$h(x_1,x_2)=-\sin(\omega x_1) \sin(\omega x_2)$</span>, <span>$\omega = \pi - \frac{1}{8}$</span>, and target state</p><p class="math-container">\[\begin{aligned}
+    y_d(x) = \begin{cases}
+    10 \quad \text{if } x \in [0.25,0.75]^2, \\
+    5 \quad \text{otherwise}.
+    \end{cases}
+\end{aligned}\]</p><p>The implementation as a <code>GridapPDENLPModel</code> is given as follows.</p><pre><code class="nohighlight">    using Gridap, PDENLPModels
+    #Domain
+    n = 100
+    model = CartesianDiscreteModel((-1,1,-1,1), (n,n))
+
+    #Definition of the spaces:
+    Xpde = TestFESpace(
+      reffe=:Lagrangian, 
+      conformity=:H1, 
+      valuetype=Float64, 
+      model=model, 
+      order=1, 
+      dirichlet_tags=&quot;boundary&quot;
+    )
+    Ypde = TrialFESpace(Xpde, 0.0)
+    Xcon = TestFESpace(
+      reffe=:Lagrangian, 
+      order=1, 
+      valuetype=Float64,
+      conformity=:L2, 
+      model=model
+    )
+    Ycon = TrialFESpace(Xcon)
+
+    #Integration machinery
+    trian = Triangulation(model)
+    degree = 1
+    quad = CellQuadrature(trian,degree)
+
+    #Objective function:
+    yd(x) = min(x[1]-0.25, 0.75-x[1],x[2]-0.25, 0.75-x[2])&gt;=0. ? 10. : 5.
+    function f(yu)
+        y, u = yu
+        0.5 * (yd - y) * (yd - y) + 0.5 * 1e-4 * u * u
+    end
+
+    #Definition of the constraint operator
+    ω = π - 1/8
+    h(x) = - sin(ω*x[1])*sin(ω*x[2])
+    function res(yu, v)
+     y, u = yu
+     ∇(v) ⊙ ∇(y) + operate(sinh, y)*v - u*v - v * h
+    end
+    t_Ω = FETerm(res,trian,quad)
+    op = FEOperator(Y, Xpde, t_Ω)
+
+    Y = MultiFieldFESpace([Ypde, Ycon])
+    xin = zeros(Gridap.FESpaces.num_free_dofs(Y))
+    nlp = GridapPDENLPModel(xin, f, trian, quad, Ypde, Ycon, Xpde, Xcon, op)</code></pre><p>Then, one can solve the problem with Ipopt via <a href="https://github.com/JuliaSmoothOptimizers/NLPModelsIpopt.jl">NLPModelsIpopt.jl</a> and plot the solution as a VTK file.</p><pre><code class="nohighlight">stats = ipopt(nlp, print_level = 0)</code></pre><p>Switching again the discrete solution as a <code>FEFunction</code> the result can written as a VTK-file using Gridap&#39;s facilities.</p><pre><code class="nohighlight">yfv = stats.solution[1:Gridap.FESpaces.num_free_dofs(nlp.Ypde)]
+yh  = FEFunction(nlp.Ypde, yfv)
+ufv = stats.solution[1+Gridap.FESpaces.num_free_dofs(nlp.Ypde):end]
+uh  = FEFunction(nlp.Ycon, ufv)
+writevtk(nlp.tnrj.trian,&quot;results&quot;,cellfields=[&quot;uh&quot;=&gt;uh, &quot;yh&quot;=&gt;yh])</code></pre><p>Finally, the solution is obtained using any software reading VTK, e.g. Paraview.</p><p><img src="../fig/2dPBy.png" alt="Solution of P-B equation"/><img src="../fig/2dPBu.png" alt="Control of P-B equation"/></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../tore/">« Calculus of Variations</a><a class="docs-footer-nextpage" href="../KrylovforLinearPDE/">Krylov.jl to solve linear PDE »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.3 on <span class="colophon-date" title="Friday 9 July 2021 12:57">Friday 9 July 2021</span>. Using Julia version 1.6.1.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
