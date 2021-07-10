@@ -1,8 +1,5 @@
-using LinearAlgebra, SparseArrays
 #This package
-using Gridap
-#PDENLPModels
-using PDENLPModels
+using Gridap, PDENLPModels
 using PDENLPModels:
   FEFunctionType,
   _split_vector,
@@ -13,7 +10,10 @@ using PDENLPModels:
   _compute_gradient!,
   _compute_hess_coo
 #Testing
-using NLPModels, NLPModelsIpopt, NLPModelsTest, Test
+using NLPModels, NLPModelsIpopt, NLPModelsTest, Random, Test
+using LinearAlgebra, SparseArrays
+
+Random.seed!(1998)
 
 const pde_problems = [
   "BURGER1D",

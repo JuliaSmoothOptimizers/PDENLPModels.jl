@@ -82,15 +82,6 @@ function basicunconstrained_test(; udc = false)
   @test obj(nlp, sol) <= 1 / n
   @test norm(grad(nlp, sol)) <= 1 / n
 
-  #=
-  # lbfgs solves the problem with too much precision.
-  @time _t = lbfgs(nlp, x = x1, rtol = 0.0, atol = 1e-10) #lbfgs modifies the initial point !!
-  nn  = Gridap.FESpaces.num_free_dofs(Ypde)
-  @test norm(_t.solution[1:nn] - soly, Inf) <= 1/n
-  @test obj(nlp, _t.solution) <= 1/n
-  @test norm(_t.solution[nn + 1: nlp.meta.nvar] - solu, Inf) <= sqrt(1/n)
-  =#
-
   if udc
     println("derivatives check. This may take approx. 5 minutes.")
     #Check derivatives using NLPModels tools:
