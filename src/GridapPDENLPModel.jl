@@ -108,26 +108,6 @@ function grad!(nlp::GridapPDENLPModel, x::AbstractVector, g::AbstractVector)
   return _compute_gradient!(g, nlp.tnrj, κ, yu, nlp.Y, nlp.X)
 end
 
-function hess_coord(nlp::AbstractNLPModel, x::AbstractVector; obj_weight::Real = one(eltype(x)))
-  @lencheck nlp.meta.nvar x
-  vals = zeros(eltype(x), nlp.meta.nnzh) # Vector{eltype(x)}(undef, nlp.meta.nnzh)
-  return hess_coord!(nlp, x, vals; obj_weight = obj_weight)
-end
-
-function jac_coord(nlp::AbstractNLPModel, x::AbstractVector)
-  @lencheck nlp.meta.nvar x
-  vals = zeros(eltype(x), nlp.meta.nnzj) # Vector{eltype(x)}(undef, nlp.meta.nnzh)
-  return jac_coord!(nlp, x, vals)
-end
-
-#=
-function hess_coord(nlp::AbstractNLPModel, x::AbstractVector, y::AbstractVector; obj_weight::Real = one(eltype(x)))
-  @lencheck nlp.meta.nvar x
-  vals = zeros(eltype(x), nlp.meta.nnzh) # Vector{eltype(x)}(undef, nlp.meta.nnzh)
-  return hess_coord!(nlp, x, y, vals; obj_weight = obj_weight)
-end
-=#
-
 function hess_coord!(
   nlp::GridapPDENLPModel,
   x::AbstractVector{T},
@@ -143,6 +123,7 @@ function hess_coord!(
 
   nnz_hess_k = get_nnz_hess_k(nlp.tnrj, nlp.meta.nvar, nlp.nparam)
   vals[1:nnz_hess_k] .= _compute_hess_k_vals(nlp, nlp.tnrj, κ, xyu)
+  nini = nnz_hess_k
 
   if typeof(nlp.tnrj) != NoFETerm
     if nlp.nparam > 0
@@ -158,6 +139,11 @@ function hess_coord!(
     Gridap.FESpaces.assemble_matrix!(A, assem, matdata)
     _, _, v = findnz(tril(A))
     vals[nnz_hess_k+1:nnz_hess_k+length(v)] .= v
+    nini += length(v)
+  end
+
+  if nini < nlp.meta.nnzh
+    vals[nini+1:end] .= zero(T)
   end
 
   #= DOESN'T WORK?
@@ -557,7 +543,7 @@ function _jac_coord!(
   )
 
   if nlp.meta.nnzj != nini
-    @warn "hess_coord!: Size of vals and number of assignements didn't match $(nlp.meta.nnzh) vs $(nini)"
+    @warn "jac_coord!: number of assignements didn't match $(nlp.meta.nnzj) vs $(nini)"
   end
   return vals
 end
