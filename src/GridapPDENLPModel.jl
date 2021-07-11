@@ -80,6 +80,7 @@ mutable struct GridapPDENLPModel{T, S, NRJ <: AbstractEnergyTerm} <: AbstractNLP
   nvar_pde::Int #number of dofs in the solution functions
   nvar_con::Int #number of dofs in the control functions
   nparam::Int
+  nnzh_obj::Int
 end
 
 include("bounds_function.jl")
@@ -263,16 +264,14 @@ function hess_coord!(
   @lencheck nlp.meta.nnzh vals
   increment!(nlp, :neval_hess)
 
-  _, _, nnzh_obj = _compute_hess_structure(nlp.tnrj, nlp.Y, nlp.X, nlp.meta.x0, nlp.nparam)
   hess_coord!(nlp, x, vals, obj_weight = obj_weight) # @view vals[1:nnzh_obj]
   decrement!(nlp, :neval_hess)
-  nini = nnzh_obj
+  nini = nlp.nnzh_obj
 
-  κ, xyu = x[1:(nlp.nparam)], x[(nlp.nparam + 1):(nlp.meta.nvar)]
-  yu = FEFunction(nlp.Y, xyu)
+  p, n = nlp.nparam, nlp.meta.nvar
+  κ, xyu = x[1:p], x[(p + 1):n]
 
-  if nlp.nparam > 0
-    p, n = nlp.nparam, nlp.meta.nvar
+  if p > 0
     nnz_hess_k = Int(p * (p + 1) / 2) + (n - p) * p
     function ℓ(x, λ)
       c = similar(x, nlp.meta.ncon)
@@ -311,7 +310,7 @@ function hess_coord!(
     lag_hess = Gridap.FESpaces._hessian(x -> split_res(x, λf), xh, luh)
     matdata = Gridap.FESpaces.collect_cell_matrix(lag_hess)
     assem = SparseMatrixAssembler(nlp.Y, nlp.X)
-    A = Gridap.FESpaces.allocate_matrix(assem, matdata)
+    A = Gridap.FESpaces.allocate_matrix(assem, matdata) # use a view of vals
     Gridap.FESpaces.assemble_matrix!(A, assem, matdata)
     _, _, v = findnz(tril(A))
     vals[nini+1:end] .= v

@@ -55,6 +55,7 @@ function GridapPDENLPModel(
     nvar_pde,
     nvar_con,
     nparam,
+    nnzh,
   )
 end
 
@@ -200,6 +201,7 @@ function GridapPDENLPModel(
 
   # nnzh = get_nnzh(tnrj, c, Y, Ypde, X, nparam, nvar) #nvar * (nvar + 1) / 2
   rows, cols, nnzh = _compute_hess_structure(tnrj, c, Y, Ypde, Ycon, X, x0, nparam)
+  _, _, nnzh_obj = _compute_hess_structure(tnrj, Y, X, x0, nparam)
 
   if typeof(c) <: AffineFEOperator #Here we expect ncon = nvar_pde
     nln = Int[]
@@ -242,6 +244,7 @@ function GridapPDENLPModel(
     nvar_pde,
     nvar_con,
     nparam,
+    nnzh_obj,
   )
 end
 
