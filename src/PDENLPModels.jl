@@ -11,11 +11,11 @@ using Gridap
 
 function Gridap.Arrays.testargs(k::Gridap.Arrays.PosNegReindex,i::Integer)
   # @check length(k.values_pos) !=0 || length(k.values_neg) != 0 "This map has empty domain"
-  if !(eltype(k.values_pos) == eltype(k.values_neg))
+  #if !(eltype(k.values_pos) == eltype(k.values_neg))
     #@show typeof(k.values_pos), typeof(k.values_neg)
     #@show one(i)
     #@show eltype(k.values_pos), eltype(k.values_neg)
-  end
+  #end
   # @check eltype(k.values_pos) == eltype(k.values_neg) "This map is type-instable"
   length(k.values_pos) !=0 ? (one(i),) : (-one(i))
 end
@@ -63,7 +63,7 @@ _fespace_to_multifieldfespace(::VoidFESpace) = VoidMultiFieldFESpace()
 _fespace_to_multifieldfespace(Y::FESpace) = MultiFieldFESpace([Y])
 
 #Additional modeling structures for the objective function.
-include("hessian_functions.jl")
+# include("hessian_functions.jl")
 include("additional_obj_terms.jl")
 #Set of practical functions: _split_FEFunction, _split_vector
 include("util_functions.jl")

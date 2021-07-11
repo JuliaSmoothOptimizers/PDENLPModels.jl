@@ -4,6 +4,7 @@ This is a modified version of
 from Gridap.FESpaces.
 The motivation is to avoid the use of the yet unknown values.
 =#
+#=
 function fill_jac_coo_symbolic!(
   I,
   J,
@@ -43,6 +44,7 @@ function fill_jac_coo_symbolic!(
   end
   nini
 end
+=#
 
 #=GRIDAPv15
 function allocate_coo_jac!(
@@ -94,6 +96,7 @@ end
 =#
 
 #=
+#=
 This is a modified version of
 `function count_matrix_nnz_coo(a::GenericSparseMatrixAssembler,matdata) end`
 from Gridap.FESpaces.
@@ -127,6 +130,7 @@ function count_nnz_coo_short(a::Gridap.FESpaces.GenericSparseMatrixAssembler, ce
   end
   n
 end
+=#
 
 include("test_autodiff.jl")
 
@@ -328,6 +332,7 @@ function _from_terms_to_jacobian_vals!(
   vals[nfirst+1:nini] .= v
   return nini
 end
+
 #=GRIDAPv15
 function _from_terms_to_jacobian_vals!(
   op::Gridap.FESpaces.FEOperatorFromWeakForm,
@@ -381,6 +386,7 @@ Adaptation of
 `function assemble_matrix_add!(mat,a::GenericSparseMatrixAssembler,matdata) end`
 from Gridap.FESpaces
 =#
+#=
 function assemble_jac_vals!(mat, a::Gridap.FESpaces.GenericSparseMatrixAssembler, matdata; n = 0)
   nini = n
   for (cellmat_rc, cellidsrows, cellidscols) in zip(matdata...)
@@ -454,6 +460,7 @@ import Gridap.FESpaces._get_block_layout
 function _get_block_layout(a::AbstractArray)
   nothing
 end
+=#
 
 #=
 function _jac_from_term_to_terms!(

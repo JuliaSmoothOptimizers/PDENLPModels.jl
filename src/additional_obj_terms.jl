@@ -3,19 +3,6 @@ abstract type AbstractEnergyTerm end
 """
 Return the integral of the objective function
 
-`_obj_cell_integral(:: AbstractEnergyTerm, :: GenericCellField,  :: AbstractVector)`
-
-x is a vector of GenericCellField, for instance resulting from
-`yuh = CellField(Y, cell_yu)`.
-
-See also: `MixedEnergyFETerm`, `EnergyFETerm`, `NoFETerm`, `_obj_integral`,
-`_compute_gradient_k`, `_compute_hess_coo`, `_compute_hess_k_coo`
-"""
-function _obj_cell_integral end
-
-"""
-Return the integral of the objective function
-
 `_obj_integral(:: AbstractEnergyTerm, :: FEFunctionType, :: AbstractVector)`
 
 See also: `MixedEnergyFETerm`, `EnergyFETerm`, `NoFETerm`,
@@ -44,6 +31,7 @@ See also: `MixedEnergyFETerm`, `EnergyFETerm`, `NoFETerm`, `_obj_integral`,
 """
 function _compute_gradient! end
 
+#=
 """
 Return the hessian w.r.t. yu of the objective function in coo format.
 
@@ -53,6 +41,7 @@ See also: `MixedEnergyFETerm`, `EnergyFETerm`, `NoFETerm`, `_obj_integral`,
 `_obj_cell_integral`, `_compute_gradient_k`, `_compute_hess_k_coo`
 """
 function _compute_hess_coo end
+=#
 
 """
 Return the values of the hessian w.r.t. κ of the objective function.
@@ -90,7 +79,6 @@ function NoFETerm()
 end
 
 _obj_integral(term::NoFETerm, κ::AbstractVector, x::FEFunctionType) = term.f(κ)
-_obj_cell_integral(term::NoFETerm, κ::AbstractVector, yuh::CellFieldType) = term.f(κ)
 
 function _compute_gradient!(
   g::AbstractVector,
@@ -115,6 +103,7 @@ function _compute_gradient_k(term::NoFETerm, κ::AbstractVector, yu::FEFunctionT
   return ForwardDiff.gradient(term.f, κ)
 end
 
+#=
 function _compute_hess_coo(
   term::NoFETerm,
   κ::AbstractVector{T},
@@ -124,6 +113,7 @@ function _compute_hess_coo(
 ) where {T}
   return (Int[], Int[], T[])
 end
+=#
 
 function _compute_hess_k_vals(
   nlp::AbstractNLPModel,
@@ -164,15 +154,6 @@ function _obj_integral(term::EnergyFETerm, κ::AbstractVector, x::FEFunctionType
   return term.f(x) # integrate(term.f(x), term.quad)
 end
 
-#= REMOVE
-function _obj_cell_integral(term::EnergyFETerm, κ::AbstractVector, yuh::CellFieldType)
-  @lencheck 0 κ
-  _yuh = Gridap.FESpaces.restrict(yuh, term.trian)
-
-  return integrate(term.f(_yuh), term.quad)
-end
-=#
-
 function _compute_gradient!(
   g::AbstractVector,
   tnrj::EnergyFETerm,
@@ -185,14 +166,6 @@ function _compute_gradient!(
 
   cell_yu = Gridap.FESpaces.get_cell_dof_values(yu)
   cell_id_yu = Gridap.Arrays.IdentityVector(length(cell_yu))
-#=
-  function _cell_obj_yu(cell)
-    yuh = CellField(Y, cell)
-    _obj_cell_integral(tnrj, κ, yuh)
-  end
-=#
-  #Compute the gradient with AD
-  #cell_r_yu = Gridap.Arrays.autodiff_array_gradient(_cell_obj_yu, cell_yu, cell_id_yu)
 
   cell_r_yu = get_array(gradient(tnrj.f, yu))
   #Put the result in the format expected by Gridap.FESpaces.assemble_matrix
@@ -204,11 +177,14 @@ function _compute_gradient!(
   return g
 end
 
+#=
 function _compute_gradient_k(term::EnergyFETerm, κ::AbstractVector{T}, yu::FEFunctionType) where {T}
   @lencheck 0 κ
   return T[]
 end
+=#
 
+#=
 function _compute_hess_coo(
   tnrj::EnergyFETerm,
   κ::AbstractVector,
@@ -220,16 +196,6 @@ function _compute_hess_coo(
 
   cell_yu = Gridap.FESpaces.get_cell_dof_values(yu)
   cell_id_yu = Gridap.Arrays.IdentityVector(length(cell_yu))
-
-  #=
-  function _cell_obj_yu(cell)
-    yuh = CellField(Y, cell)
-    _obj_cell_integral(tnrj, κ, yuh)
-  end
-
-  #Compute the hessian with AD
-  cell_r_yu = Gridap.Arrays.autodiff_array_hessian(_cell_obj_yu, cell_yu, cell_id_yu)
-  =#
   cell_r_yu = get_array(hessian(tnrj.f, yu))
   #Assemble the matrix in the "good" space
   assem = Gridap.FESpaces.SparseMatrixAssembler(Y, X)
@@ -237,6 +203,7 @@ function _compute_hess_coo(
 
   return (I, J, V)
 end
+=#
 
 function _compute_hess_k_vals(
   nlp::AbstractNLPModel,
@@ -301,31 +268,6 @@ function _obj_integral(term::MixedEnergyFETerm, κ::AbstractVector, x::FEFunctio
   return term.f(κ, x) # integrate(term.f(κ, x), term.quad)
 end
 
-#= REMOVE
-function _obj_cell_integral(term::MixedEnergyFETerm, κ::AbstractVector, yuh::CellFieldType)
-  @lencheck term.nparam κ
-  _yuh = Gridap.FESpaces.restrict(yuh, term.trian)
-  #=
-  kf = interpolate_everywhere(term.ispace, κ)
-  cell_kf = Gridap.FESpaces.get_cell_dof_values(kf)
-  kfu    = CellField(term.ispace, cell_kf)
-  _kfu = Gridap.FESpaces.restrict(kfu, term.trian)
-
-  return integrate(term.f(_kfu, _yuh), term.quad)=#
-  return integrate(term.f(κ, _yuh), term.quad)
-end
-=#
-
-#=
-function _obj_cell_integral(term::MixedEnergyFETerm, κ::CellFieldType, yuh::CellFieldType)
-
-    _yuh = Gridap.FESpaces.restrict(yuh, term.trian)
-    _κ = Gridap.FESpaces.restrict(κ, term.trian)
-
-    return integrate(term.f(_κ, _yuh), term.quad)
-end
-=#
-
 function _compute_gradient!(
   g::AbstractVector,
   term::MixedEnergyFETerm,
@@ -341,15 +283,6 @@ function _compute_gradient!(
   cell_yu = Gridap.FESpaces.get_cell_dof_values(yu)
   cell_id_yu = Gridap.Arrays.IdentityVector(length(cell_yu))
 
-  #=
-  function _cell_obj_yu(cell)
-    yuh = CellField(Y, cell)
-    _obj_cell_integral(term, κ, yuh)
-  end
-
-  #Compute the gradient with AD
-  cell_r_yu = Gridap.Arrays.autodiff_array_gradient(_cell_obj_yu, cell_yu, cell_id_yu)
-  =#
   cell_r_yu = get_array(gradient(x -> term.f(κ, x), yu))
   #Put the result in the format expected by Gridap.FESpaces.assemble_matrix
   vecdata_yu = [[cell_r_yu], [cell_id_yu]] #TODO would replace by Tuple work?
@@ -368,6 +301,7 @@ function _compute_gradient_k(term::MixedEnergyFETerm, κ::AbstractVector, yu::FE
   return ForwardDiff.gradient(intf, κ)
 end
 
+#=
 function _compute_hess_coo(
   term::MixedEnergyFETerm,
   κ::AbstractVector,
@@ -378,15 +312,6 @@ function _compute_hess_coo(
   cell_yu = Gridap.FESpaces.get_cell_dof_values(yu)
   cell_id_yu = Gridap.Arrays.IdentityVector(length(cell_yu))
 
-  #=
-  function _cell_obj_yu(cell)
-    yuh = CellField(Y, cell)
-    _obj_cell_integral(term, κ, yuh)
-  end
-
-  #Compute the hessian with AD
-  cell_r_yu = Gridap.Arrays.autodiff_array_hessian(_cell_obj_yu, cell_yu, cell_id_yu)
-  =#
   cell_r_yu = get_array(hessian(x -> term.f(κ, x), yu))
   #Assemble the matrix in the "good" space
   assem = Gridap.FESpaces.SparseMatrixAssembler(Y, X)
@@ -394,6 +319,7 @@ function _compute_hess_coo(
 
   return (I, J, V)
 end
+=#
 
 function _compute_hess_k_vals(
   nlp::AbstractNLPModel,
@@ -453,6 +379,7 @@ function _compute_hess_k_vals(
   return vals
 end
 
+#=
 @doc raw"""
 FETerm modeling the objective function of the optimization problem with
 functional and discrete unknowns, describe as a norm and a regularizer.
@@ -521,3 +448,4 @@ function _compute_hess_coo end
 function _compute_hess_k_coo end
 
 function _compute_hess_k_vals end
+=#
