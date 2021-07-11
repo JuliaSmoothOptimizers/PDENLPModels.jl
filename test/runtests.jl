@@ -23,7 +23,7 @@ const pde_problems = [
   "DYNAMICSIR",
   "BASICUNCONSTRAINED",
   "PENALIZEDPOISSON",
-  #"INCOMPRESSIBLENAVIERSTOKES", #too slow
+  #"INCOMPRESSIBLENAVIERSTOKES", #too slow (tested locally only)
   "POISSONMIXED",
   "POISSONPARAM",
   "POISSONMIXED2",
@@ -38,7 +38,7 @@ end
 n = 3
 #Tanj: for each problem there is a lowercase(problem) function that returns a GridapPDENLPModel
 #++ would be to also have a lowercase(problem)_test that test the problem with the exact solution.
-local_test = false
+local_test = false # tested locally only
 
 @testset "NLP tests" begin
   for problem in pde_problems
@@ -46,19 +46,6 @@ local_test = false
     @time nlp = eval(Meta.parse("$(lowercase(problem))(n=$(n))"))
     @testset "Test problem scenario" begin
       local_test || eval(Meta.parse("$(lowercase(problem))_test()"))
-      x = rand(nlp.meta.nvar)
-      obj(nlp, x)
-      grad(nlp, x)
-      hess_structure(nlp)
-      hess_coord(nlp, x)
-      hess(nlp, x)
-      if nlp.meta.ncon > 0
-        y = rand(nlp.meta.ncon)
-        cons(nlp, x)
-        jac(nlp, x)
-        hess(nlp, x, y)
-        hess_coord(nlp, x, y)
-      end
     end
     @testset "Problem $(nlp.meta.name)" begin
       @info "$(problem) consistency"
