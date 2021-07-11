@@ -64,6 +64,9 @@ function torebrachistochrone_test()
   φs = stats.solution[1:nn]
   θs = stats.solution[(nn + 1):(2 * nn)]
 
+  a = 1
+  c = 3
+
   xs = (c .+ a * cos.(φs)) .* cos.(θs)
   ys = (c .+ a * cos.(φs)) .* sin.(θs)
   zs = a * sin.(φs)
