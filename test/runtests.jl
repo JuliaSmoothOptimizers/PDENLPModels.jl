@@ -15,37 +15,57 @@ using LinearAlgebra, SparseArrays
 
 Random.seed!(1998)
 
-const pde_problems = [
-  "BURGER1D",
-  "CELLINCREASE",
-  "SIS",
-  "CONTROLSIR",
-  "DYNAMICSIR",
-  "BASICUNCONSTRAINED",
-  "PENALIZEDPOISSON",
-  #"INCOMPRESSIBLENAVIERSTOKES", #too slow (tested locally only)
-  "POISSONMIXED",
-  "POISSONPARAM",
-  "POISSONMIXED2",
-  "TOREBRACHISTOCHRONE",
-  "CONTROLELASTICMEMBRANE",
-]
-
-for problem in pde_problems
-  include("problems/$(lowercase(problem)).jl")
-end
-
 n = 3
 #Tanj: for each problem there is a lowercase(problem) function that returns a GridapPDENLPModel
 #++ would be to also have a lowercase(problem)_test that test the problem with the exact solution.
 local_test = false # tested locally only
+
+pde_problems = if local_test
+  [
+    "BURGER1D",
+    "CELLINCREASE",
+    "SIS",
+    "CONTROLSIR",
+    "DYNAMICSIR",
+    "BASICUNCONSTRAINED",
+    "PENALIZEDPOISSON",
+    #"INCOMPRESSIBLENAVIERSTOKES", #too slow (tested locally only)
+    "POISSONMIXED",
+    "POISSONPARAM",
+    "POISSONMIXED2",
+    "TOREBRACHISTOCHRONE",
+    "CONTROLELASTICMEMBRANE",
+  ]
+else
+  [
+    "BURGER1D",
+    # "CELLINCREASE",
+    # "SIS",
+    "CONTROLSIR", # similar SIS, CELLINCREASE, DYNAMICSIR
+    # "DYNAMICSIR",
+    # "BASICUNCONSTRAINED", # simplified PENALIZEDPOISSON
+    "PENALIZEDPOISSON",
+    #"INCOMPRESSIBLENAVIERSTOKES", #too slow (tested locally only)
+    "POISSONMIXED",
+    "POISSONPARAM",
+    # "POISSONMIXED2", # similar POISSONMIXED
+    "TOREBRACHISTOCHRONE",
+    "CONTROLELASTICMEMBRANE",
+  ]
+end
+
+for problem in pde_problems
+  include("problems/$(lowercase(problem)).jl")
+end
 
 @testset "NLP tests" begin
   for problem in pde_problems
     @info "$(problem)"
     @time nlp = eval(Meta.parse("$(lowercase(problem))(n=$(n))"))
     @testset "Test problem scenario" begin
-      local_test || eval(Meta.parse("$(lowercase(problem))_test()"))
+      if local_test 
+        @time eval(Meta.parse("$(lowercase(problem))_test()"))
+      end
     end
     @testset "Problem $(nlp.meta.name)" begin
       @info "$(problem) consistency"
