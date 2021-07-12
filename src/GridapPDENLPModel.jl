@@ -139,12 +139,12 @@ function hess_coord!(
     A = Gridap.FESpaces.allocate_matrix(assem, matdata)
     Gridap.FESpaces.assemble_matrix!(A, assem, matdata)
     _, _, v = findnz(tril(A))
-    vals[nnz_hess_k+1:nnz_hess_k+length(v)] .= v
+    vals[(nnz_hess_k + 1):(nnz_hess_k + length(v))] .= v
     nini += length(v)
   end
 
   if nini < nlp.meta.nnzh
-    vals[nini+1:end] .= zero(T)
+    vals[(nini + 1):end] .= zero(T)
   end
 
   vals .*= obj_weight
@@ -184,7 +184,16 @@ function hess_structure!(
 
   # we need in-place _compute_hess_structure functions with the right type
   if nlp.meta.ncon > 0
-    rrows, ccols, _ = _compute_hess_structure(nlp.tnrj, nlp.op, nlp.Y, nlp.Ypde, nlp.Ycon, nlp.X, nlp.meta.x0, nlp.nparam)
+    rrows, ccols, _ = _compute_hess_structure(
+      nlp.tnrj,
+      nlp.op,
+      nlp.Y,
+      nlp.Ypde,
+      nlp.Ycon,
+      nlp.X,
+      nlp.meta.x0,
+      nlp.nparam,
+    )
   else
     rrows, ccols, _ = _compute_hess_structure(nlp.tnrj, nlp.Y, nlp.X, nlp.meta.x0, nlp.nparam)
   end
@@ -231,7 +240,7 @@ function hess_coord!(
     # λ = zeros(Gridap.FESpaces.num_free_dofs(nlp.Ypde))
     λf = FEFunction(nlp.Xpde, λ) # or Ypde
     xh = FEFunction(nlp.Y, x)
-    
+
     function split_res(x, λ)
       if typeof(nlp.Ycon) <: VoidFESpace
         if nlp.nparam > 0
@@ -256,7 +265,7 @@ function hess_coord!(
     A = Gridap.FESpaces.allocate_matrix(assem, matdata) # use a view of vals
     Gridap.FESpaces.assemble_matrix!(A, assem, matdata)
     _, _, v = findnz(tril(A))
-    vals[nini+1:end] .= v
+    vals[(nini + 1):end] .= v
   end
 
   return vals
@@ -379,11 +388,11 @@ function jac_structure!(
   @lencheck nlp.meta.nnzj rows cols
   nini = nlp.nparam > 0 ? jac_k_structure!(nlp, rows, cols) : 0
   _jac_structure!(
-    nlp.op, 
+    nlp.op,
     nlp,
-    view(rows, (nini+1):nlp.meta.nnzj),
-    view(cols, (nini+1):nlp.meta.nnzj),
-    )
+    view(rows, (nini + 1):(nlp.meta.nnzj)),
+    view(cols, (nini + 1):(nlp.meta.nnzj)),
+  )
   return rows, cols
 end
 

@@ -14,7 +14,13 @@ function burger1d(args...; n = 512, kwargs...)
   order = 1
   valuetype = Float64
   reffe = ReferenceFE(lagrangian, valuetype, 1)
-  V = TestFESpace(model, reffe; conformity = :H1, labels = labels, dirichlet_tags = ["diri0", "diri1"])
+  V = TestFESpace(
+    model,
+    reffe;
+    conformity = :H1,
+    labels = labels,
+    dirichlet_tags = ["diri0", "diri1"],
+  )
 
   h(x) = 2 * (nu + x[1]^3)
   uD0 = VectorValue(0)
@@ -22,7 +28,7 @@ function burger1d(args...; n = 512, kwargs...)
   U = TrialFESpace(V, [uD0, uD1])
 
   conv(u, ∇u) = (∇u ⋅ one(∇u)) ⊙ u
-  c(u, v) = v⊙(conv∘(u,∇(u)))
+  c(u, v) = v ⊙ (conv ∘ (u, ∇(u)))
   nu = 0.08
 
   # Now we move to the optimization:
@@ -33,11 +39,11 @@ function burger1d(args...; n = 512, kwargs...)
   f(u, z) = 0.5 * (ud - u) * (ud - u) + 0.5 * α * z * z
   function f(yu) #:: Union{Gridap.MultiField.MultiFieldFEFunction, Gridap.CellData.GenericCellField}
     u, z = yu
-    ∫( f(u, z) )dΩ
+    ∫(f(u, z))dΩ
   end
 
   function res(y, u, v) #u is the solution of the PDE and z the control
-    ∫( -nu * (∇(v) ⊙ ∇(y)) + c(y, v) - v * u - v * h )dΩ
+    ∫(-nu * (∇(v) ⊙ ∇(y)) + c(y, v) - v * u - v * h)dΩ
   end
   op = FEOperator(res, U, V)
 
@@ -62,8 +68,13 @@ function burger1d_test(; udc = false)
   order = 1
   valuetype = Float64
   reffe = ReferenceFE(lagrangian, valuetype, order)
-  V = TestFESpace(model, reffe; conformity = :H1, labels = labels, dirichlet_tags = ["diri0", "diri1"])
-
+  V = TestFESpace(
+    model,
+    reffe;
+    conformity = :H1,
+    labels = labels,
+    dirichlet_tags = ["diri0", "diri1"],
+  )
 
   h(x) = 2 * (nu + x[1]^3)
   uD0 = VectorValue(0)
@@ -71,8 +82,8 @@ function burger1d_test(; udc = false)
   U = TrialFESpace(V, [uD0, uD1])
 
   conv(u, ∇u) = (∇u ⋅ one(∇u)) ⊙ u
-  dconv(du, ∇du, u, ∇u) = conv∘(u, ∇du) + conv∘(du, ∇u)
-  c(u, v) = v ⊙ conv∘(u, ∇(u))
+  dconv(du, ∇du, u, ∇u) = conv ∘ (u, ∇du) + conv ∘ (du, ∇u)
+  c(u, v) = v ⊙ conv ∘ (u, ∇(u))
   nu = 0.08
 
   trian = Triangulation(model)
@@ -82,7 +93,7 @@ function burger1d_test(; udc = false)
 
   function res(y, v) #u is the solution of the PDE and z the control
     z(x) = 0.5
-    ∫( -nu * (∇(v) ⊙ ∇(y)) + c(y, v) - v * z - v * h )dΩ
+    ∫(-nu * (∇(v) ⊙ ∇(y)) + c(y, v) - v * z - v * h)dΩ
   end
   op_pde = FEOperator(res, U, V)
 

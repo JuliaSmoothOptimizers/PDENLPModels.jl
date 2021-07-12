@@ -28,12 +28,12 @@ function dynamicsir(args...; x0 = [1, 2], n = 10, T = 1, kwargs...)
   end
   =#
   conv(u, ∇u) = (∇u ⋅ one(∇u)) ⊙ u
-  c(u, v) = conv∘(v, ∇(u))
+  c(u, v) = conv ∘ (v, ∇(u))
   function res(y, u, v)
     I, S = y
     bf, cf = u
     p, q = v
-    ∫( c(I, p) + c(S, q) -p * (bf * S * I - cf * I) + q * bf * S * I )dΩ
+    ∫(c(I, p) + c(S, q) - p * (bf * S * I - cf * I) + q * bf * S * I)dΩ
   end
 
   trian = Triangulation(model)
@@ -56,7 +56,7 @@ function dynamicsir(args...; x0 = [1, 2], n = 10, T = 1, kwargs...)
   #we need to be smart to avoid divisions
   function f(yu) #:: Union{Gridap.MultiField.MultiFieldFEFunction, Gridap.CellData.GenericCellField}
     I, S, bf, cf = yu
-    ∫( 0.5 * ((bf ⋅ w0) - w1) ⋅ ((bf ⋅ w0) - w1) + 0.5 * ((cf ⋅ w0) - w2) ⋅ ((cf ⋅ w0) - w2) )dΩ
+    ∫(0.5 * ((bf ⋅ w0) - w1) ⋅ ((bf ⋅ w0) - w1) + 0.5 * ((cf ⋅ w0) - w2) ⋅ ((cf ⋅ w0) - w2))dΩ
   end
 
   ndofs = Gridap.FESpaces.num_free_dofs(Ypde) + Gridap.FESpaces.num_free_dofs(Ycon)
