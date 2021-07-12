@@ -16,50 +16,43 @@
     model = CartesianDiscreteModel((-1,1,-1,1), (n,n))
 
     #Definition of the spaces:
+    order = 1
+    valuetype = Float64
+    reffe = ReferenceFE(lagrangian, valuetype, order)
     Xpde = TestFESpace(
-      reffe=:Lagrangian, 
-      conformity=:H1, 
-      valuetype=Float64, 
-      model=model, 
-      order=1, 
-      dirichlet_tags=&quot;boundary&quot;
+      model,
+      reffe;
+      conformity = :H1,
+      dirichlet_tags=&quot;boundary&quot;,
     )
     Ypde = TrialFESpace(Xpde, 0.0)
-    Xcon = TestFESpace(
-      reffe=:Lagrangian, 
-      order=1, 
-      valuetype=Float64,
-      conformity=:L2, 
-      model=model
-    )
+    Xcon = TestFESpace(model, reffe; conformity = :L2)
     Ycon = TrialFESpace(Xcon)
 
     #Integration machinery
     trian = Triangulation(model)
     degree = 1
-    quad = CellQuadrature(trian,degree)
+    dΩ = Measure(trian,degree)
 
     #Objective function:
     yd(x) = min(x[1]-0.25, 0.75-x[1],x[2]-0.25, 0.75-x[2])&gt;=0. ? 10. : 5.
     function f(yu)
         y, u = yu
-        0.5 * (yd - y) * (yd - y) + 0.5 * 1e-4 * u * u
+        ∫( 0.5 * (yd - y) * (yd - y) + 0.5 * 1e-4 * u * u )dΩ
     end
 
     #Definition of the constraint operator
     ω = π - 1/8
     h(x) = - sin(ω*x[1])*sin(ω*x[2])
-    function res(yu, v)
-     y, u = yu
-     ∇(v) ⊙ ∇(y) + operate(sinh, y)*v - u*v - v * h
+    function res(y, u, v)
+     ∫( ∇(v) ⊙ ∇(y) + operate(sinh, y)*v - u*v - v * h )dΩ
     end
-    t_Ω = FETerm(res,trian,quad)
-    op = FEOperator(Y, Xpde, t_Ω)
+    op = FEOperator(res, Y, Xpde)
 
     Y = MultiFieldFESpace([Ypde, Ycon])
     xin = zeros(Gridap.FESpaces.num_free_dofs(Y))
-    nlp = GridapPDENLPModel(xin, f, trian, quad, Ypde, Ycon, Xpde, Xcon, op)</code></pre><p>Then, one can solve the problem with Ipopt via <a href="https://github.com/JuliaSmoothOptimizers/NLPModelsIpopt.jl">NLPModelsIpopt.jl</a> and plot the solution as a VTK file.</p><pre><code class="nohighlight">stats = ipopt(nlp, print_level = 0)</code></pre><p>Switching again the discrete solution as a <code>FEFunction</code> the result can written as a VTK-file using Gridap&#39;s facilities.</p><pre><code class="nohighlight">yfv = stats.solution[1:Gridap.FESpaces.num_free_dofs(nlp.Ypde)]
+    nlp = GridapPDENLPModel(xin, f, trian, dΩ, Ypde, Ycon, Xpde, Xcon, op)</code></pre><p>Then, one can solve the problem with Ipopt via <a href="https://github.com/JuliaSmoothOptimizers/NLPModelsIpopt.jl">NLPModelsIpopt.jl</a> and plot the solution as a VTK file.</p><pre><code class="nohighlight">stats = ipopt(nlp, print_level = 0)</code></pre><p>Switching again the discrete solution as a <code>FEFunction</code> the result can written as a VTK-file using Gridap&#39;s facilities.</p><pre><code class="nohighlight">yfv = stats.solution[1:Gridap.FESpaces.num_free_dofs(nlp.Ypde)]
 yh  = FEFunction(nlp.Ypde, yfv)
 ufv = stats.solution[1+Gridap.FESpaces.num_free_dofs(nlp.Ypde):end]
 uh  = FEFunction(nlp.Ycon, ufv)
-writevtk(nlp.tnrj.trian,&quot;results&quot;,cellfields=[&quot;uh&quot;=&gt;uh, &quot;yh&quot;=&gt;yh])</code></pre><p>Finally, the solution is obtained using any software reading VTK, e.g. Paraview.</p><p><img src="../fig/2dPBy.png" alt="Solution of P-B equation"/><img src="../fig/2dPBu.png" alt="Control of P-B equation"/></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../tore/">« Calculus of Variations</a><a class="docs-footer-nextpage" href="../KrylovforLinearPDE/">Krylov.jl to solve linear PDE »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.3 on <span class="colophon-date" title="Saturday 10 July 2021 22:29">Saturday 10 July 2021</span>. Using Julia version 1.6.1.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+writevtk(nlp.tnrj.trian,&quot;results&quot;,cellfields=[&quot;uh&quot;=&gt;uh, &quot;yh&quot;=&gt;yh])</code></pre><p>Finally, the solution is obtained using any software reading VTK, e.g. Paraview.</p><p><img src="../fig/2dPBy.png" alt="Solution of P-B equation"/><img src="../fig/2dPBu.png" alt="Control of P-B equation"/></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../tore/">« Calculus of Variations</a><a class="docs-footer-nextpage" href="../KrylovforLinearPDE/">Krylov.jl to solve linear PDE »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.3 on <span class="colophon-date" title="Monday 12 July 2021 18:11">Monday 12 July 2021</span>. Using Julia version 1.6.1.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

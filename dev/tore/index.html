@@ -8,17 +8,6 @@
 \end{aligned}
 \right.\]</p><p>with <span>$a=1$</span> and <span>$c=3$</span>.</p><pre><code class="nohighlight">  using Gridap, PDENLPModels
 
-  # The function under the integral:
-  # To use the function cos in Gridap: `operate(cos, x)` vaut cos(x)
-  # The square function is not available, so: `x*x` holds for $x^2$, 
-  # and `∇(φ) ⊙ ∇(φ)` for `φ&#39;^2`.
-  a = 1
-  c = 3
-  function f(x)
-    φ, θ = x
-    a * a * ∇(φ) ⊙ ∇(φ) + (c + a * operate(cos, φ)) * (c + a * operate(cos, φ)) * ∇(θ) ⊙ ∇(θ)
-  end
-
   n = 100 #discretization size
   domain = (0,1) 
   model = CartesianDiscreteModel(domain, n)
@@ -30,20 +19,19 @@
   x0 = zeros(2) # initial values
   xf = π * ones(2) # final values
   
+  order = 1
+  valuetype = Float64
+  reffe = ReferenceFE(lagrangian, valuetype, order)
   V0 = TestFESpace(
-    reffe=:Lagrangian, 
-    order=1, 
-    valuetype=Float64,
-    conformity=:H1, 
-    model=model, 
+    model,
+    reffe;
+    conformity = :H1,
     dirichlet_tags=[&quot;diri0&quot;,&quot;diri1&quot;],
   )
   V1 = TestFESpace(
-    reffe=:Lagrangian, 
-    order=1, 
-    valuetype=Float64,
-    conformity=:H1, 
-    model=model, 
+    model,
+    reffe;
+    conformity = :H1,
     dirichlet_tags=[&quot;diri0&quot;,&quot;diri1&quot;],
   )
   
@@ -57,7 +45,18 @@
   
   trian = Triangulation(model)
   degree = 1
-  quad = CellQuadrature(trian, degree)
+  dΩ = Measure(trian, degree)
+
+  # The function under the integral:
+  # To use the function cos in Gridap: `operate(cos, x)` vaut cos(x)
+  # The square function is not available, so: `x*x` holds for $x^2$, 
+  # and `∇(φ) ⊙ ∇(φ)` for `φ&#39;^2`.
+  a = 1
+  c = 3
+  function f(x)
+    φ, θ = x
+    ∫( a * a * ∇(φ) ⊙ ∇(φ) + (c + a * operate(cos, φ)) * (c + a * operate(cos, φ)) * ∇(θ) ⊙ ∇(θ) )dΩ
+  end
 
   # boundaries
   xmin = 0
@@ -67,7 +66,7 @@
     zeros(nU0 + nU1), 
     f, 
     trian, 
-    quad, 
+    dΩ, 
     U, 
     V, 
     lvar = xmin * ones(nU0+nU1), 
@@ -96,4 +95,4 @@ Xs = (c .+ a * cos.(αs)) * cos.(βs)&#39;
 Ys = (c .+ a * cos.(αs)) * sin.(βs)&#39;
 Zs = (a * sin.(αs)) * ones(M)&#39;
 plot3d(Xs, Ys, Zs, st=:surface, grid=false, c=:grays, axis=false, colorbar=false)
-plot3d!(xs, ys, zs, linewidth=4, color=:red, title=@sprintf(&quot;Geodesic on a Torus (length=%4.f)&quot;, L), legend=false)</code></pre><p><img src="../fig/torus.png" alt="Geodesic over the tore"/></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../">« Introduction</a><a class="docs-footer-nextpage" href="../poisson-boltzman/">PDE-constrained optimization »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.3 on <span class="colophon-date" title="Saturday 10 July 2021 22:29">Saturday 10 July 2021</span>. Using Julia version 1.6.1.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+plot3d!(xs, ys, zs, linewidth=4, color=:red, title=@sprintf(&quot;Geodesic on a Torus (length=%4.f)&quot;, L), legend=false)</code></pre><p><img src="../fig/torus.png" alt="Geodesic over the tore"/></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../">« Introduction</a><a class="docs-footer-nextpage" href="../poisson-boltzman/">PDE-constrained optimization »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.3 on <span class="colophon-date" title="Monday 12 July 2021 18:11">Monday 12 July 2021</span>. Using Julia version 1.6.1.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
