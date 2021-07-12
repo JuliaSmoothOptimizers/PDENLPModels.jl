@@ -33,7 +33,7 @@ function _poisson()
 
     trian = Triangulation(model)
     degree = 2
-    quad = CellQuadrature(trian,degree)
+    quad = Measure(trian,degree)
 
     V0 = TestFESpace(
       reffe=:Lagrangian, order=1, valuetype=Float64,

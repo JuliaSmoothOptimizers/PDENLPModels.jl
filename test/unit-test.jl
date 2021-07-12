@@ -3,22 +3,25 @@ n = 4
 partition = (n)
 model = CartesianDiscreteModel(domain, partition)
 Xpde = TestFESpace(
-  reffe = :Lagrangian,
-  order = 1,
-  valuetype = Float64,
-  conformity = :H1,
-  model = model,
+  model, 
+  ReferenceFE(lagrangian, Float64, 1),
+  conformity = :H1, 
   dirichlet_tags = "boundary",
 )
 u0(x) = 0.0
 Ypde = TrialFESpace(Xpde, u0)
 
 f(x) = dot(x, x)
-trian = Triangulation(model)
-quad = CellQuadrature(trian, 1)
+fxh = x->∫(f(x)) * dΩ
+function fyuh(yu)
+  y, u = yu
+  ∫( y * 1.0 ) * dΩ
+end
 
-Xcon =
-  TestFESpace(reffe = :Lagrangian, order = 1, valuetype = Float64, conformity = :H1, model = model)
+trian = Triangulation(model)
+dΩ = Measure(trian, 1)
+
+Xcon = TestFESpace(model, ReferenceFE(lagrangian, Float64, 1), conformity = :H1)
 Ycon = TrialFESpace(Xcon)
 Y = MultiFieldFESpace([Ypde, Ycon])
 X = MultiFieldFESpace([Xpde, Xcon])
@@ -43,39 +46,42 @@ end
 
   NT = NoFETerm()
   NTf = NoFETerm(f)
-  EFT = EnergyFETerm(f, trian, quad)
-  MEFT = MixedEnergyFETerm(f, trian, quad, 1)
+  EFT = EnergyFETerm(fxh, trian, dΩ)
+  MEFT = MixedEnergyFETerm(fxh, trian, dΩ, 1)
+
+  EFTmixed = EnergyFETerm(fyuh, trian, dΩ)
+  MEFTmixed = MixedEnergyFETerm(fyuh, trian, dΩ, 1)
 
   nlp = GridapPDENLPModel(x0, NT, Ypde, Xpde)
   nlp = GridapPDENLPModel(x0, NTf, Ypde, Xpde)
   nlp = GridapPDENLPModel(x0, EFT, Ypde, Xpde)
   nlp = GridapPDENLPModel(x0, MEFT, Ypde, Xpde)
-  nlp = GridapPDENLPModel(x0, f, trian, quad, Ypde, Xpde)
-  # nlp = GridapPDENLPModel(f, trian, quad, Ypde, Xpde)
+  nlp = GridapPDENLPModel(x0, fxh, trian, dΩ, Ypde, Xpde)
+  # nlp = GridapPDENLPModel(fxh, trian, dΩ, Ypde, Xpde)
   nlp = GridapPDENLPModel(x0, NT, Ypde, Xpde, lvar = lvar, uvar = uvar)
   nlp = GridapPDENLPModel(x0, NTf, Ypde, Xpde, lvar = lvar, uvar = uvar)
   nlp = GridapPDENLPModel(x0, EFT, Ypde, Xpde, lvar = lvar, uvar = uvar)
   nlp = GridapPDENLPModel(x0, MEFT, Ypde, Xpde, lvar = lvar, uvar = uvar)
-  nlp = GridapPDENLPModel(x0, f, trian, quad, Ypde, Xpde, lvar = lvar, uvar = uvar)
-  # nlp = GridapPDENLPModel(f, trian, quad, Ypde, Xpde, lvar = lvar, uvar = uvar)
+  nlp = GridapPDENLPModel(x0, fxh, trian, dΩ, Ypde, Xpde, lvar = lvar, uvar = uvar)
+  # nlp = GridapPDENLPModel(fxh, trian, dΩ, Ypde, Xpde, lvar = lvar, uvar = uvar)
 
   @test_throws DimensionError GridapPDENLPModel(
     x0,
-    f,
+    fxh,
     trian,
-    quad,
+    dΩ,
     Ypde,
     Xpde,
     lvar = badlvar,
     uvar = baduvar,
   )
-  #@test_throws DimensionError GridapPDENLPModel(f, trian, quad, Ypde, Xpde, lvar = badlvar, uvar = baduvar)
-  @test_throws DimensionError GridapPDENLPModel(badx0, f, trian, quad, Ypde, Xpde)
+  #@test_throws DimensionError GridapPDENLPModel(fxh, trian, dΩ, Ypde, Xpde, lvar = badlvar, uvar = baduvar)
+  @test_throws DimensionError GridapPDENLPModel(badx0, fxh, trian, dΩ, Ypde, Xpde)
   @test_throws DimensionError GridapPDENLPModel(
     badx0,
-    f,
+    fxh,
     trian,
-    quad,
+    dΩ,
     Ypde,
     Xpde,
     lvar = lvar,
@@ -84,26 +90,31 @@ end
 
   x0 = zeros(8)
   x0y = zeros(3)
-  function res(yu, v)
-    y, u = yu
-    y * v
+  function res(y, u, v)
+    ∫( y * v ) * dΩ
   end
-
-  term = FETerm(res, trian, quad)
-  cter = FEOperator(Y, Xpde, term)
-  taff = AffineFETerm(res, v -> 0 * v, trian, quad)
-  caff = AffineFEOperator(Y, Xpde, taff)
+  ctermixed = FEOperator(res, Y, Xpde)
+  function res(y, v)
+    ∫( y * v ) * dΩ
+  end
+  cter = FEOperator(res, Y, Xpde)
+  function resff(yu, v)
+    y, u = yu
+    ∫( y * v ) * dΩ
+  end
+  rhs(v) =  ∫( v * 0.0 ) * dΩ
+  caff = AffineFEOperator(resff, rhs, Y, Xpde)
 
   lvary, uvary, lvaru, uvaru = -ones(3), ones(3), -ones(5), ones(5)
   lcon, ucon, y0 = -ones(3), ones(3), zeros(3)
   badlvary, baduvary, badlvaru, baduvaru = -ones(4), ones(5), -ones(3), ones(3)
   badlcon, baducon, bady0 = -ones(2), ones(2), zeros(2)
-  nlp = GridapPDENLPModel(x0, NT, Ypde, Ycon, Xpde, Xcon, cter)
-  nlp = GridapPDENLPModel(x0, NTf, Ypde, Ycon, Xpde, Xcon, cter)
-  nlp = GridapPDENLPModel(x0, EFT, Ypde, Ycon, Xpde, Xcon, cter)
-  nlp = GridapPDENLPModel(x0, MEFT, Ypde, Ycon, Xpde, Xcon, cter)
-  nlp = GridapPDENLPModel(x0, f, trian, quad, Ypde, Ycon, Xpde, Xcon, cter)
-  #nlp = GridapPDENLPModel(f, trian, quad, Ypde, Ycon, Xpde, Xcon, cter)
+  nlp = GridapPDENLPModel(x0, NT, Ypde, Ycon, Xpde, Xcon, ctermixed)
+  nlp = GridapPDENLPModel(x0, NTf, Ypde, Ycon, Xpde, Xcon, ctermixed)
+  nlp = GridapPDENLPModel(x0, EFTmixed, Ypde, Ycon, Xpde, Xcon, ctermixed)
+  nlp = GridapPDENLPModel(x0, MEFTmixed, Ypde, Ycon, Xpde, Xcon, ctermixed)
+  nlp = GridapPDENLPModel(x0, fyuh, trian, dΩ, Ypde, Ycon, Xpde, Xcon, ctermixed) 
+  #nlp = GridapPDENLPModel(fxh, trian, dΩ, Ypde, Ycon, Xpde, Xcon, cter)
   #nlp = GridapPDENLPModel(NT, Ypde, Xpde, cter)
   #nlp = GridapPDENLPModel(NTf, Ypde, Xpde, cter)
   #nlp = GridapPDENLPModel(EFT, Ypde, Xpde, cter)
@@ -116,34 +127,34 @@ end
   nlp = GridapPDENLPModel(x0y, NTf, Ypde, Xpde, cter, lvar = lvary, uvar = uvary)
   nlp = GridapPDENLPModel(x0y, EFT, Ypde, Xpde, cter, lvar = lvary, uvar = uvary)
   nlp = GridapPDENLPModel(x0y, MEFT, Ypde, Xpde, cter, lvar = lvary, uvar = uvary)
-  nlp = GridapPDENLPModel(x0, NT, Ypde, Ycon, Xpde, Xcon, cter, y0 = y0, lcon = lcon, ucon = ucon)
-  nlp = GridapPDENLPModel(x0, NTf, Ypde, Ycon, Xpde, Xcon, cter, y0 = y0, lcon = lcon, ucon = ucon)
-  nlp = GridapPDENLPModel(x0, EFT, Ypde, Ycon, Xpde, Xcon, cter, y0 = y0, lcon = lcon, ucon = ucon)
-  nlp = GridapPDENLPModel(x0, MEFT, Ypde, Ycon, Xpde, Xcon, cter, y0 = y0, lcon = lcon, ucon = ucon)
+  nlp = GridapPDENLPModel(x0, NT, Ypde, Ycon, Xpde, Xcon, ctermixed, y0 = y0, lcon = lcon, ucon = ucon)
+  nlp = GridapPDENLPModel(x0, NTf, Ypde, Ycon, Xpde, Xcon, ctermixed, y0 = y0, lcon = lcon, ucon = ucon)
+  nlp = GridapPDENLPModel(x0, EFTmixed, Ypde, Ycon, Xpde, Xcon, ctermixed, y0 = y0, lcon = lcon, ucon = ucon)
+  nlp = GridapPDENLPModel(x0, MEFTmixed, Ypde, Ycon, Xpde, Xcon, ctermixed, y0 = y0, lcon = lcon, ucon = ucon)
   nlp = GridapPDENLPModel(
     x0,
-    f,
+    fyuh,
     trian,
-    quad,
+    dΩ,
     Ypde,
     Ycon,
     Xpde,
     Xcon,
-    cter,
+    ctermixed,
     y0 = y0,
     lcon = lcon,
     ucon = ucon,
   )
   nlp = GridapPDENLPModel(
     x0,
-    f,
+    fyuh,
     trian,
-    quad,
+    dΩ,
     Ypde,
     Ycon,
     Xpde,
     Xcon,
-    cter,
+    ctermixed,
     y0 = y0,
     lcon = lcon,
     ucon = ucon,
@@ -155,7 +166,7 @@ end
     Ycon,
     Xpde,
     Xcon,
-    cter,
+    ctermixed,
     lvary = lvary,
     uvary = uvary,
     lvaru = lvaru,
@@ -168,7 +179,7 @@ end
     Ycon,
     Xpde,
     Xcon,
-    cter,
+    ctermixed,
     lvary = lvary,
     uvary = uvary,
     lvaru = lvaru,
@@ -176,12 +187,12 @@ end
   )
   nlp = GridapPDENLPModel(
     x0,
-    EFT,
+    EFTmixed,
     Ypde,
     Ycon,
     Xpde,
     Xcon,
-    cter,
+    ctermixed,
     lvary = lvary,
     uvary = uvary,
     lvaru = lvaru,
@@ -189,12 +200,12 @@ end
   )
   nlp = GridapPDENLPModel(
     x0,
-    MEFT,
+    MEFTmixed,
     Ypde,
     Ycon,
     Xpde,
     Xcon,
-    cter,
+    ctermixed,
     lvary = lvary,
     uvary = uvary,
     lvaru = lvaru,
@@ -202,20 +213,20 @@ end
   )
   nlp = GridapPDENLPModel(
     x0,
-    f,
+    fyuh,
     trian,
-    quad,
+    dΩ,
     Ypde,
     Ycon,
     Xpde,
     Xcon,
-    cter,
+    ctermixed,
     lvary = lvary,
     uvary = uvary,
     lvaru = lvaru,
     uvaru = uvaru,
   )
-  #nlp = GridapPDENLPModel(f, trian, quad, Ypde, Ycon, Xpde, Xcon, cter, lvary = lvary, uvary = uvary, lvaru = lvaru, uvaru = uvaru)
+  #nlp = GridapPDENLPModel(f, trian, dΩ, Ypde, Ycon, Xpde, Xcon, ctermixed, lvary = lvary, uvary = uvary, lvaru = lvaru, uvaru = uvaru)
   nlp = GridapPDENLPModel(
     x0,
     NT,
@@ -223,7 +234,7 @@ end
     Ycon,
     Xpde,
     Xcon,
-    cter,
+    ctermixed,
     lvary = lvary,
     uvary = uvary,
     lvaru = lvaru,
@@ -239,7 +250,7 @@ end
     Ycon,
     Xpde,
     Xcon,
-    cter,
+    ctermixed,
     lvary = lvary,
     uvary = uvary,
     lvaru = lvaru,
@@ -250,12 +261,12 @@ end
   )
   nlp = GridapPDENLPModel(
     x0,
-    EFT,
+    EFTmixed,
     Ypde,
     Ycon,
     Xpde,
     Xcon,
-    cter,
+    ctermixed,
     lvary = lvary,
     uvary = uvary,
     lvaru = lvaru,
@@ -266,12 +277,12 @@ end
   )
   nlp = GridapPDENLPModel(
     x0,
-    MEFT,
+    MEFTmixed,
     Ypde,
     Ycon,
     Xpde,
     Xcon,
-    cter,
+    ctermixed,
     lvary = lvary,
     uvary = uvary,
     lvaru = lvaru,
@@ -282,14 +293,14 @@ end
   )
   nlp = GridapPDENLPModel(
     x0,
-    f,
+    fyuh,
     trian,
-    quad,
+    dΩ,
     Ypde,
     Ycon,
     Xpde,
     Xcon,
-    cter,
+    ctermixed,
     lvary = lvary,
     uvary = uvary,
     lvaru = lvaru,
@@ -300,14 +311,14 @@ end
   )
   nlp = GridapPDENLPModel(
     x0,
-    f,
+    fyuh,
     trian,
-    quad,
+    dΩ,
     Ypde,
     Ycon,
     Xpde,
     Xcon,
-    cter,
+    ctermixed,
     lvary = lvary,
     uvary = uvary,
     lvaru = lvaru,
@@ -315,15 +326,14 @@ end
     y0 = y0,
     lcon = lcon,
     ucon = ucon,
-  )
-
-  nlp = GridapPDENLPModel(x0, f, trian, quad, Ypde, Ycon, Xpde, Xcon, caff)
-  #nlp = GridapPDENLPModel(f, trian, quad, Ypde, Ycon, Xpde, Xcon, caff)
+  )  
+  nlp = GridapPDENLPModel(x0, fyuh, trian, dΩ, Ypde, Ycon, Xpde, Xcon, caff)
+  #nlp = GridapPDENLPModel(fyuh, trian, dΩ, Ypde, Ycon, Xpde, Xcon, caff)
   nlp = GridapPDENLPModel(
     x0,
-    f,
+    fyuh,
     trian,
-    quad,
+    dΩ,
     Ypde,
     Ycon,
     Xpde,
@@ -333,12 +343,12 @@ end
     lcon = lcon,
     ucon = ucon,
   )
-  #nlp = GridapPDENLPModel(f, trian, quad, Ypde, Ycon, Xpde, Xcon, caff, y0 = y0, lcon = lcon, ucon = ucon)
+  #nlp = GridapPDENLPModel(fyuh, trian, dΩ, Ypde, Ycon, Xpde, Xcon, caff, y0 = y0, lcon = lcon, ucon = ucon)
   nlp = GridapPDENLPModel(
     x0,
-    f,
+    fyuh,
     trian,
-    quad,
+    dΩ,
     Ypde,
     Ycon,
     Xpde,
@@ -349,12 +359,12 @@ end
     lvaru = lvaru,
     uvaru = uvaru,
   )
-  #nlp = GridapPDENLPModel(f, trian, quad, Ypde, Ycon, Xpde, Xcon, caff, lvary = lvary, uvary = uvary, lvaru = lvaru, uvaru = uvaru)
+  #nlp = GridapPDENLPModel(fyuh, trian, dΩ, Ypde, Ycon, Xpde, Xcon, caff, lvary = lvary, uvary = uvary, lvaru = lvaru, uvaru = uvaru)
   nlp = GridapPDENLPModel(
     x0,
-    f,
+    fyuh,
     trian,
-    quad,
+    dΩ,
     Ypde,
     Ycon,
     Xpde,
@@ -368,28 +378,27 @@ end
     lcon = lcon,
     ucon = ucon,
   )
-  #nlp = GridapPDENLPModel(f, trian, quad, Ypde, Ycon, Xpde, Xcon, caff, lvary = lvary, uvary = uvary, lvaru = lvaru, uvaru = uvaru, y0 = y0, lcon = lcon, ucon = ucon)
-
+  #nlp = GridapPDENLPModel(fxh, trian, dΩ, Ypde, Ycon, Xpde, Xcon, caff, lvary = lvary, uvary = uvary, lvaru = lvaru, uvaru = uvaru, y0 = y0, lcon = lcon, ucon = ucon)
   @test_throws DimensionError GridapPDENLPModel(
     x0,
-    f,
+    fyuh,
     trian,
-    quad,
+    dΩ,
     Ypde,
     Ycon,
     Xpde,
     Xcon,
-    cter,
+    ctermixed,
     y0 = bady0,
     lcon = badlcon,
     ucon = ucon,
   )
-  #@test_throws DimensionError GridapPDENLPModel(f, trian, quad, Ypde, Ycon, Xpde, Xcon, cter, y0 = bady0, lcon = lcon, ucon = baducon)
+  #@test_throws DimensionError GridapPDENLPModel(fyuh, trian, dΩ, Ypde, Ycon, Xpde, Xcon, ctermixed, y0 = bady0, lcon = lcon, ucon = baducon)
   @test_throws DimensionError GridapPDENLPModel(
     x0,
-    f,
+    fyuh,
     trian,
-    quad,
+    dΩ,
     Ypde,
     Ycon,
     Xpde,
@@ -399,57 +408,57 @@ end
     lcon = lcon,
     ucon = ucon,
   )
-  #@test_throws DimensionError GridapPDENLPModel(f, trian, quad, Ypde, Ycon, Xpde, Xcon, caff, y0 = y0, lcon = badlcon, ucon = baducon)
+  #@test_throws DimensionError GridapPDENLPModel(fyuh, trian, dΩ, Ypde, Ycon, Xpde, Xcon, caff, y0 = y0, lcon = badlcon, ucon = baducon)
   @test_throws DimensionError GridapPDENLPModel(
     x0,
-    f,
+    fyuh,
     trian,
-    quad,
+    dΩ,
     Ypde,
     Ycon,
     Xpde,
     Xcon,
-    cter,
+    ctermixed,
     lvary = badlvary,
     uvary = baduvary,
   )
-  #@test_throws DimensionError GridapPDENLPModel(f, trian, quad, Ypde, Ycon, Xpde, Xcon, cter, lvary = badlvary, uvary = baduvary)
+  #@test_throws DimensionError GridapPDENLPModel(fyuh, trian, dΩ, Ypde, Ycon, Xpde, Xcon, ctermixed, lvary = badlvary, uvary = baduvary)
   @test_throws DimensionError GridapPDENLPModel(
     x0,
-    f,
+    fyuh,
     trian,
-    quad,
+    dΩ,
     Ypde,
     Ycon,
     Xpde,
     Xcon,
-    cter,
+    ctermixed,
     lvaru = badlvaru,
     uvaru = baduvaru,
   )
-  #@test_throws DimensionError GridapPDENLPModel(f, trian, quad, Ypde, Ycon, Xpde, Xcon, cter, lvaru = badlvaru, uvaru = baduvaru)
+  #@test_throws DimensionError GridapPDENLPModel(fyuh, trian, dΩ, Ypde, Ycon, Xpde, Xcon, ctermixed, lvaru = badlvaru, uvaru = baduvaru)
   @test_throws DimensionError GridapPDENLPModel(
     x0,
-    f,
+    fyuh,
     trian,
-    quad,
+    dΩ,
     Ypde,
     Ycon,
     Xpde,
     Xcon,
-    cter,
+    ctermixed,
     lvary = badlvary,
     uvary = baduvary,
     y0 = y0,
     lcon = badlcon,
     ucon = baducon,
   )
-  #@test_throws DimensionError GridapPDENLPModel(f, trian, quad, Ypde, Ycon, Xpde, Xcon, cter, lvary = badlvary, uvary = baduvary, y0 = bady0, lcon = badlcon, ucon = ucon)
+  #@test_throws DimensionError GridapPDENLPModel(fyuh, trian, dΩ, Ypde, Ycon, Xpde, Xcon, ctermixed, lvary = badlvary, uvary = baduvary, y0 = bady0, lcon = badlcon, ucon = ucon)
   @test_throws DimensionError GridapPDENLPModel(
     x0,
-    f,
+    fyuh,
     trian,
-    quad,
+    dΩ,
     Ypde,
     Ycon,
     Xpde,
@@ -461,32 +470,32 @@ end
     lcon = lcon,
     ucon = baducon,
   )
-  #@test_throws DimensionError GridapPDENLPModel(f, trian, quad, Ypde, Ycon, Xpde, Xcon, caff, lvary = badlvary, uvary = baduvary, y0 = bady0, lcon = lcon, ucon = baducon)
-  @test_throws DimensionError GridapPDENLPModel(badx0, f, trian, quad, Ypde, Ycon, Xpde, Xcon, cter)
+  #@test_throws DimensionError GridapPDENLPModel(fyuh, trian, dΩ, Ypde, Ycon, Xpde, Xcon, caff, lvary = badlvary, uvary = baduvary, y0 = bady0, lcon = lcon, ucon = baducon)
+  @test_throws DimensionError GridapPDENLPModel(badx0, fyuh, trian, dΩ, Ypde, Ycon, Xpde, Xcon, cter)
   @test_throws DimensionError GridapPDENLPModel(
     badx0,
-    f,
+    fyuh,
     trian,
-    quad,
+    dΩ,
     Ypde,
     Ycon,
     Xpde,
     Xcon,
-    cter,
+    ctermixed,
     y0 = y0,
     lcon = lcon,
     ucon = ucon,
   )
   @test_throws DimensionError GridapPDENLPModel(
     badx0,
-    f,
+    fyuh,
     trian,
-    quad,
+    dΩ,
     Ypde,
     Ycon,
     Xpde,
     Xcon,
-    cter,
+    ctermixed,
     lvary = lvary,
     uvary = uvary,
     lvaru = lvaru,
@@ -494,14 +503,14 @@ end
   )
   @test_throws DimensionError GridapPDENLPModel(
     badx0,
-    f,
+    fyuh,
     trian,
-    quad,
+    dΩ,
     Ypde,
     Ycon,
     Xpde,
     Xcon,
-    cter,
+    ctermixed,
     lvary = lvary,
     uvary = uvary,
     lvaru = lvaru,
@@ -510,12 +519,12 @@ end
     lcon = lcon,
     ucon = ucon,
   )
-  @test_throws DimensionError GridapPDENLPModel(badx0, f, trian, quad, Ypde, Ycon, Xpde, Xcon, caff)
+  @test_throws DimensionError GridapPDENLPModel(badx0, fyuh, trian, dΩ, Ypde, Ycon, Xpde, Xcon, caff)
   @test_throws DimensionError GridapPDENLPModel(
     badx0,
-    f,
+    fyuh,
     trian,
-    quad,
+    dΩ,
     Ypde,
     Ycon,
     Xpde,
@@ -527,9 +536,9 @@ end
   )
   @test_throws DimensionError GridapPDENLPModel(
     badx0,
-    f,
+    fyuh,
     trian,
-    quad,
+    dΩ,
     Ypde,
     Ycon,
     Xpde,
@@ -542,9 +551,9 @@ end
   )
   @test_throws DimensionError GridapPDENLPModel(
     badx0,
-    f,
+    fyuh,
     trian,
-    quad,
+    dΩ,
     Ypde,
     Ycon,
     Xpde,
@@ -627,6 +636,7 @@ y, u, k = _split_vector(x0, Ypde, Ycon)
 y, u, k = _split_vector(x0, Ypde, PDENLPModels.VoidFESpace())
 @test y == x0[1:3] && u == [] && k == x0[4:11]
 
+#= Gridap v15
 #Test additional_obj_terms.jl
 @testset "Tests of energy FETerm" begin
   f0(k) = dot(k, k)
@@ -640,12 +650,12 @@ y, u, k = _split_vector(x0, Ypde, PDENLPModels.VoidFESpace())
   #Test MultiField yu
   x1 = zeros(nY)
   yu1 = FEFunction(Y, x1)
-  cel1 = Gridap.FESpaces.get_cell_values(yu1)
+  cel1 = Gridap.FESpaces.get_cell_dof_values(yu1)
   yuh1 = CellField(Y, cel1)
   #Test SingleField yu
   x2 = rand(Gridap.FESpaces.num_free_dofs(Ypde))
   yu2 = FEFunction(Ypde, x2)
-  cel2 = Gridap.FESpaces.get_cell_values(yu2)
+  cel2 = Gridap.FESpaces.get_cell_dof_values(yu2)
   yuh2 = CellField(Ypde, cel2)
 
   tnrj = NoFETerm()
@@ -676,10 +686,10 @@ y, u, k = _split_vector(x0, Ypde, PDENLPModels.VoidFESpace())
   @test _obj_integral(tnrj, ones(2), yu2) == 2.0
   @test _obj_cell_integral(tnrj, ones(2), yuh2) == 2.0
 
-  @test_throws AssertionError tnrj = MixedEnergyFETerm(f2, trian, quad, 0)
-  @test_throws AssertionError tnrj = MixedEnergyFETerm(f2s, trian, quad, 0)
+  @test_throws AssertionError tnrj = MixedEnergyFETerm(f2, trian, dΩ, 0)
+  @test_throws AssertionError tnrj = MixedEnergyFETerm(f2s, trian, dΩ, 0)
 
-  tnrj = MixedEnergyFETerm(f2, trian, quad, 3)
+  tnrj = MixedEnergyFETerm(f2, trian, dΩ, 3)
   @test sum(_obj_integral(tnrj, ones(3), yu1)) == 3.0
   @test _obj_cell_integral(tnrj, ones(3), yuh1) == 0.75 * ones(4)
   @test _compute_gradient_k(tnrj, ones(3), yu1) == 2 * ones(3)
@@ -687,7 +697,7 @@ y, u, k = _split_vector(x0, Ypde, PDENLPModels.VoidFESpace())
   _compute_gradient!(g, tnrj, ones(3), yu1, Y, X)
   @test g[1:3] == 2 * ones(3)
   _H = _compute_hess_coo(tnrj, ones(3), yu1, Y, X)
-  tnrj = MixedEnergyFETerm(f2s, trian, quad, 3)
+  tnrj = MixedEnergyFETerm(f2s, trian, dΩ, 3)
   @test typeof(sum(_obj_integral(tnrj, ones(3), yu2))) <: Number
   @test typeof(sum(_obj_cell_integral(tnrj, ones(3), yuh2))) <: Number
   @test _compute_gradient_k(tnrj, ones(3), yu2) == 2 * ones(3)
@@ -700,7 +710,7 @@ y, u, k = _split_vector(x0, Ypde, PDENLPModels.VoidFESpace())
   @test_throws DimensionError _obj_integral(tnrj, ones(2), yu1)
   @test_throws DimensionError _compute_gradient_k(tnrj, ones(2), yu1)
 
-  tnrj = EnergyFETerm(f1, trian, quad)
+  tnrj = EnergyFETerm(f1, trian, dΩ)
   @test sum(_obj_integral(tnrj, [], yu1)) == 0.0
   @test sum(_obj_cell_integral(tnrj, [], yuh1)) == 0.0
   @test _compute_gradient_k(tnrj, [], yu1) == []
@@ -709,7 +719,7 @@ y, u, k = _split_vector(x0, Ypde, PDENLPModels.VoidFESpace())
   @test length(g) == nY
   _H = _compute_hess_coo(tnrj, [], yu1, Y, X)
 
-  tnrj = EnergyFETerm(f1s, trian, quad)
+  tnrj = EnergyFETerm(f1s, trian, dΩ)
   @test typeof(sum(_obj_integral(tnrj, [], yu2))) <: Number
   typeof(sum(_obj_cell_integral(tnrj, [], yuh2))) <: Number
 
@@ -719,6 +729,7 @@ y, u, k = _split_vector(x0, Ypde, PDENLPModels.VoidFESpace())
   @test_throws DimensionError _obj_cell_integral(tnrj, ones(2), yuh2)
   @test_throws DimensionError _compute_gradient_k(tnrj, ones(2), yu2)
 end
+=#
 
 @testset "Functions used to create bounds in constructors" begin
   #Domain
@@ -729,11 +740,9 @@ end
 
   #Definition of the spaces:
   Xpde = TestFESpace(
-    reffe = :Lagrangian,
-    conformity = :H1,
-    valuetype = Float64,
-    model = model,
-    order = 2,
+    model, 
+    ReferenceFE(lagrangian, Float64, 2),
+    conformity = :H1, 
     dirichlet_tags = "boundary",
   )
 
@@ -741,11 +750,9 @@ end
   Ypde = TrialFESpace(Xpde, y0)
 
   Xcon = TestFESpace(
-    reffe = :Lagrangian,
-    order = 1,
-    valuetype = Float64,
-    conformity = :H1,
-    model = model,
+    model, 
+    ReferenceFE(lagrangian, Float64, 1),
+    conformity = :H1, 
   )
   Ycon = TrialFESpace(Xcon)
   Y = MultiFieldFESpace([Ypde, Ycon])
@@ -753,7 +760,7 @@ end
   #Integration machinery
   trian = Triangulation(model)
   degree = 1
-  quad = CellQuadrature(trian, degree)
+  dΩ = Measure(trian, degree)
 
   for T in (Float16, Float32, Float64)
     #Example 0:
@@ -805,6 +812,7 @@ end
     @test uvar == vcat(T(Inf) * ones(T, 9), 0.5 * ones(T, 9))
     @test eltype(lvar) == T
     @test eltype(uvar) == T
+    
     #Example 1bis:
     umin(x) = T(x[1] + x[2])
     umax(x) = T(x[1]^2 + x[2]^2)
@@ -822,6 +830,7 @@ end
     @test uvar == 0.5 * ones(T, 9)
     @test eltype(lvar) == T
     @test eltype(uvar) == T
+
     #Example 2:
     umin(x) = [T(x[1] + x[2])]
     umax(x) = [T(x[1]^2 + x[2]^2)]
@@ -878,15 +887,17 @@ function check_counters(nlp::AbstractNLPModel)
 end
 
 @testset "Check counters" begin
-  EFT = EnergyFETerm(x -> 1.0, trian, quad)
-  function res(yu, v)
-    y, u = yu
-    y * v
+  EFT = EnergyFETerm(x -> ∫(1.0)dΩ, trian, dΩ)
+  function res(y, u, v)
+    ∫( y * v)dΩ
   end
-  term = FETerm(res, trian, quad)
-  cter = FEOperator(Y, Xpde, term)
-  taff = AffineFETerm(res, v -> 0 * v, trian, quad)
-  caff = AffineFEOperator(Y, Xpde, taff)
+  cter = FEOperator(res, Y, Xpde)
+  function resff(yu, v)
+    y, u = yu
+    ∫( y * v)dΩ
+  end
+  rhs(v) =  ∫( v * 0.0 ) * dΩ
+  caff = AffineFEOperator(resff, rhs, Y, Xpde)
   x0 = zeros(8)
 
   nlp = GridapPDENLPModel(x0, EFT, Ypde, Ycon, Xpde, Xcon, cter)

@@ -4,6 +4,7 @@ This is a modified version of
 from Gridap.FESpaces.
 The motivation is to avoid the use of the yet unknown values.
 =#
+#=
 function fill_jac_coo_symbolic!(
   I,
   J,
@@ -43,9 +44,11 @@ function fill_jac_coo_symbolic!(
   end
   nini
 end
+=#
 
+#=GRIDAPv15
 function allocate_coo_jac!(
-  op::Gridap.FESpaces.FEOperatorFromTerms,
+  op::Gridap.FESpaces.FEOperatorFromWeakForm,
   Y::FESpace,
   Xpde::FESpace,
   Ypde::FESpace,
@@ -90,7 +93,9 @@ function allocate_coo_jac!(
 
   return nini
 end
+=#
 
+#=
 #=
 This is a modified version of
 `function count_matrix_nnz_coo(a::GenericSparseMatrixAssembler,matdata) end`
@@ -125,18 +130,71 @@ function count_nnz_coo_short(a::Gridap.FESpaces.GenericSparseMatrixAssembler, ce
   end
   n
 end
+=#
+
+include("test_autodiff.jl")
 
 function count_nnz_jac(
-  op::Gridap.FESpaces.FEOperatorFromTerms,
+  op::Gridap.FESpaces.FEOperatorFromWeakForm,
   Y::FESpace,
   Xpde::FESpace,
   Ypde::FESpace,
   Ycon::FESpace,
+  x,
 ) where {T}
-  ru, ry = [], []
-  cu, cy = [], []
-  r, c = [], []
 
+#########################################################################
+# Improve to avoid using x
+  nvar = length(x)
+  nyu = num_free_dofs(Y)
+  nparam = nvar - nyu
+  yh, uh = _split_FEFunction(x, Ypde, Ycon)
+  κ, xyu = x[1:nparam], x[(nparam + 1):nvar]
+  yu = FEFunction(Y, xyu)
+
+  v = Gridap.FESpaces.get_cell_shapefuns(Xpde)
+  du = Gridap.FESpaces.get_cell_shapefuns_trial(Ypde)
+  if nparam == 0
+    if typeof(Ycon) <: VoidFESpace
+      resuh = op.res(yh, v)
+      dcjacy = Gridap.FESpaces._jacobian(x->op.res(x, du), yh, resuh)
+    else
+      resuh = op.res(yh, uh, v)
+      dcjacy = Gridap.FESpaces._jacobian(x->op.res(x, uh, du), yh, resuh)
+    end
+  else
+    if typeof(Ycon) <: VoidFESpace
+      resuh = op.res(κ, yh, v)
+      dcjacy = Gridap.FESpaces._jacobian(x->op.res(κ, x, du), yh, resuh)
+    else
+      resuh = op.res(κ, yh, uh, v)
+      dcjacy = Gridap.FESpaces._jacobian(x->op.res(κ, x, uh, du), yh, resuh)
+    end
+  end
+  matdata_y = Gridap.FESpaces.collect_cell_matrix(dcjacy)
+  assem = SparseMatrixAssembler(Ypde, Xpde)
+  Ay = Gridap.FESpaces.allocate_matrix(assem, matdata_y)
+
+  if Ycon != VoidFESpace()
+    # du = Gridap.FESpaces.get_cell_shapefuns_trial(Ycon)
+    if nparam == 0
+      resuh = op.res(yh, uh, v)
+      dcjacu = _jacobian2(x->op.res(yh, x, du), uh, resuh)
+    else
+      resuh = op.res(κ, yh, uh, v)
+      dcjacu = _jacobian2(x->op.res(κ, yh, x, du), uh, resuh)
+    end
+    matdata_u = Gridap.FESpaces.collect_cell_matrix(dcjacu)
+    assem = SparseMatrixAssembler(Ycon, Xpde)
+    Au = Gridap.FESpaces.allocate_matrix(assem, matdata_u)
+  else
+    Au = zeros(Gridap.FESpaces.num_free_dofs(Ypde), 0)
+  end
+
+  A = hcat(Ay, Au)
+#########################################################################  
+
+  #=GRIDAPv15
   for term in op.terms
     _jac_from_term_to_terms_id!(term, r, c, ru, cu, ry, cy)
   end
@@ -152,8 +210,9 @@ function count_nnz_jac(
 
   assem = Gridap.FESpaces.SparseMatrixAssembler(Y, Xpde)
   nini += count_nnz_coo_short(assem, (r, c))
+  =#
 
-  return nini
+  return nnz(A)
 end
 
 function count_nnz_jac(
@@ -162,6 +221,7 @@ function count_nnz_jac(
   Xpde::FESpace,
   Ypde::FESpace,
   Ycon::FESpace,
+  x,
 )
   return nnz(get_matrix(op))
 end
@@ -192,19 +252,8 @@ function _from_terms_to_jacobian_vals!(
   return nfirst + nini
 end
 
-"""
-Note:
-1) Compute the derivatives w.r.t. y and u separately.
-
-2) Use AD for those derivatives. Only for the following:
-- NonlinearFETerm (we neglect the inapropriate jac function);
-- NonlinearFETermWithAutodiff
-- TODO: Gridap.FESpaces.FETerm & AffineFETerm ?
-- FESource <: AffineFETerm (jacobian of a FESource is nothing)
-- LinearFETerm <: AffineFETerm (not implemented)
-"""
 function _from_terms_to_jacobian(
-  op::Gridap.FESpaces.FEOperatorFromTerms,
+  op::Gridap.FESpaces.FEOperatorFromWeakForm,
   x::AbstractVector{T},
   Y::FESpace,
   Xpde::FESpace,
@@ -218,42 +267,75 @@ function _from_terms_to_jacobian(
   κ, xyu = x[1:nparam], x[(nparam + 1):nvar]
   yu = FEFunction(Y, xyu)
 
-  dy = Gridap.FESpaces.get_cell_basis(Ypde)
-  du = Ycon != VoidFESpace() ? Gridap.FESpaces.get_cell_basis(Ycon) : nothing #use only jac is furnished
-  dyu = Gridap.FESpaces.get_cell_basis(Y)
-  v = Gridap.FESpaces.get_cell_basis(Xpde)
+  v = Gridap.FESpaces.get_cell_shapefuns(Xpde)
 
-  wu, wy = [], []
-  ru, ry = [], []
-  cu, cy = [], []
-  w, r, c = [], [], []
-
-  for term in op.terms
-    _jac_from_term_to_terms!(term, κ, yu, yh, uh, dyu, dy, du, v, w, r, c, wu, ru, cu, wy, ry, cy)
+  du = Gridap.FESpaces.get_cell_shapefuns_trial(Ypde)
+  if nparam == 0
+    if typeof(Ycon) <: VoidFESpace
+      resuh = op.res(yh, v)
+      dcjacy = Gridap.FESpaces._jacobian(x->op.res(x, du), yh, resuh)
+    else
+      resuh = op.res(yh, uh, v)
+      dcjacy = Gridap.FESpaces._jacobian(x->op.res(x, uh, du), yh, resuh)
+    end
+  else
+    if typeof(Ycon) <: VoidFESpace
+      resuh = op.res(κ, yh, v)
+      dcjacy = Gridap.FESpaces._jacobian(x->op.res(κ, x, du), yh, resuh)
+    else
+      resuh = op.res(κ, yh, uh, v)
+      dcjacy = Gridap.FESpaces._jacobian(x->op.res(κ, x, uh, du), yh, resuh)
+    end
   end
-
-  assem_y = Gridap.FESpaces.SparseMatrixAssembler(Ypde, Xpde)
-  Ay = Gridap.FESpaces.assemble_matrix(assem_y, (wy, ry, cy))
+  matdata_y = Gridap.FESpaces.collect_cell_matrix(dcjacy)
+  assem = SparseMatrixAssembler(Ypde, Xpde)
+  Ay = Gridap.FESpaces.allocate_matrix(assem, matdata_y)
+  Gridap.FESpaces.assemble_matrix!(Ay, assem, matdata_y)
 
   if Ycon != VoidFESpace()
-    assem_u = Gridap.FESpaces.SparseMatrixAssembler(Ycon, Xpde)
-    Au = Gridap.FESpaces.assemble_matrix(assem_u, (wu, ru, cu))
+    # assem_u = Gridap.FESpaces.SparseMatrixAssembler(Ycon, Xpde)
+    # Au = Gridap.FESpaces.assemble_matrix(assem_u, (wu, ru, cu))
+    #du = Gridap.FESpaces.get_cell_shapefuns_trial(Ycon)
+    if nparam == 0
+      resuh = op.res(yh, uh, v)
+      dcjacu = _jacobian2(x->op.res(yh, x, du), uh, resuh)
+    else
+      resuh = op.res(κ, yh, uh, v)
+      dcjacu = _jacobian2(x->op.res(κ, yh, x, du), uh, resuh)
+    end
+    matdata_u = Gridap.FESpaces.collect_cell_matrix(dcjacu)
+    assem = SparseMatrixAssembler(Ycon, Xpde)
+    Au = Gridap.FESpaces.allocate_matrix(assem, matdata_u)
+    Gridap.FESpaces.assemble_matrix!(Au, assem, matdata_u)
   else
     Au = zeros(Gridap.FESpaces.num_free_dofs(Ypde), 0)
   end
 
   S = hcat(Ay, Au)
 
-  assem = Gridap.FESpaces.SparseMatrixAssembler(Y, Xpde)
-  #doesn't work as we may not have the good sparsity pattern.
-  #Gridap.FESpaces.assemble_matrix_add!(S, assem, (w, r, c))
-  S += Gridap.FESpaces.assemble_matrix(assem, (w, r, c))
-
   return S
 end
 
 function _from_terms_to_jacobian_vals!(
-  op::Gridap.FESpaces.FEOperatorFromTerms,
+  op::Gridap.FESpaces.FEOperatorFromWeakForm,
+  x::AbstractVector{T},
+  Y::FESpace,
+  Xpde::FESpace,
+  Ypde::FESpace,
+  Ycon::FESpace,
+  vals::AbstractVector{T};
+  nfirst::Integer = 0,
+) where {T <: Number}
+  A = _from_terms_to_jacobian(op, x, Y, Xpde, Ypde, Ycon)
+  _, _, v = findnz(A)
+  nini = nfirst + length(v)
+  vals[nfirst+1:nini] .= v
+  return nini
+end
+
+#=GRIDAPv15
+function _from_terms_to_jacobian_vals!(
+  op::Gridap.FESpaces.FEOperatorFromWeakForm,
   x::AbstractVector{T},
   Y::FESpace,
   Xpde::FESpace,
@@ -297,12 +379,14 @@ function _from_terms_to_jacobian_vals!(
 
   return nini
 end
+=#
 
 #=
 Adaptation of
 `function assemble_matrix_add!(mat,a::GenericSparseMatrixAssembler,matdata) end`
 from Gridap.FESpaces
 =#
+#=
 function assemble_jac_vals!(mat, a::Gridap.FESpaces.GenericSparseMatrixAssembler, matdata; n = 0)
   nini = n
   for (cellmat_rc, cellidsrows, cellidscols) in zip(matdata...)
@@ -376,7 +460,9 @@ import Gridap.FESpaces._get_block_layout
 function _get_block_layout(a::AbstractArray)
   nothing
 end
+=#
 
+#=
 function _jac_from_term_to_terms!(
   term::Gridap.FESpaces.FETerm,
   κ::AbstractVector,
@@ -403,7 +489,9 @@ function _jac_from_term_to_terms!(
   cellids = get_cell_id(term)
   _push_matrix_contribution!(w, r, c, cellvals, cellids)
 end
+=#
 
+#=
 function _jac_from_term_to_terms_id!(
   term::Gridap.FESpaces.FETerm,
   r::AbstractVector,
@@ -419,8 +507,10 @@ function _jac_from_term_to_terms_id!(
   w = [] #just to reuse Gridap functions
   Gridap.FESpaces._push_matrix_contribution!(w, r, c, [], cellids)
 end
+=#
 
 #https://github.com/gridap/Gridap.jl/blob/758a8620756e164ba0e6b83dc8dcbb278015b3d9/src/FESpaces/FETerms.jl#L367
+#=GRIDAPv15
 function _jac_from_term_to_terms!(
   term::Union{Gridap.FESpaces.LinearFETerm, Gridap.FESpaces.AffineFETermFromIntegration},
   κ::AbstractVector,
@@ -445,11 +535,13 @@ function _jac_from_term_to_terms!(
   _yuh = restrict(yu, term.trian)
 
   cellids = Gridap.FESpaces.get_cell_id(term)
-  cellvals = integrate(term.biform(_yuh, _v), term.trian, term.quad)
+  cellvals = integrate(term.biform(_yuh, _v), term.quad)
 
   Gridap.FESpaces._push_matrix_contribution!(w, r, c, cellvals, cellids)
 end
+=#
 
+#=
 function _jac_from_term_to_terms_id!(
   term::Union{Gridap.FESpaces.LinearFETerm, Gridap.FESpaces.AffineFETermFromIntegration},
   r::AbstractVector,
@@ -464,7 +556,9 @@ function _jac_from_term_to_terms_id!(
 
   Gridap.FESpaces._push_matrix_contribution!(w, r, c, [], cellids)
 end
+=#
 
+#=
 function _jac_from_term_to_terms!(
   term::Union{Gridap.FESpaces.NonlinearFETermWithAutodiff, Gridap.FESpaces.NonlinearFETerm},
   κ::AbstractVector,
@@ -495,7 +589,9 @@ function _jac_from_term_to_terms!(
 
   _jac_from_term_to_terms_y!(term, κ, yh, uh, dy, v, wy, ry, cy)
 end
+=#
 
+#=GRIDAPv15
 function _jac_from_term_to_terms_id!(
   term::Union{Gridap.FESpaces.NonlinearFETermWithAutodiff, Gridap.FESpaces.NonlinearFETerm},
   r::AbstractVector,
@@ -508,7 +604,9 @@ function _jac_from_term_to_terms_id!(
   _jac_from_term_to_terms_u_id!(term, ru, cu)
   _jac_from_term_to_terms_y_id!(term, ry, cy)
 end
+=#
 
+#=GRIDAPv15
 #https://github.com/gridap/Gridap.jl/blob/758a8620756e164ba0e6b83dc8dcbb278015b3d9/src/FESpaces/FETerms.jl#L332
 function _jac_from_term_to_terms!(
   term::Gridap.FESpaces.FESource,
@@ -532,7 +630,9 @@ function _jac_from_term_to_terms!(
 )
   nothing
 end
+=#
 
+#=GRIDAPv15
 function _jac_from_term_to_terms_id!(
   term::Gridap.FESpaces.FESource,
   r::AbstractVector,
@@ -544,9 +644,13 @@ function _jac_from_term_to_terms_id!(
 )
   nothing
 end
+=#
 
+#=GRIDAPv15
 include("test_autodiff.jl")
+=#
 
+#=GRIDAPv15
 function _jac_from_term_to_terms_u!(
   term::Union{Gridap.FESpaces.NonlinearFETermWithAutodiff, Gridap.FESpaces.NonlinearFETerm},
   κ::AbstractVector,
@@ -565,9 +669,9 @@ function _jac_from_term_to_terms_u!(
   function uh_to_cell_residual(uf)
     _uf = Gridap.FESpaces.restrict(uf, term.trian)
     if length(κ) > 0
-      return integrate(term.res(κ, vcat(_yh, _uf), _v), term.trian, term.quad)
+      return integrate(term.res(κ, vcat(_yh, _uf), _v), term.quad)
     else
-      return integrate(term.res(vcat(_yh, _uf), _v), term.trian, term.quad)
+      return integrate(term.res(vcat(_yh, _uf), _v), term.quad)
     end
   end
 
@@ -575,7 +679,7 @@ function _jac_from_term_to_terms_u!(
   ###########
   U = Gridap.FESpaces.get_fe_space(uh)
   cell_u_to_cell_residual = Gridap.FESpaces._change_argument_to_cell_u(uh_to_cell_residual, U)
-  cell_u = Gridap.FESpaces.get_cell_values(uh)
+  cell_u = Gridap.FESpaces.get_cell_dof_values(uh)
   _temp = cell_u_to_cell_residual(cell_u)
   ncu = length(_temp[1])
   cell_j = autodiff_array_jacobian2(cell_u_to_cell_residual, cell_u, ncu, cellids)
@@ -586,7 +690,9 @@ function _jac_from_term_to_terms_u!(
 
   return w, r, c
 end
+=#
 
+#=GRIDAPv15
 function _jac_from_term_to_terms_u_id!(
   term::Union{Gridap.FESpaces.NonlinearFETermWithAutodiff, Gridap.FESpaces.NonlinearFETerm},
   r::AbstractVector,
@@ -598,7 +704,9 @@ function _jac_from_term_to_terms_u_id!(
 
   return r, c
 end
+=#
 
+#=GRIDAPv15
 function _jac_from_term_to_terms_y_id!(
   term::Union{Gridap.FESpaces.NonlinearFETermWithAutodiff, Gridap.FESpaces.NonlinearFETerm},
   r::AbstractVector,
@@ -610,7 +718,9 @@ function _jac_from_term_to_terms_y_id!(
 
   return r, c
 end
+=#
 
+#=GRIDAPv15
 function _jac_from_term_to_terms_y!(
   term::Gridap.FESpaces.NonlinearFETermWithAutodiff,
   κ::AbstractVector,
@@ -630,13 +740,13 @@ function _jac_from_term_to_terms_y!(
   function yh_to_cell_residual(yf) #Tanj: improved solution is to declare the function outside
     _yf = Gridap.FESpaces.restrict(yf, term.trian)
     if length(κ) > 0 && uh != nothing
-      return integrate(term.res(κ, vcat(_yf, _uh), _v), term.trian, term.quad)
+      return integrate(term.res(κ, vcat(_yf, _uh), _v), term.quad)
     elseif length(κ) > 0 #&& uh == nothing
-      return integrate(term.res(κ, _yf, _v), term.trian, term.quad)
+      return integrate(term.res(κ, _yf, _v), term.quad)
     elseif length(κ) == 0 && uh == nothing
-      return integrate(term.res(_yf, _v), term.trian, term.quad)
+      return integrate(term.res(_yf, _v), term.quad)
     else #length(κ) == 0 && uh != nothing
-      return integrate(term.res(vcat(_yf, _uh), _v), term.trian, term.quad)
+      return integrate(term.res(vcat(_yf, _uh), _v), term.quad)
     end
   end
 
@@ -647,7 +757,9 @@ function _jac_from_term_to_terms_y!(
 
   return w, r, c
 end
+=#
 
+#=GRIDAPv15
 function _jac_from_term_to_terms_y!(
   term::Gridap.FESpaces.NonlinearFETerm,
   κ::AbstractVector,
@@ -668,12 +780,13 @@ function _jac_from_term_to_terms_y!(
 
   cellids = Gridap.FESpaces.get_cell_id(term)
   if length(κ) > 0
-    cellvals_y = integrate(term.jac(κ, vcat(_yh, _uh), _du, _v), term.trian, term.quad)
+    cellvals_y = integrate(term.jac(κ, vcat(_yh, _uh), _du, _v), term.quad)
   else
-    cellvals_y = integrate(term.jac(vcat(_yh, _uh), _du, _v), term.trian, term.quad)
+    cellvals_y = integrate(term.jac(vcat(_yh, _uh), _du, _v), term.quad)
   end
 
   Gridap.FESpaces._push_matrix_contribution!(w, r, c, cellvals_y, cellids)
 
   return w, r, c
 end
+=#

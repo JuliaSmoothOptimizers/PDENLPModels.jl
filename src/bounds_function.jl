@@ -20,7 +20,7 @@ function bounds_functions_to_vectors(
   cell_xs = get_cell_coordinates(trian)
   #Create a function that given a cell returns the middle.
   midpoint(xs) = sum(xs) / length(xs)
-  cell_xm = apply(midpoint, cell_xs) #this is a vector of size num_cells(trian)
+  cell_xm = lazy_map(midpoint, cell_xs) #this is a vector of size num_cells(trian)
 
   nfields_y = if typeof(Ypde) <: MultiFieldFESpace
     Gridap.MultiField.num_fields(Ypde) #Gridap.MultiField.num_fields(Y)
@@ -74,7 +74,7 @@ function bounds_functions_to_vectors(
   cell_xs = get_cell_coordinates(trian)
   #Create a function that given a cell returns the middle.
   midpoint(xs) = sum(xs) / length(xs)
-  cell_xm = apply(midpoint, cell_xs) #this is a vector of size num_cells(trian)
+  cell_xm = lazy_map(midpoint, cell_xs) #this is a vector of size num_cells(trian)
 
   nfields_u = if typeof(Ycon) <: MultiFieldFESpace
     Gridap.MultiField.num_fields(Ycon) #Gridap.MultiField.num_fields(Y)
@@ -130,7 +130,7 @@ function bounds_functions_to_vectors(
   cell_xs = get_cell_coordinates(trian)
   #Create a function that given a cell returns the middle.
   midpoint(xs) = sum(xs) / length(xs)
-  cell_xm = apply(midpoint, cell_xs) #this is a vector of size num_cells(trian)
+  cell_xm = lazy_map(midpoint, cell_xs) #this is a vector of size num_cells(trian)
 
   nfields_y = if typeof(Ypde) <: MultiFieldFESpace
     Gridap.MultiField.num_fields(Ypde) #Gridap.MultiField.num_fields(Y)
@@ -187,7 +187,7 @@ function _functions_to_vectors!(
   trian::Triangulation,
   lfunc::Function,
   ufunc::Function,
-  cell_xm::Gridap.Arrays.AppliedArray,
+  cell_xm, # What is this type ??? Former Gridap.Arrays.AppliedArray
   Y::FESpace,
   lvar::AbstractVector,
   uvar::AbstractVector,
@@ -198,8 +198,8 @@ function _functions_to_vectors!(
   for i = 1:nfields
     Yi = typeof(Y) <: MultiFieldFESpace ? Y.spaces[i] : Y
 
-    cell_l = apply(x -> lfunc(x)[i], cell_xm) #this is a vector of size num_cells(trian)
-    cell_u = apply(x -> ufunc(x)[i], cell_xm) #this is a vector of size num_cells(trian)
+    cell_l = lazy_map(x -> lfunc(x)[i], cell_xm) #this is a vector of size num_cells(trian)
+    cell_u = lazy_map(x -> ufunc(x)[i], cell_xm) #this is a vector of size num_cells(trian)
 
     lvaru = get_free_values(Gridap.FESpaces.interpolate(cell_l, Yi))
     uvaru = get_free_values(Gridap.FESpaces.interpolate(cell_u, Yi))

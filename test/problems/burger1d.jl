@@ -7,42 +7,23 @@ function burger1d(args...; n = 512, kwargs...)
   add_tag_from_tags!(labels, "diri1", [2])
   add_tag_from_tags!(labels, "diri0", [1])
 
-  D = 1
+  trian = Triangulation(model)
+  degree = 1
+  dΩ = Measure(trian, degree)
+
   order = 1
-  V = TestFESpace(
-    reffe = :Lagrangian,
-    conformity = :H1,
-    valuetype = Float64,
-    model = model,
-    labels = labels,
-    order = order,
-    dirichlet_tags = ["diri0", "diri1"],
-  )
+  valuetype = Float64
+  reffe = ReferenceFE(lagrangian, valuetype, 1)
+  V = TestFESpace(model, reffe; conformity = :H1, labels = labels, dirichlet_tags = ["diri0", "diri1"])
 
   h(x) = 2 * (nu + x[1]^3)
   uD0 = VectorValue(0)
   uD1 = VectorValue(-1)
   U = TrialFESpace(V, [uD0, uD1])
 
-  @law conv(u, ∇u) = (∇u ⋅ one(∇u)) ⊙ u
-  @law dconv(du, ∇du, u, ∇u) = conv(u, ∇du) + conv(du, ∇u)
-
-  function a(u, v)
-    ∇(v) ⊙ ∇(u)
-  end
-
-  c(u, v) = v ⊙ conv(u, ∇(u))
+  conv(u, ∇u) = (∇u ⋅ one(∇u)) ⊙ u
+  c(u, v) = v⊙(conv∘(u,∇(u)))
   nu = 0.08
-  function res_pde(u, v)
-    z(x) = 0.5
-    -nu * (∇(v) ⊙ ∇(u)) + c(u, v) - v * z - v * h
-  end
-
-  trian = Triangulation(model)
-  degree = 1
-  quad = CellQuadrature(trian, degree)
-  t_Ω = FETerm(res_pde, trian, quad)
-  op_pde = FEOperator(U, V, t_Ω)
 
   # Now we move to the optimization:
   ud(x) = -x[1]^2
@@ -52,28 +33,21 @@ function burger1d(args...; n = 512, kwargs...)
   f(u, z) = 0.5 * (ud - u) * (ud - u) + 0.5 * α * z * z
   function f(yu) #:: Union{Gridap.MultiField.MultiFieldFEFunction, Gridap.CellData.GenericCellField}
     u, z = yu
-    f(u, z)
+    ∫( f(u, z) )dΩ
   end
 
-  function res(yu, v) #u is the solution of the PDE and z the control
-    u, z = yu
-    -nu * (∇(v) ⊙ ∇(u)) + c(u, v) - v * z - v * h
+  function res(y, u, v) #u is the solution of the PDE and z the control
+    ∫( -nu * (∇(v) ⊙ ∇(y)) + c(y, v) - v * u - v * h )dΩ
   end
-  t_Ω = FETerm(res, trian, quad)
-  op = FEOperator(U, V, t_Ω)
+  op = FEOperator(res, U, V)
 
-  Xcon = TestFESpace(
-    reffe = :Lagrangian,
-    order = 1,
-    valuetype = Float64,
-    conformity = :H1,
-    model = model,
-  )
+  Xcon = TestFESpace(model, reffe; conformity = :H1)
+  Ycon = TrialFESpace(Xcon)
   Ycon = TrialFESpace(Xcon)
 
   Y = MultiFieldFESpace([U, Ycon])
   xin = zeros(Gridap.FESpaces.num_free_dofs(Y))
-  return GridapPDENLPModel(xin, f, trian, quad, U, Ycon, V, Xcon, op)
+  return GridapPDENLPModel(xin, f, trian, dΩ, U, Ycon, V, Xcon, op)
 end
 
 function burger1d_test(; udc = false)
@@ -85,41 +59,36 @@ function burger1d_test(; udc = false)
   add_tag_from_tags!(labels, "diri1", [2])
   add_tag_from_tags!(labels, "diri0", [1])
 
-  D = 1
   order = 1
-  V = TestFESpace(
-    reffe = :Lagrangian,
-    conformity = :H1,
-    valuetype = Float64,
-    model = model,
-    labels = labels,
-    order = order,
-    dirichlet_tags = ["diri0", "diri1"],
-  )
+  valuetype = Float64
+  reffe = ReferenceFE(lagrangian, valuetype, order)
+  V = TestFESpace(model, reffe; conformity = :H1, labels = labels, dirichlet_tags = ["diri0", "diri1"])
+
 
   h(x) = 2 * (nu + x[1]^3)
   uD0 = VectorValue(0)
   uD1 = VectorValue(-1)
   U = TrialFESpace(V, [uD0, uD1])
 
-  @law conv(u, ∇u) = (∇u ⋅ one(∇u)) ⊙ u
-  @law dconv(du, ∇du, u, ∇u) = conv(u, ∇du) + conv(du, ∇u)
-  c(u, v) = v ⊙ conv(u, ∇(u))
+  conv(u, ∇u) = (∇u ⋅ one(∇u)) ⊙ u
+  dconv(du, ∇du, u, ∇u) = conv∘(u, ∇du) + conv∘(du, ∇u)
+  c(u, v) = v ⊙ conv∘(u, ∇(u))
   nu = 0.08
-  function res_pde(u, v)
-    z(x) = 0.5
-    -nu * (∇(v) ⊙ ∇(u)) + c(u, v) - v * z - v * h
-  end
 
   trian = Triangulation(model)
   @test Gridap.FESpaces.num_cells(trian) == 512
   degree = 1
-  quad = CellQuadrature(trian, degree)
-  t_Ω = FETerm(res_pde, trian, quad)
-  op_pde = FEOperator(U, V, t_Ω)
+  dΩ = Measure(trian, degree)
 
+  function res(y, v) #u is the solution of the PDE and z the control
+    z(x) = 0.5
+    ∫( -nu * (∇(v) ⊙ ∇(y)) + c(y, v) - v * z - v * h )dΩ
+  end
+  op_pde = FEOperator(res, U, V)
+
+  #=
   # Check resolution for z given.
-  nls = NLSolver(show_trace = true, method = :newton) #, linesearch=BackTracking()
+  nls = NLSolver(show_trace = true, method = :newton)
   solver = FESolver(nls)
 
   uh = solve(solver, op_pde)
@@ -158,4 +127,5 @@ function burger1d_test(; udc = false)
   @test Hv[512:1024] == zeros(513)
   Hvo = hprod(nlp, sol_gridap, zeros(nlp.meta.ncon), rand(nlp.meta.nvar), obj_weight = 0.0)
   @test Hvo == zeros(1024)
+  =#
 end

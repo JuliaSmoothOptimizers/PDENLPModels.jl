@@ -30,49 +30,42 @@ The implementation as a `GridapPDENLPModel` is given as follows.
     model = CartesianDiscreteModel((-1,1,-1,1), (n,n))
 
     #Definition of the spaces:
+    order = 1
+    valuetype = Float64
+    reffe = ReferenceFE(lagrangian, valuetype, order)
     Xpde = TestFESpace(
-      reffe=:Lagrangian, 
-      conformity=:H1, 
-      valuetype=Float64, 
-      model=model, 
-      order=1, 
-      dirichlet_tags="boundary"
+      model,
+      reffe;
+      conformity = :H1,
+      dirichlet_tags="boundary",
     )
     Ypde = TrialFESpace(Xpde, 0.0)
-    Xcon = TestFESpace(
-      reffe=:Lagrangian, 
-      order=1, 
-      valuetype=Float64,
-      conformity=:L2, 
-      model=model
-    )
+    Xcon = TestFESpace(model, reffe; conformity = :L2)
     Ycon = TrialFESpace(Xcon)
 
     #Integration machinery
     trian = Triangulation(model)
     degree = 1
-    quad = CellQuadrature(trian,degree)
+    dΩ = Measure(trian,degree)
 
     #Objective function:
     yd(x) = min(x[1]-0.25, 0.75-x[1],x[2]-0.25, 0.75-x[2])>=0. ? 10. : 5.
     function f(yu)
         y, u = yu
-        0.5 * (yd - y) * (yd - y) + 0.5 * 1e-4 * u * u
+        ∫( 0.5 * (yd - y) * (yd - y) + 0.5 * 1e-4 * u * u )dΩ
     end
 
     #Definition of the constraint operator
     ω = π - 1/8
     h(x) = - sin(ω*x[1])*sin(ω*x[2])
-    function res(yu, v)
-     y, u = yu
-     ∇(v) ⊙ ∇(y) + operate(sinh, y)*v - u*v - v * h
+    function res(y, u, v)
+     ∫( ∇(v) ⊙ ∇(y) + operate(sinh, y)*v - u*v - v * h )dΩ
     end
-    t_Ω = FETerm(res,trian,quad)
-    op = FEOperator(Y, Xpde, t_Ω)
+    op = FEOperator(res, Y, Xpde)
 
     Y = MultiFieldFESpace([Ypde, Ycon])
     xin = zeros(Gridap.FESpaces.num_free_dofs(Y))
-    nlp = GridapPDENLPModel(xin, f, trian, quad, Ypde, Ycon, Xpde, Xcon, op)
+    nlp = GridapPDENLPModel(xin, f, trian, dΩ, Ypde, Ycon, Xpde, Xcon, op)
 ```
 
 Then, one can solve the problem with Ipopt via [NLPModelsIpopt.jl](https://github.com/JuliaSmoothOptimizers/NLPModelsIpopt.jl) and plot the solution as a VTK file.

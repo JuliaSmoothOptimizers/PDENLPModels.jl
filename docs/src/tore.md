@@ -17,17 +17,6 @@ with $a=1$ and $c=3$.
 ```
   using Gridap, PDENLPModels
 
-  # The function under the integral:
-  # To use the function cos in Gridap: `operate(cos, x)` vaut cos(x)
-  # The square function is not available, so: `x*x` holds for $x^2$, 
-  # and `∇(φ) ⊙ ∇(φ)` for `φ'^2`.
-  a = 1
-  c = 3
-  function f(x)
-    φ, θ = x
-    a * a * ∇(φ) ⊙ ∇(φ) + (c + a * operate(cos, φ)) * (c + a * operate(cos, φ)) * ∇(θ) ⊙ ∇(θ)
-  end
-
   n = 100 #discretization size
   domain = (0,1) 
   model = CartesianDiscreteModel(domain, n)
@@ -39,20 +28,19 @@ with $a=1$ and $c=3$.
   x0 = zeros(2) # initial values
   xf = π * ones(2) # final values
   
+  order = 1
+  valuetype = Float64
+  reffe = ReferenceFE(lagrangian, valuetype, order)
   V0 = TestFESpace(
-    reffe=:Lagrangian, 
-    order=1, 
-    valuetype=Float64,
-    conformity=:H1, 
-    model=model, 
+    model,
+    reffe;
+    conformity = :H1,
     dirichlet_tags=["diri0","diri1"],
   )
   V1 = TestFESpace(
-    reffe=:Lagrangian, 
-    order=1, 
-    valuetype=Float64,
-    conformity=:H1, 
-    model=model, 
+    model,
+    reffe;
+    conformity = :H1,
     dirichlet_tags=["diri0","diri1"],
   )
   
@@ -66,7 +54,18 @@ with $a=1$ and $c=3$.
   
   trian = Triangulation(model)
   degree = 1
-  quad = CellQuadrature(trian, degree)
+  dΩ = Measure(trian, degree)
+
+  # The function under the integral:
+  # To use the function cos in Gridap: `operate(cos, x)` vaut cos(x)
+  # The square function is not available, so: `x*x` holds for $x^2$, 
+  # and `∇(φ) ⊙ ∇(φ)` for `φ'^2`.
+  a = 1
+  c = 3
+  function f(x)
+    φ, θ = x
+    ∫( a * a * ∇(φ) ⊙ ∇(φ) + (c + a * operate(cos, φ)) * (c + a * operate(cos, φ)) * ∇(θ) ⊙ ∇(θ) )dΩ
+  end
 
   # boundaries
   xmin = 0
@@ -76,7 +75,7 @@ with $a=1$ and $c=3$.
     zeros(nU0 + nU1), 
     f, 
     trian, 
-    quad, 
+    dΩ, 
     U, 
     V, 
     lvar = xmin * ones(nU0+nU1), 

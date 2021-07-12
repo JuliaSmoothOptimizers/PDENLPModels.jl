@@ -20,7 +20,7 @@ function GridapPDENLPModel(
 
   @assert nparam ≥ 0 throw(DimensionError("x0", nvar_pde, nvar))
 
-  nnzh = get_nnzh(tnrj, Ypde, Xpde, nparam, nvar) #nvar * (nvar + 1) / 2
+  rows, cols, nnzh = _compute_hess_structure(tnrj, Y, X, x0, nparam)
 
   if NRJ <: NoFETerm && typeof(lvar) <: AbstractVector && typeof(uvar) <: AbstractVector
     lv, uv = lvar, uvar
@@ -55,6 +55,7 @@ function GridapPDENLPModel(
     nvar_pde,
     nvar_con,
     nparam,
+    nnzh,
   )
 end
 
@@ -62,7 +63,7 @@ function GridapPDENLPModel(
   x0::S,
   f::Function,
   trian::Triangulation,
-  quad::CellQuadrature,
+  quad::Measure,
   Ypde::FESpace,
   Xpde::FESpace;
   lvar::S = fill!(similar(x0), -eltype(S)(Inf)),
@@ -81,7 +82,7 @@ function GridapPDENLPModel(
   x0::S,
   f::Function,
   trian::Triangulation,
-  quad::CellQuadrature,
+  quad::Measure,
   Ypde::FESpace,
   Xpde::FESpace,
   c::FEOperator;
@@ -198,7 +199,9 @@ function GridapPDENLPModel(
   @lencheck nvar lvar uvar
   @lencheck ncon ucon y0
 
-  nnzh = get_nnzh(tnrj, c, Y, X, nparam, nvar) #nvar * (nvar + 1) / 2
+  # nnzh = get_nnzh(tnrj, c, Y, Ypde, X, nparam, nvar) #nvar * (nvar + 1) / 2
+  rows, cols, nnzh = _compute_hess_structure(tnrj, c, Y, Ypde, Ycon, X, x0, nparam)
+  _, _, nnzh_obj = _compute_hess_structure(tnrj, Y, X, x0, nparam)
 
   if typeof(c) <: AffineFEOperator #Here we expect ncon = nvar_pde
     nln = Int[]
@@ -207,7 +210,7 @@ function GridapPDENLPModel(
     nln = setdiff(1:ncon, lin)
   end
   nnz_jac_k = nparam > 0 ? ncon * nparam : 0
-  nnzj = count_nnz_jac(c, Y, Xpde, Ypde, Ycon) + nnz_jac_k
+  nnzj = count_nnz_jac(c, Y, Xpde, Ypde, Ycon, x0) + nnz_jac_k
 
   meta = NLPModelMeta{T, S}(
     nvar,
@@ -241,6 +244,7 @@ function GridapPDENLPModel(
     nvar_pde,
     nvar_con,
     nparam,
+    nnzh_obj,
   )
 end
 
@@ -248,7 +252,7 @@ function GridapPDENLPModel(
   x0::S,
   f::Function,
   trian::Triangulation,
-  quad::CellQuadrature,
+  quad::Measure,
   Ypde::FESpace,
   Ycon::FESpace,
   Xpde::FESpace,
