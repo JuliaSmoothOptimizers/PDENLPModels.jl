@@ -60,6 +60,13 @@ end
   for problem in pde_problems
     @info "$(problem)"
     @time nlp = eval(Meta.parse("$(lowercase(problem))(n=$(n))"))
+    x = nlp.meta.x0
+    obj(nlp, x)
+    grad(nlp, x)
+    hess(nlp, x)
+    y = nlp.meta.y0
+    hess(nlp, x, y)
+    #=
     @testset "Test problem scenario" begin
       if local_test
         @time eval(Meta.parse("$(lowercase(problem))_test()"))
@@ -88,6 +95,7 @@ end
         end
       end
     end
+    =#
   end
 end
 

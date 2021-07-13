@@ -121,7 +121,7 @@ function incompressiblenavierstokes_test(; udc = false)
   nls = NLSolver(show_trace = true, method = :newton) #, linesearch=BackTracking()
   solver = FESolver(nls)
   uh, ph = solve(solver, nlp.op)
-  sol_gridap = vcat(get_free_values(uh), get_free_values(ph))
+  sol_gridap = vcat(get_free_dof_values(uh), get_free_dof_values(ph))
 
   cGx = Gridap.FESpaces.residual(nlp.op, FEFunction(Gridap.FESpaces.get_trial(nlp.op), sol_gridap))
   cx = cons(nlp, sol_gridap)
