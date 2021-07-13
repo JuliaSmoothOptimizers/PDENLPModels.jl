@@ -33,13 +33,13 @@ function poissonmixed2(args...; n = 3, kwargs...)
   f(x) = (2 * pi^2) * sin(2 * pi * x[1]) * x[2]
 
   function res(k, y, v)
-    ∫( k[1] * ∇(v) ⊙ ∇(y) - v * f * k[2] )dΩ
+    ∫(k[1] * ∇(v) ⊙ ∇(y) - v * f * k[2])dΩ
   end
   op = FEOperator(res, Ug, V0)
 
   function fk(k, y)
     k1(x) = k[1]
-    ∫( k1 * (sol - y) * (sol - y) + 0.5 * (k[2] - 1.0) * (k[2] - 1.0) )dΩ
+    ∫(k1 * (sol - y) * (sol - y) + 0.5 * (k[2] - 1.0) * (k[2] - 1.0))dΩ
   end
 
   Vp = TestFESpace(model, reffe; conformity = :H1)

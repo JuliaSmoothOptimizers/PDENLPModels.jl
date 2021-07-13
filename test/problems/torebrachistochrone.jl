@@ -24,7 +24,7 @@ function torebrachistochrone(args...; n = 3, kwargs...)
   #Pas de carré disponible, donc: `x*x` vaut pour x^2, et `∇(φ) ⊙ ∇(φ)` vaut `φ'^2` (la dérivée au carré)
   function f(x)
     φ, θ = x
-    ∫( a * a * ∇(φ) ⊙ ∇(φ) + (c + a * (cos ∘ φ)) * (c + a * (cos ∘ φ)) * ∇(θ) ⊙ ∇(θ) )dΩ
+    ∫(a * a * ∇(φ) ⊙ ∇(φ) + (c + a * (cos ∘ φ)) * (c + a * (cos ∘ φ)) * ∇(θ) ⊙ ∇(θ))dΩ
   end
 
   labels = get_face_labeling(model)
@@ -33,8 +33,20 @@ function torebrachistochrone(args...; n = 3, kwargs...)
 
   valuetype = Float64
   reffe = ReferenceFE(lagrangian, valuetype, 1)
-  V0 = TestFESpace(model, reffe; conformity = :H1, labels = labels, dirichlet_tags = ["diri0", "diri1"])
-  V1 = TestFESpace(model, reffe; conformity = :H1, labels = labels, dirichlet_tags = ["diri0", "diri1"])
+  V0 = TestFESpace(
+    model,
+    reffe;
+    conformity = :H1,
+    labels = labels,
+    dirichlet_tags = ["diri0", "diri1"],
+  )
+  V1 = TestFESpace(
+    model,
+    reffe;
+    conformity = :H1,
+    labels = labels,
+    dirichlet_tags = ["diri0", "diri1"],
+  )
 
   U0 = TrialFESpace(V0, [x0[1], xf[1]])
   U1 = TrialFESpace(V0, [x0[2], xf[2]])

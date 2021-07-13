@@ -61,7 +61,7 @@ end
     @info "$(problem)"
     @time nlp = eval(Meta.parse("$(lowercase(problem))(n=$(n))"))
     @testset "Test problem scenario" begin
-      if local_test 
+      if local_test
         @time eval(Meta.parse("$(lowercase(problem))_test()"))
       end
     end

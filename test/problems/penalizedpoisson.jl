@@ -32,7 +32,7 @@ function penalizedpoisson(args...; n = 2^4, kwargs...)
   w(x) = 1
   function f(yu)
     y = yu
-    ∫( 0.5 * ∇(y) ⊙ ∇(y) - w * y )*dΩ
+    ∫(0.5 * ∇(y) ⊙ ∇(y) - w * y) * dΩ
   end
 
   xin = zeros(Gridap.FESpaces.num_free_dofs(Ypde))
@@ -87,9 +87,9 @@ function penalizedpoisson_test(; udc = false)
   trian = Triangulation(model)
   degree = 2
   dΩ = Measure(trian, degree)
-  a(u, v) = ∫( ∇(v) ⊙ ∇(u) )*dΩ
+  a(u, v) = ∫(∇(v) ⊙ ∇(u)) * dΩ
   w(x) = 1
-  b_Ω(v) = ∫( v * w )*dΩ
+  b_Ω(v) = ∫(v * w) * dΩ
 
   op_pde = AffineFEOperator(a, b_Ω, U, V0)
   ls = LUSolver()

@@ -11,10 +11,16 @@ function incompressiblenavierstokes(args...; n = 3, kwargs...)
   order = 2
   valuetype = VectorValue{D, Float64}
   reffeᵤ = ReferenceFE(lagrangian, valuetype, order)
-  V = TestFESpace(model, reffeᵤ, conformity=:H1, labels=labels, dirichlet_tags=["diri0","diri1"])
+  V = TestFESpace(
+    model,
+    reffeᵤ,
+    conformity = :H1,
+    labels = labels,
+    dirichlet_tags = ["diri0", "diri1"],
+  )
 
-  reffeₚ = ReferenceFE(lagrangian, Float64, order-1; space=:P)
-  Q = TestFESpace(model, reffeₚ, conformity=:L2, constraint=:zeromean)
+  reffeₚ = ReferenceFE(lagrangian, Float64, order - 1; space = :P)
+  Q = TestFESpace(model, reffeₚ, conformity = :L2, constraint = :zeromean)
 
   uD0 = VectorValue(0, 0)
   uD1 = VectorValue(1, 0)
@@ -32,10 +38,10 @@ function incompressiblenavierstokes(args...; n = 3, kwargs...)
   conv(u, ∇u) = Re * (∇u') ⋅ u
   dconv(du, ∇du, u, ∇u) = conv(u, ∇du) + conv(du, ∇u)
 
-  a((u, p), (v, q)) = ∫( ∇(v) ⊙ ∇(u) - (∇ ⋅ v) * p + q * (∇ ⋅ u) )dΩ
+  a((u, p), (v, q)) = ∫(∇(v) ⊙ ∇(u) - (∇ ⋅ v) * p + q * (∇ ⋅ u))dΩ
 
-  c(u, v) = ∫( v ⊙ (conv ∘ (u, ∇(u))) )dΩ # c(u, v) = v ⊙ conv(u, ∇(u))
-  dc(u, du, v) = ∫( v ⊙ (dconv ∘ (du, ∇(du), u, ∇(u))) )dΩ
+  c(u, v) = ∫(v ⊙ (conv ∘ (u, ∇(u))))dΩ # c(u, v) = v ⊙ conv(u, ∇(u))
+  dc(u, du, v) = ∫(v ⊙ (dconv ∘ (du, ∇(du), u, ∇(u))))dΩ
 
   res((u, p), (v, q)) = a((u, p), (v, q)) + c(u, v)
   jac((u, p), (du, dp), (v, q)) = a((du, dp), (v, q)) + dc(u, du, v)
@@ -50,7 +56,7 @@ function incompressiblenavierstokes(args...; n = 3, kwargs...)
   xin = zeros(ndofs)
   # Ycon, Xcon = nothing, nothing
   # @time nlp = GridapPDENLPModel(xin, x->0.0, Ωₕ, dΩ, Y, Ycon, X, Xcon, op)
-  return GridapPDENLPModel(xin, x -> ∫( 0.0 )dΩ, Ωₕ, dΩ, Y, X, op)
+  return GridapPDENLPModel(xin, x -> ∫(0.0)dΩ, Ωₕ, dΩ, Y, X, op)
 end
 
 function incompressiblenavierstokes_test(; udc = false)

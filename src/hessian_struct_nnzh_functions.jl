@@ -48,13 +48,12 @@ end
 function _compute_hess_structure_k(tnrj::AbstractEnergyTerm, Y, X, x0, nparam)
   n, p = length(x0), nparam
   prows = n
-  nnz_hess_k =
-    if (typeof(tnrj) <: MixedEnergyFETerm && tnrj.inde) || typeof(tnrj) <: NoFETerm
-      prows = p
-      Int(p * (p + 1) / 2)
-    else
-      Int(p * (p + 1) / 2) + (n - p) * p
-    end
+  nnz_hess_k = if (typeof(tnrj) <: MixedEnergyFETerm && tnrj.inde) || typeof(tnrj) <: NoFETerm
+    prows = p
+    Int(p * (p + 1) / 2)
+  else
+    Int(p * (p + 1) / 2) + (n - p) * p
+  end
   I = ((i, j) for i = 1:prows, j = 1:p if j ≤ i)
   rows = getindex.(I, 1)[:]
   cols = getindex.(I, 2)[:]
@@ -75,14 +74,22 @@ function _compute_hess_structure(op::AffineFEOperator, Y, Ypde, Ycon, X, x0, npa
   return Int[], Int[], 0
 end
 
-function _compute_hess_structure(op::Gridap.FESpaces.FEOperatorFromWeakForm, Y, Ypde, Ycon, X, x0, nparam) where {T}
+function _compute_hess_structure(
+  op::Gridap.FESpaces.FEOperatorFromWeakForm,
+  Y,
+  Ypde,
+  Ycon,
+  X,
+  x0,
+  nparam,
+) where {T}
   λ = zeros(Gridap.FESpaces.num_free_dofs(Ypde))
   λf = FEFunction(Ypde, λ) # or Ypde
   nvar = length(x0)
   κ, xyu = x0[1:nparam], x0[(nparam + 1):nvar]
   xh = FEFunction(Y, xyu)
   nvar = length(xyu)
-  
+
   function split_res(x, λ)
     if typeof(Ycon) <: VoidFESpace
       if nparam > 0
@@ -162,7 +169,15 @@ function get_nnzh(tnrj::T, op::AffineFEOperator, Y, Ypde, X, nparam, nvar) where
   return get_nnzh(tnrj, Y, X, nparam, nvar)
 end
 
-function get_nnzh(tnrj::T, op::Gridap.FESpaces.FEOperatorFromWeakForm, Y, Ypde, X, nparam, nvar) where {T}
+function get_nnzh(
+  tnrj::T,
+  op::Gridap.FESpaces.FEOperatorFromWeakForm,
+  Y,
+  Ypde,
+  X,
+  nparam,
+  nvar,
+) where {T}
   nnz_hess_obj = get_nnzh(tnrj, Y, X, nparam, nvar)
 
   nnz_hess_yu = 0
@@ -178,12 +193,12 @@ function get_nnzh(tnrj::T, op::Gridap.FESpaces.FEOperatorFromWeakForm, Y, Ypde, 
     nnz_hess_yu += count_hess_nnz_coo_short(a, cell_id_yu)
   end
   =#
-###################################################################################
+  ###################################################################################
   λ = zeros(Gridap.FESpaces.num_free_dofs(Ypde))
   λf = FEFunction(Ypde, λ) # or Ypde
   x = zeros(nvar)
   xh = FEFunction(Y, x)
-  
+
   function split_res(x, λ)
     if Gridap.FESpaces.num_free_dofs(Ypde) == nvar - nparam
       return op.res(x, λ)
@@ -194,13 +209,13 @@ function get_nnzh(tnrj::T, op::Gridap.FESpaces.FEOperatorFromWeakForm, Y, Ypde, 
   end
   luh = split_res(xh, λf)
 
-  lag_hess = Gridap.FESpaces._hessian(x->split_res(x, λf), xh, luh)
+  lag_hess = Gridap.FESpaces._hessian(x -> split_res(x, λf), xh, luh)
   matdata = Gridap.FESpaces.collect_cell_matrix(lag_hess)
   assem = SparseMatrixAssembler(Y, X)
   A = Gridap.FESpaces.allocate_matrix(assem, matdata)
 
   nnz_hess_yu += nnz(A)
-###################################################################################
+  ###################################################################################
 
   #add the nnz w.r.t. k; by default it is:
   if nparam > 0

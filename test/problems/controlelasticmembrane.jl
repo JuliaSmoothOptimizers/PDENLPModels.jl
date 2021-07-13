@@ -40,7 +40,7 @@ function controlelasticmembrane(args...; n = 3, kargs...)
   α = 1e-2
   function f(yu)
     y, u = yu
-    ∫( 0.5 * (yd - y) * (yd - y) + 0.5 * α * u * u ) * dΩ
+    ∫(0.5 * (yd - y) * (yd - y) + 0.5 * α * u * u) * dΩ
   end
 
   # Definition of the constraint operator
@@ -48,9 +48,9 @@ function controlelasticmembrane(args...; n = 3, kargs...)
   h(x) = -sin(ω * x[1]) * sin(ω * x[2])
   function res(yu, v)
     y, u = yu
-    ∫( ∇(v) ⊙ ∇(y) - v * u ) * dΩ #- v * h
+    ∫(∇(v) ⊙ ∇(y) - v * u) * dΩ #- v * h
   end
-  rhs(v) =  ∫( v * h ) * dΩ
+  rhs(v) = ∫(v * h) * dΩ
   op = AffineFEOperator(res, rhs, Y, Xpde)
 
   # It is easy to have a constant bounds
