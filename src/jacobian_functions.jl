@@ -152,7 +152,7 @@ function count_nnz_jac(
   κ, xyu = x[1:nparam], x[(nparam + 1):nvar]
   yu = FEFunction(Y, xyu)
 
-  v = Gridap.FESpaces.get_cell_shapefuns(Xpde)
+  v = Gridap.FESpaces.get_fe_basis(Xpde)
   du = Gridap.FESpaces.get_trial_fe_basis(Ypde)
   if nparam == 0
     if typeof(Ycon) <: VoidFESpace
@@ -267,7 +267,7 @@ function _from_terms_to_jacobian(
   κ, xyu = x[1:nparam], x[(nparam + 1):nvar]
   yu = FEFunction(Y, xyu)
 
-  v = Gridap.FESpaces.get_cell_shapefuns(Xpde)
+  v = Gridap.FESpaces.get_fe_basis(Xpde)
 
   du = Gridap.FESpaces.get_trial_fe_basis(Ypde)
   if nparam == 0

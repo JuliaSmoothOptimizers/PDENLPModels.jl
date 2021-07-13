@@ -294,7 +294,7 @@ function _from_terms_to_residual!(
   # Gridap.FESpaces.residual(nlp.op, FEFunction(nlp.Y, x))
   # Split the call of: b = allocate_residual(op, u)
   V = Gridap.FESpaces.get_test(op)
-  v = Gridap.FESpaces.get_cell_shapefuns(V)
+  v = Gridap.FESpaces.get_fe_basis(V)
   if nlp.nparam == 0
     if typeof(nlp.Ycon) <: VoidFESpace
       vecdata = Gridap.FESpaces.collect_cell_vector(op.res(y, v))
