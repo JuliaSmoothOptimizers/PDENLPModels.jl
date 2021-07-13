@@ -16,18 +16,18 @@ Random.seed!(1998)
 n = 3
 #Tanj: for each problem there is a lowercase(problem) function that returns a GridapPDENLPModel
 #++ would be to also have a lowercase(problem)_test that test the problem with the exact solution.
-local_test = false # tested locally only
+local_test = true # tested locally only
 
 pde_problems = if local_test
   [
-    "BURGER1D",
-    "CELLINCREASE",
-    "SIS",
-    "CONTROLSIR",
-    "DYNAMICSIR",
-    "BASICUNCONSTRAINED",
+    # "BURGER1D", # see error Gridap 1
+    # "CELLINCREASE", # see error Gridap 1
+    # "SIS",
+    # "CONTROLSIR",
+    # "DYNAMICSIR", # meilleur stacktrace
+    #"BASICUNCONSTRAINED", # meilleur stacktrace
     "PENALIZEDPOISSON",
-    #"INCOMPRESSIBLENAVIERSTOKES", #too slow (tested locally only)
+    "INCOMPRESSIBLENAVIERSTOKES", #too slow (tested locally only)
     "POISSONMIXED",
     "POISSONPARAM",
     "POISSONMIXED2",

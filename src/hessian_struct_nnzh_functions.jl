@@ -33,7 +33,7 @@ function _compute_hess_structure_obj(tnrj::AbstractEnergyTerm, Y, X, x0, nparam)
     luh = tnrj.f(xh)
     lag_hess = Gridap.FESpaces._hessian(tnrj.f, xh, luh)
   end
-  matdata = Gridap.FESpaces.collect_cell_matrix(lag_hess)
+  matdata = Gridap.FESpaces.collect_cell_matrix(Y, X, lag_hess)
   assem = SparseMatrixAssembler(Y, X)
   A = Gridap.FESpaces.allocate_matrix(assem, matdata)
   rows, cols, _ = findnz(tril(A))
@@ -109,7 +109,7 @@ function _compute_hess_structure(
   luh = split_res(xh, λf)
 
   lag_hess = Gridap.FESpaces._hessian(x -> split_res(x, λf), xh, luh)
-  matdata = Gridap.FESpaces.collect_cell_matrix(lag_hess)
+  matdata = Gridap.FESpaces.collect_cell_matrix(Y, X, lag_hess)
   assem = SparseMatrixAssembler(Y, X)
   A = Gridap.FESpaces.allocate_matrix(assem, matdata)
   rows, cols, _ = findnz(tril(A))
@@ -210,7 +210,7 @@ function get_nnzh(
   luh = split_res(xh, λf)
 
   lag_hess = Gridap.FESpaces._hessian(x -> split_res(x, λf), xh, luh)
-  matdata = Gridap.FESpaces.collect_cell_matrix(lag_hess)
+  matdata = Gridap.FESpaces.collect_cell_matrix(Y, X, lag_hess)
   assem = SparseMatrixAssembler(Y, X)
   A = Gridap.FESpaces.allocate_matrix(assem, matdata)
 

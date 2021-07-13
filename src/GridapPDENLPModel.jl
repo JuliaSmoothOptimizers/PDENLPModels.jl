@@ -134,7 +134,7 @@ function hess_coord!(
       luh = nlp.tnrj.f(yu)
       lag_hess = Gridap.FESpaces._hessian(nlp.tnrj.f, yu, luh)
     end
-    matdata = Gridap.FESpaces.collect_cell_matrix(lag_hess)
+    matdata = Gridap.FESpaces.collect_cell_matrix(nlp.Y, nlp.X, lag_hess)
     assem = SparseMatrixAssembler(nlp.Y, nlp.X)
     A = Gridap.FESpaces.allocate_matrix(assem, matdata)
     Gridap.FESpaces.assemble_matrix!(A, assem, matdata)
@@ -260,7 +260,7 @@ function hess_coord!(
     luh = split_res(xh, λf)
 
     lag_hess = Gridap.FESpaces._hessian(x -> split_res(x, λf), xh, luh)
-    matdata = Gridap.FESpaces.collect_cell_matrix(lag_hess)
+    matdata = Gridap.FESpaces.collect_cell_matrix(nlp.Y, nlp.X, lag_hess)
     assem = SparseMatrixAssembler(nlp.Y, nlp.X)
     A = Gridap.FESpaces.allocate_matrix(assem, matdata) # use a view of vals
     Gridap.FESpaces.assemble_matrix!(A, assem, matdata)

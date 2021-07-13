@@ -171,7 +171,7 @@ function count_nnz_jac(
       dcjacy = Gridap.FESpaces._jacobian(x -> op.res(κ, x, uh, du), yh, resuh)
     end
   end
-  matdata_y = Gridap.FESpaces.collect_cell_matrix(dcjacy)
+  matdata_y = Gridap.FESpaces.collect_cell_matrix(Ypde, Xpde, dcjacy)
   assem = SparseMatrixAssembler(Ypde, Xpde)
   Ay = Gridap.FESpaces.allocate_matrix(assem, matdata_y)
 
@@ -184,7 +184,7 @@ function count_nnz_jac(
       resuh = op.res(κ, yh, uh, v)
       dcjacu = _jacobian2(x -> op.res(κ, yh, x, du), uh, resuh)
     end
-    matdata_u = Gridap.FESpaces.collect_cell_matrix(dcjacu)
+    matdata_u = Gridap.FESpaces.collect_cell_matrix(Ycon, Xpde, dcjacu)
     assem = SparseMatrixAssembler(Ycon, Xpde)
     Au = Gridap.FESpaces.allocate_matrix(assem, matdata_u)
   else
@@ -287,7 +287,7 @@ function _from_terms_to_jacobian(
       dcjacy = Gridap.FESpaces._jacobian(x -> op.res(κ, x, uh, du), yh, resuh)
     end
   end
-  matdata_y = Gridap.FESpaces.collect_cell_matrix(dcjacy)
+  matdata_y = Gridap.FESpaces.collect_cell_matrix(Ypde, Xpde, dcjacy)
   assem = SparseMatrixAssembler(Ypde, Xpde)
   Ay = Gridap.FESpaces.allocate_matrix(assem, matdata_y)
   Gridap.FESpaces.assemble_matrix!(Ay, assem, matdata_y)
@@ -303,7 +303,7 @@ function _from_terms_to_jacobian(
       resuh = op.res(κ, yh, uh, v)
       dcjacu = _jacobian2(x -> op.res(κ, yh, x, du), uh, resuh)
     end
-    matdata_u = Gridap.FESpaces.collect_cell_matrix(dcjacu)
+    matdata_u = Gridap.FESpaces.collect_cell_matrix(Ycon, Xpde, dcjacu)
     assem = SparseMatrixAssembler(Ycon, Xpde)
     Au = Gridap.FESpaces.allocate_matrix(assem, matdata_u)
     Gridap.FESpaces.assemble_matrix!(Au, assem, matdata_u)
