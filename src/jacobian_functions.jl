@@ -153,7 +153,7 @@ function count_nnz_jac(
   yu = FEFunction(Y, xyu)
 
   v = Gridap.FESpaces.get_cell_shapefuns(Xpde)
-  du = Gridap.FESpaces.get_cell_shapefuns_trial(Ypde)
+  du = Gridap.FESpaces.get_trial_fe_basis(Ypde)
   if nparam == 0
     if typeof(Ycon) <: VoidFESpace
       resuh = op.res(yh, v)
@@ -176,7 +176,7 @@ function count_nnz_jac(
   Ay = Gridap.FESpaces.allocate_matrix(assem, matdata_y)
 
   if Ycon != VoidFESpace()
-    # du = Gridap.FESpaces.get_cell_shapefuns_trial(Ycon)
+    # du = Gridap.FESpaces.get_trial_fe_basis(Ycon)
     if nparam == 0
       resuh = op.res(yh, uh, v)
       dcjacu = _jacobian2(x -> op.res(yh, x, du), uh, resuh)
@@ -269,7 +269,7 @@ function _from_terms_to_jacobian(
 
   v = Gridap.FESpaces.get_cell_shapefuns(Xpde)
 
-  du = Gridap.FESpaces.get_cell_shapefuns_trial(Ypde)
+  du = Gridap.FESpaces.get_trial_fe_basis(Ypde)
   if nparam == 0
     if typeof(Ycon) <: VoidFESpace
       resuh = op.res(yh, v)
@@ -295,7 +295,7 @@ function _from_terms_to_jacobian(
   if Ycon != VoidFESpace()
     # assem_u = Gridap.FESpaces.SparseMatrixAssembler(Ycon, Xpde)
     # Au = Gridap.FESpaces.assemble_matrix(assem_u, (wu, ru, cu))
-    #du = Gridap.FESpaces.get_cell_shapefuns_trial(Ycon)
+    #du = Gridap.FESpaces.get_trial_fe_basis(Ycon)
     if nparam == 0
       resuh = op.res(yh, uh, v)
       dcjacu = _jacobian2(x -> op.res(yh, x, du), uh, resuh)
