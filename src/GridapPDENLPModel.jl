@@ -365,21 +365,14 @@ function jtprod!(nlp::GridapPDENLPModel, x::AbstractVector, v::AbstractVector, J
   return Jtv
 end
 
-include("jac_structure.jl")
-
 function jac_structure!(
   nlp::GridapPDENLPModel,
-  rows::AbstractVector{<:Integer},
-  cols::AbstractVector{<:Integer},
-)
+  rows::AbstractVector{T},
+  cols::AbstractVector{T},
+) where {T<:Integer}
   @lencheck nlp.meta.nnzj rows cols
-  nini = nlp.nparam > 0 ? jac_k_structure!(nlp, rows, cols) : 0
-  _jac_structure!(
-    nlp.op,
-    nlp,
-    view(rows, (nini + 1):(nlp.meta.nnzj)),
-    view(cols, (nini + 1):(nlp.meta.nnzj)),
-  )
+  rows .= T.(nlp.Jrows)
+  cols .= T.(nlp.Jcols)
   return rows, cols
 end
 
