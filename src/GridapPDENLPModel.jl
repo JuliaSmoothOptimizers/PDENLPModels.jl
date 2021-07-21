@@ -345,11 +345,10 @@ function jprod!(nlp::GridapPDENLPModel, x::AbstractVector, v::AbstractVector, Jv
   @lencheck nlp.meta.nvar x v
   @lencheck nlp.meta.ncon Jv
   increment!(nlp, :neval_jprod)
-
-  Jx = jac(nlp, x)
+  rows, cols = jac_structure(nlp)
+  vals = jac_coord(nlp, x)
   decrement!(nlp, :neval_jac)
-  mul!(Jv, Jx, v)
-
+  coo_prod!(rows, cols, vals, v, Jv)
   return Jv
 end
 
@@ -357,12 +356,15 @@ function jtprod!(nlp::GridapPDENLPModel, x::AbstractVector, v::AbstractVector, J
   @lencheck nlp.meta.nvar x Jtv
   @lencheck nlp.meta.ncon v
   increment!(nlp, :neval_jtprod)
-
-  Jx = jac(nlp, x)
+  rows, cols = jac_structure(nlp)
+  vals = jac_coord(nlp, x)
   decrement!(nlp, :neval_jac)
-  mul!(Jtv, Jx', v)
-
+  coo_prod!(cols, rows, vals, v, Jtv)
   return Jtv
+end
+
+function jac_structure(nlp::GridapPDENLPModel)
+  return (nlp.Jrows, nlp.Jcols)
 end
 
 function jac_structure!(
