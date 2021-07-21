@@ -188,24 +188,8 @@ function hess_structure!(
 ) where {T <: Integer}
   @lencheck nlp.meta.nnzh rows cols
 
-  # we need in-place _compute_hess_structure functions with the right type
-  if nlp.meta.ncon > 0
-    rrows, ccols, _ = _compute_hess_structure(
-      nlp.tnrj,
-      nlp.op,
-      nlp.Y,
-      nlp.Ypde,
-      nlp.Ycon,
-      nlp.X,
-      nlp.meta.x0,
-      nlp.nparam,
-    )
-  else
-    rrows, ccols, _ = _compute_hess_structure(nlp.tnrj, nlp.Y, nlp.X, nlp.meta.x0, nlp.nparam)
-  end
-
-  rows .= T.(rrows)
-  cols .= T.(ccols)
+  rows .= T.(nlp.Hrows)
+  cols .= T.(nlp.Hcols)
 
   (rows, cols)
 end
