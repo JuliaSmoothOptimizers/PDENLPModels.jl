@@ -129,7 +129,7 @@ function hess_coord!(
   yu = FEFunction(nlp.Y, xyu)
 
   nnz_hess_k = get_nnz_hess_k(nlp.tnrj, nlp.meta.nvar, nlp.nparam)
-  vals[1:nnz_hess_k] .= _compute_hess_k_vals(nlp, nlp.tnrj, κ, xyu)
+  vals[1:nnz_hess_k] .= _compute_hess_k_vals(nlp, nlp.tnrj, κ, xyu) # do in-place
   nini = nnz_hess_k
 
   if typeof(nlp.tnrj) != NoFETerm
@@ -142,11 +142,7 @@ function hess_coord!(
     end
     matdata = Gridap.FESpaces.collect_cell_matrix(lag_hess)
     assem = SparseMatrixAssembler(nlp.Y, nlp.X)
-    A = Gridap.FESpaces.allocate_matrix(assem, matdata)
-    Gridap.FESpaces.assemble_matrix!(A, assem, matdata)
-    _, _, v = findnz(tril(A))
-    vals[(nnz_hess_k + 1):(nnz_hess_k + length(v))] .= v
-    nini += length(v)
+    nini = fill_hess_coo_numeric!(vals, assem, matdata, n=nini)
   end
 
   if nini < nlp.meta.nnzh
@@ -173,7 +169,7 @@ function hprod!(
   end
 
   rows, cols = hess_structure(nlp)
-  vals = hess_coord(nlp, x, obj_weight = obj_weight)
+  vals = hess_coord(nlp, x, obj_weight = obj_weight) # store in a workspace in the model
   decrement!(nlp, :neval_hess)
   coo_sym_prod!(cols, rows, vals, v, Hv)
 
@@ -255,10 +251,7 @@ function hess_coord!(
     lag_hess = Gridap.FESpaces._hessian(x -> split_res(x, λf), xh, luh)
     matdata = Gridap.FESpaces.collect_cell_matrix(lag_hess)
     assem = SparseMatrixAssembler(nlp.Y, nlp.X)
-    A = Gridap.FESpaces.allocate_matrix(assem, matdata) # use a view of vals
-    Gridap.FESpaces.assemble_matrix!(A, assem, matdata)
-    _, _, v = findnz(tril(A))
-    vals[(nini + 1):end] .= v
+    fill_hess_coo_numeric!(vals, assem, matdata, n=nini)
   end
 
   return vals

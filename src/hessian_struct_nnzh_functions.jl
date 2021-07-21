@@ -35,10 +35,13 @@ function _compute_hess_structure_obj(tnrj::AbstractEnergyTerm, Y, X, x0, nparam)
   end
   matdata = Gridap.FESpaces.collect_cell_matrix(lag_hess)
   assem = SparseMatrixAssembler(Y, X)
-  A = Gridap.FESpaces.allocate_matrix(assem, matdata)
-  rows, cols, _ = findnz(tril(A))
-  nini = length(rows)
-  return rows .+ nparam, cols .+ nparam, nini
+  # A = Gridap.FESpaces.allocate_matrix(assem, matdata)
+  # rows, cols, _ = findnz(tril(A))
+  n = Gridap.FESpaces.count_matrix_nnz_coo(assem, matdata)
+  rows, cols, _ = Gridap.FESpaces.allocate_coo_vectors(Gridap.FESpaces.get_matrix_type(assem), n)
+  nini = fill_hessstruct_coo_numeric!(rows, cols, assem, matdata)
+
+  return rows[1:nini] .+ nparam, cols[1:nini] .+ nparam, nini
 end
 
 function _compute_hess_structure_obj(tnrj::NoFETerm, Y, X, x0, nparam)
@@ -111,10 +114,15 @@ function _compute_hess_structure(
   lag_hess = Gridap.FESpaces._hessian(x -> split_res(x, λf), xh, luh)
   matdata = Gridap.FESpaces.collect_cell_matrix(lag_hess)
   assem = SparseMatrixAssembler(Y, X)
+  #=
   A = Gridap.FESpaces.allocate_matrix(assem, matdata)
   rows, cols, _ = findnz(tril(A))
+  =#
+  n = Gridap.FESpaces.count_matrix_nnz_coo(assem, matdata)
+  rows, cols, _ = Gridap.FESpaces.allocate_coo_vectors(Gridap.FESpaces.get_matrix_type(assem), n)
+  nini = fill_hessstruct_coo_numeric!(rows, cols, assem, matdata)
 
-  return rows .+ nparam, cols .+ nparam, length(rows)
+  return rows[1:nini] .+ nparam, cols[1:nini] .+ nparam, nini
 end
 
 function _compute_hess_structure_k(op::FEOperator, Y, X, x0, nparam)
@@ -212,9 +220,12 @@ function get_nnzh(
   lag_hess = Gridap.FESpaces._hessian(x -> split_res(x, λf), xh, luh)
   matdata = Gridap.FESpaces.collect_cell_matrix(lag_hess)
   assem = SparseMatrixAssembler(Y, X)
-  A = Gridap.FESpaces.allocate_matrix(assem, matdata)
+  # A = Gridap.FESpaces.allocate_matrix(assem, matdata)
+  n = Gridap.FESpaces.count_matrix_nnz_coo(assem, matdata)
+  rows, cols, _ = Gridap.FESpaces.allocate_coo_vectors(Gridap.FESpaces.get_matrix_type(assem), n)
+  nini = fill_hessstruct_coo_numeric!(rows, cols, assem, matdata)
 
-  nnz_hess_yu += nnz(A)
+  nnz_hess_yu += nini # nnz(A)
   ###################################################################################
 
   #add the nnz w.r.t. k; by default it is:
