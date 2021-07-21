@@ -30,7 +30,7 @@ function cellincrease(args...; x0 = [0.6, 0.1], n = 10, T = 7, kwargs...)
   degree = 1
   dΩ = Measure(trian, degree)
 
-  conv(u, ∇u) = (∇u ⋅ one(∇u)) ⊙ u
+  conv(u, ∇u) = (∇u')⋅u #(∇u ⋅ one(∇u)) ⊙ u
   c(u, v) = conv ∘ (v, ∇(u)) #v⊙conv(u,∇(u))
 
   function res(y, u, v)
