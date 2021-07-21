@@ -167,18 +167,21 @@ function hprod!(
   @lencheck nlp.meta.nvar x v Hv
   increment!(nlp, :neval_hprod)
 
-  if obj_weight == zero(T)
+  if obj_weight == 0
     Hv .= zero(T)
     return Hv
   end
 
-  rows, cols = hess_structure(nlp) # we should store those
+  rows, cols = hess_structure(nlp)
   vals = hess_coord(nlp, x, obj_weight = obj_weight)
   decrement!(nlp, :neval_hess)
-
   coo_sym_prod!(cols, rows, vals, v, Hv)
 
   return Hv
+end
+
+function hess_structure(nlp::GridapPDENLPModel)
+  return (nlp.Hrows, nlp.Hcols)
 end
 
 function hess_structure!(
@@ -259,6 +262,26 @@ function hess_coord!(
   end
 
   return vals
+end
+
+function hprod!(
+  nlp::GridapPDENLPModel,
+  x::AbstractVector{T},
+  λ::AbstractVector,
+  v::AbstractVector,
+  Hv::AbstractVector;
+  obj_weight::Real = one(T),
+) where {T}
+  @lencheck nlp.meta.nvar x v Hv
+  @lencheck nlp.meta.ncon λ
+  increment!(nlp, :neval_hprod)
+
+  rows, cols = hess_structure(nlp)
+  vals = hess_coord(nlp, x, λ, obj_weight = obj_weight)
+  decrement!(nlp, :neval_hess)
+  coo_sym_prod!(cols, rows, vals, v, Hv)
+
+  return Hv
 end
 
 function cons!(nlp::GridapPDENLPModel, x::AbstractVector, c::AbstractVector)
@@ -490,28 +513,4 @@ function _jac_coord!(
     @warn "jac_coord!: number of assignements didn't match $(nlp.meta.nnzj) vs $(nini)"
   end
   return vals
-end
-
-function hprod!(
-  nlp::GridapPDENLPModel,
-  x::AbstractVector,
-  λ::AbstractVector,
-  v::AbstractVector,
-  Hv::AbstractVector;
-  obj_weight::Real = one(eltype(x)),
-)
-  @lencheck nlp.meta.nvar x v Hv
-  @lencheck nlp.meta.ncon λ
-  increment!(nlp, :neval_hprod)
-
-  #λ_pde = λ[1:nlp.nvar_pde]
-  #λ_con = λ[nlp.nvar_pde+1:nlp.meta.ncon]
-  # _from_terms_to_hprod!(nlp.op, x, λ_pde, v, nlp, Hv, obj_weight)
-
-  rows, cols = hess_structure(nlp)
-  vals = hess_coord(nlp, x, λ, obj_weight = obj_weight)
-  decrement!(nlp, :neval_hess)
-  coo_sym_prod!(cols, rows, vals, v, Hv)
-
-  return Hv
 end
