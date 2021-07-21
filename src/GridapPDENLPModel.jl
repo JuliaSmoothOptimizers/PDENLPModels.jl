@@ -81,6 +81,12 @@ mutable struct GridapPDENLPModel{T, S, NRJ <: AbstractEnergyTerm} <: AbstractNLP
   nvar_con::Int #number of dofs in the control functions
   nparam::Int
   nnzh_obj::Int
+
+  # store the structure for hessian and jacobian matrix
+  Hrows
+  Hcols
+  Jrows
+  Jcols
 end
 
 include("bounds_function.jl")

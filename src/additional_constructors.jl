@@ -56,6 +56,10 @@ function GridapPDENLPModel(
     nvar_con,
     nparam,
     nnzh,
+    rows,
+    cols,
+    Int[],
+    Int[],
   )
 end
 
@@ -245,6 +249,10 @@ function GridapPDENLPModel(
     nvar_con,
     nparam,
     nnzh_obj,
+    rows,
+    cols,
+    Int[],
+    Int[],
   )
 end
 
