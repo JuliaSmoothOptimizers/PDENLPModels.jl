@@ -129,10 +129,10 @@ function hess_coord!(
   if typeof(nlp.tnrj) != NoFETerm
     if nlp.nparam > 0
       luh = nlp.tnrj.f(κ, yu)
-      lag_hess = Gridap.FESpaces._hessian(x -> nlp.tnrj.f(κ, x), yu, luh)
+      lag_hess = Gridap.FESpaces.jacobian(Gridap.FESpaces._gradient(x -> nlp.tnrj.f(κ, x), yu, luh), yu) # Gridap.FESpaces._hessian(x -> nlp.tnrj.f(κ, x), yu, luh)
     else
       luh = nlp.tnrj.f(yu)
-      lag_hess = Gridap.FESpaces._hessian(nlp.tnrj.f, yu, luh)
+      lag_hess = Gridap.FESpaces.jacobian(Gridap.FESpaces._gradient(nlp.tnrj.f, yu, luh), yu) # Gridap.FESpaces._hessian(nlp.tnrj.f, yu, luh)
     end
     matdata = Gridap.FESpaces.collect_cell_matrix(nlp.Y, nlp.X, lag_hess)
     assem = SparseMatrixAssembler(nlp.Y, nlp.X)

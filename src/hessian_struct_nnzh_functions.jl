@@ -28,10 +28,10 @@ function _compute_hess_structure_obj(tnrj::AbstractEnergyTerm, Y, X, x0, nparam)
   xh = FEFunction(Y, xyu)
   if nparam > 0
     luh = tnrj.f(κ, xh)
-    lag_hess = Gridap.FESpaces._hessian(x -> tnrj.f(κ, x), xh, luh)
+    lag_hess = Gridap.FESpaces.jacobian(Gridap.FESpaces._gradient(x -> tnrj.f(κ, x), xh, luh), xh) # Gridap.FESpaces._hessian(x -> tnrj.f(κ, x), xh, luh)
   else
     luh = tnrj.f(xh)
-    lag_hess = Gridap.FESpaces._hessian(tnrj.f, xh, luh)
+    lag_hess = Gridap.FESpaces.jacobian(Gridap.FESpaces._gradient(tnrj.f, xh, luh), xh) # Gridap.FESpaces._hessian(tnrj.f, xh, luh)
   end
   matdata = Gridap.FESpaces.collect_cell_matrix(Y, X, lag_hess)
   assem = SparseMatrixAssembler(Y, X)
@@ -108,7 +108,7 @@ function _compute_hess_structure(
   end
   luh = split_res(xh, λf)
 
-  lag_hess = Gridap.FESpaces._hessian(x -> split_res(x, λf), xh, luh)
+  lag_hess = Gridap.FESpaces.jacobian(Gridap.FESpaces._gradient(x -> split_res(x, λf), xh, luh), yu) # Gridap.FESpaces._hessian(x -> split_res(x, λf), xh, luh)
   matdata = Gridap.FESpaces.collect_cell_matrix(Y, X, lag_hess)
   assem = SparseMatrixAssembler(Y, X)
   A = Gridap.FESpaces.allocate_matrix(assem, matdata)
@@ -209,7 +209,7 @@ function get_nnzh(
   end
   luh = split_res(xh, λf)
 
-  lag_hess = Gridap.FESpaces._hessian(x -> split_res(x, λf), xh, luh)
+  lag_hess = Gridap.FESpaces.jacobian(Gridap.FESpaces._gradient(x -> split_res(x, λf), xh, luh), yu) # Gridap.FESpaces._hessian(x -> split_res(x, λf), xh, luh)
   matdata = Gridap.FESpaces.collect_cell_matrix(Y, X, lag_hess)
   assem = SparseMatrixAssembler(Y, X)
   A = Gridap.FESpaces.allocate_matrix(assem, matdata)
