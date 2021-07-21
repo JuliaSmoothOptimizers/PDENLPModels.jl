@@ -341,27 +341,6 @@ function _from_terms_to_residual!(
   return res
 end
 
-function jac(nlp::GridapPDENLPModel, x::AbstractVector{T}) where {T}
-  @lencheck nlp.meta.nvar x
-  increment!(nlp, :neval_jac)
-
-  pde_jac = _from_terms_to_jacobian(nlp.op, x, nlp.Y, nlp.Xpde, nlp.Ypde, nlp.Ycon)
-
-  if nlp.nparam > 0
-    κ, xyu = x[1:(nlp.nparam)], x[(nlp.nparam + 1):(nlp.meta.nvar)]
-    function _cons(nlp, xyu, k)
-      c = similar(k, nlp.meta.ncon)
-      _from_terms_to_residual!(nlp.op, vcat(k, xyu), nlp, c)
-      return c
-    end
-    ck = @closure k -> _cons(nlp, xyu, k)
-    jac_k = ForwardDiff.jacobian(ck, κ)
-    return hcat(jac_k, pde_jac)
-  end
-
-  return pde_jac
-end
-
 function jprod!(nlp::GridapPDENLPModel, x::AbstractVector, v::AbstractVector, Jv::AbstractVector)
   @lencheck nlp.meta.nvar x v
   @lencheck nlp.meta.ncon Jv
@@ -386,6 +365,8 @@ function jtprod!(nlp::GridapPDENLPModel, x::AbstractVector, v::AbstractVector, J
   return Jtv
 end
 
+include("jac_structure.jl")
+
 function jac_structure!(
   nlp::GridapPDENLPModel,
   rows::AbstractVector{<:Integer},
@@ -399,36 +380,6 @@ function jac_structure!(
     view(rows, (nini + 1):(nlp.meta.nnzj)),
     view(cols, (nini + 1):(nlp.meta.nnzj)),
   )
-  return rows, cols
-end
-
-function _jac_structure!(
-  op::AffineFEOperator,
-  nlp::GridapPDENLPModel,
-  rows::AbstractVector{<:Integer},
-  cols::AbstractVector{<:Integer},
-)
-
-  #In this case, the jacobian matrix is constant:
-  I, J, _ = findnz(get_matrix(op))
-  rows .= I
-  cols .= J .+ nlp.nparam
-
-  return rows, cols
-end
-
-#Adaptation of `function allocate_matrix(a::SparseMatrixAssembler,matdata) end` in Gridap.FESpaces.
-function _jac_structure!(
-  op::Gridap.FESpaces.FEOperatorFromWeakForm,
-  nlp::GridapPDENLPModel,
-  rows::AbstractVector{<:Integer},
-  cols::AbstractVector{<:Integer},
-)
-  A = _from_terms_to_jacobian(op, nlp.meta.x0, nlp.Y, nlp.Xpde, nlp.Ypde, nlp.Ycon)
-  r, c, _ = findnz(A)
-  rows .= r
-  cols .= c .+ nlp.nparam
-
   return rows, cols
 end
 
@@ -462,7 +413,6 @@ function _jac_coord!(
 )
   @lencheck nlp.meta.nvar x
   @lencheck nlp.meta.nnzj vals
-  increment!(nlp, :neval_jac)
   _, _, V = findnz(get_matrix(op))
   vals .= V
   return vals
@@ -476,7 +426,6 @@ function _jac_coord!(
 ) where {T}
   @lencheck nlp.meta.nvar x
   @lencheck nlp.meta.nnzj vals
-  increment!(nlp, :neval_jac)
 
   nnz_jac_k = nlp.nparam > 0 ? nlp.meta.ncon * nlp.nparam : 0
   if nlp.nparam > 0
