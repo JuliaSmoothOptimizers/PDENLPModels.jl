@@ -213,8 +213,9 @@ function GridapPDENLPModel(
   else
     nln = setdiff(1:ncon, lin)
   end
-  nnz_jac_k = nparam > 0 ? ncon * nparam : 0
-  nnzj = count_nnz_jac(c, Y, Xpde, Ypde, Ycon, x0) + nnz_jac_k
+  Jkrows, Jkcols, nnz_jac_k = jac_k_structure(nparam, ncon)
+  Jrows, Jcols, nini = _jacobian_struct(c, x0, Y, Xpde, Ypde, Ycon)
+  nnzj = nini + nnz_jac_k
 
   meta = NLPModelMeta{T, S}(
     nvar,
@@ -251,8 +252,8 @@ function GridapPDENLPModel(
     nnzh_obj,
     rows,
     cols,
-    Int[],
-    Int[],
+    vcat(Jkrows, Jrows),
+    vcat(Jkcols, Jcols .+ nparam),
   )
 end
 
