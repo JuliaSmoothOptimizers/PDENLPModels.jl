@@ -113,9 +113,9 @@ function incompressiblenavierstokes_test(; udc = false)
   @test norm(GJx' * ones(ndofs) - Jtxu, Inf) <= eps(Float64)
 
   # jac_op = (rows, cols, vals) = findnz(Jx)
-  jacop = jac_op(nlp, xin)
-  jacoptxu = jacop.tprod(ones(ndofs))
-  @test norm(Jtxu - jacoptxu, Inf) <= eps(Float64)
+  # jacop = jac_op(nlp, xin)
+  # jacoptxu = jacop.tprod(ones(ndofs))
+  # @test norm(Jtxu - jacoptxu, Inf) <= eps(Float64)
 
   # Gridap way of solving the equation:
   nls = NLSolver(show_trace = true, method = :newton) #, linesearch=BackTracking()

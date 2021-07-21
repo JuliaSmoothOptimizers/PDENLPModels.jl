@@ -27,7 +27,7 @@ pde_problems = if local_test
     "DYNAMICSIR",
     "BASICUNCONSTRAINED",
     "PENALIZEDPOISSON",
-    #"INCOMPRESSIBLENAVIERSTOKES", #too slow (tested locally only)
+    # "INCOMPRESSIBLENAVIERSTOKES", #too slow (tested locally only)
     "POISSONMIXED",
     "POISSONPARAM",
     "POISSONMIXED2",
