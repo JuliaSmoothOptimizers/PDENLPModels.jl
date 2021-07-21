@@ -378,21 +378,6 @@ function jac_structure!(
   return rows, cols
 end
 
-function jac_k_structure!(
-  nlp::GridapPDENLPModel,
-  rows::AbstractVector{<:Integer},
-  cols::AbstractVector{<:Integer},
-)
-  p = nlp.nparam
-  n = nlp.meta.ncon
-  nnz_jac_k = p * n
-  I = ((i, j) for i = 1:n, j = 1:p)
-  rows[1:nnz_jac_k] .= getindex.(I, 1)[:]
-  cols[1:nnz_jac_k] .= getindex.(I, 2)[:]
-
-  return nnz_jac_k
-end
-
 function jac_coord!(nlp::GridapPDENLPModel, x::AbstractVector, vals::AbstractVector)
   @lencheck nlp.meta.nvar x
   @lencheck nlp.meta.nnzj vals
