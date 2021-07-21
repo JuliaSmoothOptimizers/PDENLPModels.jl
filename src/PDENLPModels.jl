@@ -66,6 +66,9 @@ _fespace_to_multifieldfespace(Y::VoidMultiFieldFESpace) = Y
 _fespace_to_multifieldfespace(::VoidFESpace) = VoidMultiFieldFESpace()
 _fespace_to_multifieldfespace(Y::FESpace) = MultiFieldFESpace([Y])
 
+# function fill_matrix_coo_numeric!(I,J,V,a::GenericSparseMatrixAssembler,matdata,n=0) specialized from L.428 Gridap/FESpaces/SparseMatrixAssembler.jl
+include("fill_matrix_hessian_functions.jl")
+
 #Additional modeling structures for the objective function.
 # include("hessian_functions.jl")
 include("additional_obj_terms.jl")
