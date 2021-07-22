@@ -21,6 +21,7 @@ local_test = false # tested locally only
 pde_problems = if local_test
   [
     "BURGER1D",
+    "BURGER1D_PARAM",
     "CELLINCREASE",
     "SIS",
     "CONTROLSIR",
@@ -37,6 +38,7 @@ pde_problems = if local_test
 else
   [
     "BURGER1D",
+    "BURGER1D_PARAM",
     # "CELLINCREASE",
     # "SIS",
     "CONTROLSIR", # similar SIS, CELLINCREASE, DYNAMICSIR
