@@ -8,6 +8,20 @@ end
 
 include("test_autodiff.jl")
 
+function _from_terms_to_residual!(
+  op::AffineFEOperator,
+  x::AbstractVector{T},
+  nparam::Integer,
+  Y::FESpace,
+  Ypde::FESpace,
+  Ycon::FESpace,
+  res::AbstractVector,
+) where {T}
+  mul!(res, get_matrix(op), x)
+  axpy!(-one(T), get_vector(op), res)
+  return res
+end
+
 function _jacobian_struct(
   op::AffineFEOperator,
   x::AbstractVector{T},
@@ -18,6 +32,22 @@ function _jacobian_struct(
 ) where {T <: Number}
   rows, cols , _ = findnz(get_matrix(op))
   return rows, cols, length(rows)
+end
+
+function _jac_coord!(
+  op::AffineFEOperator,
+  nparam::Integer,
+  ncon::Integer,
+  Y::FESpace,
+  Ypde::FESpace,
+  Xpde::FESpace,
+  Ycon::FESpace,
+  x::AbstractVector,
+  vals::AbstractVector,
+)
+  _, _, V = findnz(get_matrix(op))
+  vals .= V
+  return vals
 end
 
 function _from_terms_to_jacobian_vals!(
@@ -33,6 +63,43 @@ function _from_terms_to_jacobian_vals!(
   nini = length(get_matrix(op).nzval)
   vals[(nfirst + 1):(nfirst + nini)] .= get_matrix(op).nzval
   return nfirst + nini
+end
+
+function _from_terms_to_residual!(
+  op::Gridap.FESpaces.FEOperatorFromWeakForm,
+  x::AbstractVector,
+  nparam::Integer,
+  Y::FESpace,
+  Ypde::FESpace,
+  Ycon::FESpace,
+  res::AbstractVector,
+)
+  κ, xyu = x[1:(nparam)], x[(nparam + 1):end]
+  yu = FEFunction(Y, xyu)
+  y, u = _split_FEFunction(xyu, Ypde, Ycon)
+
+  # Gridap.FESpaces.residual(op, FEFunction(Y, x))
+  # Split the call of: b = allocate_residual(op, u)
+  V = Gridap.FESpaces.get_test(op)
+  v = Gridap.FESpaces.get_cell_shapefuns(V)
+  if nparam == 0
+    if typeof(Ycon) <: VoidFESpace
+      vecdata = Gridap.FESpaces.collect_cell_vector(op.res(y, v))
+    else
+      vecdata = Gridap.FESpaces.collect_cell_vector(op.res(y, u, v))
+    end
+  else
+    if typeof(Ycon) <: VoidFESpace
+      vecdata = Gridap.FESpaces.collect_cell_vector(op.res(κ, y, v))
+    else
+      vecdata = Gridap.FESpaces.collect_cell_vector(op.res(κ, y, u, v))
+    end
+  end
+  # res = allocate_vector(op.assem, vecdata) # already done somewhere
+  # Split the call of: residual!(b,op,u)
+  Gridap.FESpaces.assemble_vector!(res, op.assem, vecdata)
+
+  return res
 end
 
 function _jacobian_struct(
@@ -96,6 +163,43 @@ function _jacobian_struct(
   end
   
   return vcat(Iy, Iu), vcat(Jy, Ju), ny + nu
+end
+
+function _jac_coord!(
+  op::Gridap.FESpaces.FEOperatorFromWeakForm,
+  nparam::Integer,
+  ncon::Integer,
+  Y::FESpace,
+  Ypde::FESpace,
+  Xpde::FESpace,
+  Ycon::FESpace,
+  x::AbstractVector{T},
+  vals::AbstractVector,
+) where {T}
+  nnz_jac_k = nparam > 0 ? ncon * nparam : 0
+  if nparam > 0
+    κ, xyu = x[1:(nparam)], x[(nparam + 1):end]
+    function _cons(xyu, k)
+      c = similar(k, ncon)
+      _from_terms_to_residual!(op, vcat(k, xyu), nparam, Y, Ypde, Ycon, c)
+      return c
+    end
+    ck = @closure k -> _cons(xyu, k)
+    jac_k = ForwardDiff.jacobian(ck, κ)
+    vals[1:nnz_jac_k] .= jac_k[:]
+  end
+
+  nini = _from_terms_to_jacobian_vals!(
+    op,
+    x,
+    Y,
+    Xpde,
+    Ypde,
+    Ycon,
+    vals,
+    nfirst = nnz_jac_k,
+  )
+  return vals
 end
 
 function _from_terms_to_jacobian_vals!(

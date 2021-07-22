@@ -29,12 +29,6 @@ where the unknown (y,u) is a MultiField see [Tutorials 7](https://gridap.github.
 
 The set Ω​ is represented here with *trian* and *quad*.
 
-TODO:
-[ ] time evolution pde problems.   
-[ ] Handle the case where g and H are given.   
-[ ] Handle several terms in the objective function (via an FEOperator)?   
-[ ] Could we control the Dirichlet boundary condition? (like classical control of heat equations)     
-
 Main constructor:
 
 `GridapPDENLPModel(:: NLPModelMeta, :: Counters, :: AbstractEnergyTerm, :: FESpace, :: Union{FESpace,Nothing}, :: FESpace, :: Union{FESpace,Nothing}, :: FESpace, :: Union{FESpace,Nothing}, :: Union{FEOperator, Nothing}, :: Int, :: Int, :: Int)` 
@@ -51,10 +45,7 @@ constrained problems explictly giving lcon and ucon:
 - `y0`: An inital estimate to the Lagrangian multipliers (default: zeros)
 
 Notes:
- - We handle two types of FEOperator: AffineFEOperator, and FEOperatorFromTerms
- which is the obtained by the FEOperator constructor.
- The terms supported in FEOperatorFromTerms are: FESource, NonlinearFETerm,
- NonlinearFETermWithAutodiff, LinearFETerm, AffineFETerm.
+ - We handle two types of FEOperator: AffineFEOperator, and FEOperatorFromWeakForm
  - If lcon and ucon are not given, they are assumed zeros.
  - If the type can't be deduced from the argument, it is Float64.
 """
@@ -216,7 +207,7 @@ function hess_coord!(
     nnz_hess_k = Int(p * (p + 1) / 2) + (n - p) * p
     function ℓ(x, λ)
       c = similar(x, nlp.meta.ncon)
-      _from_terms_to_residual!(nlp.op, x, nlp, c)
+      _from_terms_to_residual!(nlp.op, x, nlp.nparam, nlp.Y, nlp.Ypde, nlp.Ycon, c)
       return dot(c, λ)
     end
     agrad = @closure k -> ForwardDiff.gradient(x -> ℓ(x, λ), vcat(k, xyu))
@@ -281,64 +272,8 @@ function cons!(nlp::GridapPDENLPModel, x::AbstractVector, c::AbstractVector)
   @lencheck nlp.meta.nvar x
   @lencheck nlp.meta.ncon c
   increment!(nlp, :neval_cons)
-
-  _from_terms_to_residual!(nlp.op, x, nlp, c)
-
+  _from_terms_to_residual!(nlp.op, x, nlp.nparam, nlp.Y, nlp.Ypde, nlp.Ycon, c)
   return c
-end
-
-function _from_terms_to_residual!(
-  op::Gridap.FESpaces.FEOperatorFromWeakForm,
-  x::AbstractVector,
-  nlp::GridapPDENLPModel,
-  res::AbstractVector,
-)
-  κ, xyu = x[1:(nlp.nparam)], x[(nlp.nparam + 1):(nlp.meta.nvar)]
-  yu = FEFunction(nlp.Y, xyu)
-  y, u = _split_FEFunction(xyu, nlp.Ypde, nlp.Ycon)
-
-  # Gridap.FESpaces.residual(nlp.op, FEFunction(nlp.Y, x))
-  # Split the call of: b = allocate_residual(op, u)
-  V = Gridap.FESpaces.get_test(op)
-  v = Gridap.FESpaces.get_cell_shapefuns(V)
-  if nlp.nparam == 0
-    if typeof(nlp.Ycon) <: VoidFESpace
-      vecdata = Gridap.FESpaces.collect_cell_vector(op.res(y, v))
-    else
-      vecdata = Gridap.FESpaces.collect_cell_vector(op.res(y, u, v))
-    end
-  else
-    if typeof(nlp.Ycon) <: VoidFESpace
-      vecdata = Gridap.FESpaces.collect_cell_vector(op.res(κ, y, v))
-    else
-      vecdata = Gridap.FESpaces.collect_cell_vector(op.res(κ, y, u, v))
-    end
-  end
-  # res = allocate_vector(op.assem, vecdata) # already done somewhere
-  # Split the call of: residual!(b,op,u)
-  Gridap.FESpaces.assemble_vector!(res, op.assem, vecdata)
-
-  return res
-end
-
-#=
-Note:
-- mul! seems faster than doing:
-rows, cols, vals = findnz(get_matrix(op))
-coo_prod!(cols, rows, vals, v, res)
-
-- get_matrix(op) is a sparse matrix
-- Benchmark equivalent to Gridap.FESpaces.residual!(res, op_affine.op, xrand)
-=#
-function _from_terms_to_residual!(
-  op::AffineFEOperator,
-  x::AbstractVector{T},
-  nlp::GridapPDENLPModel,
-  res::AbstractVector,
-) where {T}
-  mul!(res, get_matrix(op), x)
-  axpy!(-one(T), get_vector(op), res)
-  return res
 end
 
 function jprod!(nlp::GridapPDENLPModel, x::AbstractVector, v::AbstractVector, Jv::AbstractVector)
@@ -382,57 +317,5 @@ function jac_coord!(nlp::GridapPDENLPModel, x::AbstractVector, vals::AbstractVec
   @lencheck nlp.meta.nvar x
   @lencheck nlp.meta.nnzj vals
   increment!(nlp, :neval_jac)
-  return _jac_coord!(nlp.op, nlp, x, vals)
-end
-
-function _jac_coord!(
-  op::AffineFEOperator,
-  nlp::GridapPDENLPModel,
-  x::AbstractVector,
-  vals::AbstractVector,
-)
-  @lencheck nlp.meta.nvar x
-  @lencheck nlp.meta.nnzj vals
-  _, _, V = findnz(get_matrix(op))
-  vals .= V
-  return vals
-end
-
-function _jac_coord!(
-  op::Gridap.FESpaces.FEOperatorFromWeakForm,
-  nlp::GridapPDENLPModel,
-  x::AbstractVector{T},
-  vals::AbstractVector,
-) where {T}
-  @lencheck nlp.meta.nvar x
-  @lencheck nlp.meta.nnzj vals
-
-  nnz_jac_k = nlp.nparam > 0 ? nlp.meta.ncon * nlp.nparam : 0
-  if nlp.nparam > 0
-    κ, xyu = x[1:(nlp.nparam)], x[(nlp.nparam + 1):(nlp.meta.nvar)]
-    function _cons(nlp, xyu, k)
-      c = similar(k, nlp.meta.ncon)
-      _from_terms_to_residual!(op, vcat(k, xyu), nlp, c)
-      return c
-    end
-    ck = @closure k -> _cons(nlp, xyu, k)
-    jac_k = ForwardDiff.jacobian(ck, κ)
-    vals[1:nnz_jac_k] .= jac_k[:]
-  end
-
-  nini = _from_terms_to_jacobian_vals!(
-    op,
-    x,
-    nlp.Y,
-    nlp.Xpde,
-    nlp.Ypde,
-    nlp.Ycon,
-    vals,
-    nfirst = nnz_jac_k,
-  )
-
-  if nlp.meta.nnzj != nini
-    @warn "jac_coord!: number of assignements didn't match $(nlp.meta.nnzj) vs $(nini)"
-  end
-  return vals
+  return _jac_coord!(nlp.op, nlp.nparam, nlp.meta.ncon, nlp.Y, nlp.Ypde, nlp.Xpde, nlp.Ycon, x, vals)
 end
