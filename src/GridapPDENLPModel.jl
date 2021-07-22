@@ -133,7 +133,7 @@ function hess_coord!(
     end
     matdata = Gridap.FESpaces.collect_cell_matrix(lag_hess)
     assem = SparseMatrixAssembler(nlp.Y, nlp.X)
-    nini = fill_hess_coo_numeric!(vals, assem, matdata, n=nini)
+    nini = fill_hess_coo_numeric!(vals, assem, matdata, n = nini)
   end
 
   if nini < nlp.meta.nnzh
@@ -242,7 +242,7 @@ function hess_coord!(
     lag_hess = Gridap.FESpaces._hessian(x -> split_res(x, λf), xh, luh)
     matdata = Gridap.FESpaces.collect_cell_matrix(lag_hess)
     assem = SparseMatrixAssembler(nlp.Y, nlp.X)
-    fill_hess_coo_numeric!(vals, assem, matdata, n=nini)
+    fill_hess_coo_numeric!(vals, assem, matdata, n = nini)
   end
 
   return vals
@@ -306,7 +306,7 @@ function jac_structure!(
   nlp::GridapPDENLPModel,
   rows::AbstractVector{T},
   cols::AbstractVector{T},
-) where {T<:Integer}
+) where {T <: Integer}
   @lencheck nlp.meta.nnzj rows cols
   rows .= T.(nlp.Jrows)
   cols .= T.(nlp.Jcols)
@@ -317,5 +317,15 @@ function jac_coord!(nlp::GridapPDENLPModel, x::AbstractVector, vals::AbstractVec
   @lencheck nlp.meta.nvar x
   @lencheck nlp.meta.nnzj vals
   increment!(nlp, :neval_jac)
-  return _jac_coord!(nlp.op, nlp.nparam, nlp.meta.ncon, nlp.Y, nlp.Ypde, nlp.Xpde, nlp.Ycon, x, vals)
+  return _jac_coord!(
+    nlp.op,
+    nlp.nparam,
+    nlp.meta.ncon,
+    nlp.Y,
+    nlp.Ypde,
+    nlp.Xpde,
+    nlp.Ycon,
+    x,
+    vals,
+  )
 end
