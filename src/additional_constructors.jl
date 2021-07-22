@@ -56,6 +56,10 @@ function GridapPDENLPModel(
     nvar_con,
     nparam,
     nnzh,
+    rows,
+    cols,
+    Int[],
+    Int[],
   )
 end
 
@@ -199,7 +203,6 @@ function GridapPDENLPModel(
   @lencheck nvar lvar uvar
   @lencheck ncon ucon y0
 
-  # nnzh = get_nnzh(tnrj, c, Y, Ypde, X, nparam, nvar) #nvar * (nvar + 1) / 2
   rows, cols, nnzh = _compute_hess_structure(tnrj, c, Y, Ypde, Ycon, X, x0, nparam)
   _, _, nnzh_obj = _compute_hess_structure(tnrj, Y, X, x0, nparam)
 
@@ -209,8 +212,9 @@ function GridapPDENLPModel(
   else
     nln = setdiff(1:ncon, lin)
   end
-  nnz_jac_k = nparam > 0 ? ncon * nparam : 0
-  nnzj = count_nnz_jac(c, Y, Xpde, Ypde, Ycon, x0) + nnz_jac_k
+  Jkrows, Jkcols, nnz_jac_k = jac_k_structure(nparam, ncon)
+  Jrows, Jcols, nini = _jacobian_struct(c, x0, Y, Xpde, Ypde, Ycon)
+  nnzj = nini + nnz_jac_k
 
   meta = NLPModelMeta{T, S}(
     nvar,
@@ -245,6 +249,10 @@ function GridapPDENLPModel(
     nvar_con,
     nparam,
     nnzh_obj,
+    rows,
+    cols,
+    vcat(Jkrows, Jrows),
+    vcat(Jkcols, Jcols .+ nparam),
   )
 end
 
