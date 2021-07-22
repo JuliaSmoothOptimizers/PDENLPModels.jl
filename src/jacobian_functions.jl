@@ -200,9 +200,8 @@ function _from_terms_to_jacobian_vals!(
   nvar = length(x)
   nyu = num_free_dofs(Y)
   nparam = nvar - nyu
-  yh, uh = _split_FEFunction(x, Ypde, Ycon)
   κ, xyu = x[1:nparam], x[(nparam + 1):nvar]
-  yu = FEFunction(Y, xyu)
+  yh, uh = _split_FEFunction(xyu, Ypde, Ycon)
 
   v = Gridap.FESpaces.get_cell_shapefuns(Xpde)
 
