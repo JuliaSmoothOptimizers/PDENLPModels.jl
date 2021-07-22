@@ -30,7 +30,7 @@ function _jacobian_struct(
   Ypde::FESpace,
   Ycon::FESpace,
 ) where {T <: Number}
-  rows, cols , _ = findnz(get_matrix(op))
+  rows, cols, _ = findnz(get_matrix(op))
   return rows, cols, length(rows)
 end
 
@@ -125,7 +125,7 @@ function _jacobian_struct(
   matdata_y = Gridap.FESpaces.collect_cell_matrix(dcjacy)
   assem = SparseMatrixAssembler(Ypde, Xpde)
   n = Gridap.FESpaces.count_matrix_nnz_coo(assem, matdata_y)
-  Iy,Jy,Vy = Gridap.FESpaces.allocate_coo_vectors(Gridap.FESpaces.get_matrix_type(assem), n)
+  Iy, Jy, Vy = Gridap.FESpaces.allocate_coo_vectors(Gridap.FESpaces.get_matrix_type(assem), n)
   ny = Gridap.FESpaces.fill_matrix_coo_numeric!(Iy, Jy, Vy, assem, matdata_y)
   Iy, Jy = Iy[1:ny], Jy[1:ny]
 
@@ -146,7 +146,7 @@ function _jacobian_struct(
   else
     Iu, Ju, nu = Int[], Int[], 0
   end
-  
+
   return vcat(Iy, Iu), vcat(Jy, Ju), ny + nu
 end
 
@@ -174,16 +174,7 @@ function _jac_coord!(
     vals[1:nnz_jac_k] .= jac_k[:]
   end
 
-  nini = _from_terms_to_jacobian_vals!(
-    op,
-    x,
-    Y,
-    Xpde,
-    Ypde,
-    Ycon,
-    vals,
-    nfirst = nnz_jac_k,
-  )
+  nini = _from_terms_to_jacobian_vals!(op, x, Y, Xpde, Ypde, Ycon, vals, nfirst = nnz_jac_k)
   return vals
 end
 
