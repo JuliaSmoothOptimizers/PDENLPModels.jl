@@ -83,7 +83,7 @@ end
 include("bounds_function.jl")
 include("additional_constructors.jl")
 
-show_header(io::IO, nlp::GridapPDENLPModel) = println(io, "GridapPDENLPModel")
+NLPModels.show_header(io::IO, nlp::GridapPDENLPModel) = println(io, "GridapPDENLPModel")
 
 function obj(nlp::GridapPDENLPModel, x::AbstractVector)
   @lencheck nlp.meta.nvar x

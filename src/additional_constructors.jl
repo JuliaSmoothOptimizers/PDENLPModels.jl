@@ -203,7 +203,6 @@ function GridapPDENLPModel(
   @lencheck nvar lvar uvar
   @lencheck ncon ucon y0
 
-  # nnzh = get_nnzh(tnrj, c, Y, Ypde, X, nparam, nvar) #nvar * (nvar + 1) / 2
   rows, cols, nnzh = _compute_hess_structure(tnrj, c, Y, Ypde, Ycon, X, x0, nparam)
   _, _, nnzh_obj = _compute_hess_structure(tnrj, Y, X, x0, nparam)
 

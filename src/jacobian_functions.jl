@@ -50,21 +50,6 @@ function _jac_coord!(
   return vals
 end
 
-function _from_terms_to_jacobian_vals!(
-  op::AffineFEOperator,
-  x::AbstractVector{T},
-  Y::FESpace,
-  Xpde::FESpace,
-  Ypde::FESpace,
-  Ycon::FESpace,
-  vals::AbstractVector{T};
-  nfirst::Integer = 0,
-) where {T <: Number}
-  nini = length(get_matrix(op).nzval)
-  vals[(nfirst + 1):(nfirst + nini)] .= get_matrix(op).nzval
-  return nfirst + nini
-end
-
 function _from_terms_to_residual!(
   op::Gridap.FESpaces.FEOperatorFromWeakForm,
   x::AbstractVector,
