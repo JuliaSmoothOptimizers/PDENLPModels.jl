@@ -315,6 +315,13 @@ function cons!(nlp::GridapPDENLPModel, x::AbstractVector, c::AbstractVector)
   return c
 end
 
+function cons!(nlp::GridapPDENLPModel{T, S, NRJ, Nothing}, x::AbstractVector, c::AbstractVector) where {T, S, NRJ}
+  @lencheck nlp.meta.nvar x
+  @lencheck nlp.meta.ncon c
+  increment!(nlp, :neval_cons)
+  return T[]
+end
+
 function jprod!(nlp::GridapPDENLPModel, x::AbstractVector, v::AbstractVector, Jv::AbstractVector)
   @lencheck nlp.meta.nvar x v
   @lencheck nlp.meta.ncon Jv
@@ -367,4 +374,11 @@ function jac_coord!(nlp::GridapPDENLPModel, x::AbstractVector, vals::AbstractVec
     x,
     vals,
   )
+end
+
+function jac_coord!(nlp::GridapPDENLPModel{T, S, NRJ, Nothing}, x::AbstractVector, vals::AbstractVector) where {T, S, NRJ}
+  @lencheck nlp.meta.nvar x
+  @lencheck nlp.meta.nnzj vals
+  increment!(nlp, :neval_jac)
+  return T[]
 end

@@ -38,6 +38,17 @@ nYpde = num_free_dofs(Ypde)
   @test PDENLPModels._fespace_to_multifieldfespace(PDENLPModels.VoidFESpace()) != nothing # PDENLPModels.VoidMultiFieldFESpace()
 end
 
+@testset "API for unconstrained problems" begin
+  x0 = zeros(3)
+  nlp = GridapPDENLPModel(x0, NoFETerm(), Ypde, Xpde)
+  @test nlp.meta.ncon == 0
+  @test nlp.meta.nnzj == 0
+  @test cons(nlp, x0) == []
+  @test jac_coord(nlp, x0) == []
+  @test jac_structure(nlp) == ([], [])
+  @test jac(nlp, x0) == zeros(0, 3)
+end
+
 @testset "Constructors for GridapPDENLPModel" begin
   x0 = zeros(3)
   lvar, uvar = -ones(3), ones(3)
