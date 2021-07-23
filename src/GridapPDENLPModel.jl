@@ -163,13 +163,9 @@ function hess_coord!(
   nini = nnz_hess_k
 
   if typeof(nlp.pdemeta.tnrj) != NoFETerm
-    if nlp.pdemeta.nparam > 0
-      luh = nlp.pdemeta.tnrj.f(κ, yu)
-      lag_hess = Gridap.FESpaces._hessian(x -> nlp.pdemeta.tnrj.f(κ, x), yu, luh)
-    else
-      luh = nlp.pdemeta.tnrj.f(yu)
-      lag_hess = Gridap.FESpaces._hessian(nlp.pdemeta.tnrj.f, yu, luh)
-    end
+    luh = _obj_integral(nlp.pdemeta.tnrj, κ, yu)
+    lag_hess = Gridap.FESpaces._hessian(x -> _obj_integral(nlp.pdemeta.tnrj, κ, x), yu, luh)
+
     matdata = Gridap.FESpaces.collect_cell_matrix(lag_hess)
     assem = SparseMatrixAssembler(nlp.pdemeta.Y, nlp.pdemeta.X)
     nini = fill_hess_coo_numeric!(vals, assem, matdata, n = nini)

@@ -30,8 +30,7 @@ function penalizedpoisson(args...; n = 2^4, kwargs...)
   dΩ = Measure(trian, degree)
 
   w(x) = 1
-  function f(yu)
-    y = yu
+  function f(y)
     ∫(0.5 * ∇(y) ⊙ ∇(y) - w * y) * dΩ
   end
 

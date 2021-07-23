@@ -29,8 +29,8 @@ function controlsir(args...; x0 = [1, 2], n = 10, a = 0.2, b = 0.1, μ = 0.1, T 
   dΩ = Measure(trian, degree)
   op_sis = FEOperator(res, Y, X)
 
-  function f(u) #:: Union{Gridap.MultiField.MultiFieldFEFunction, Gridap.CellData.GenericCellField}
-    I, S = u
+  function f(y)
+    I, S = y
     ∫(0.5 * I * I)dΩ
   end
 

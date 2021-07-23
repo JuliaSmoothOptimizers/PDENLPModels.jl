@@ -22,13 +22,10 @@ function _compute_hess_structure_obj(tnrj::AbstractEnergyTerm, Y, X, x0, nparam)
   nvar = length(x0)
   κ, xyu = x0[1:nparam], x0[(nparam + 1):nvar]
   xh = FEFunction(Y, xyu)
-  if nparam > 0
-    luh = tnrj.f(κ, xh)
-    lag_hess = Gridap.FESpaces._hessian(x -> tnrj.f(κ, x), xh, luh)
-  else
-    luh = tnrj.f(xh)
-    lag_hess = Gridap.FESpaces._hessian(tnrj.f, xh, luh)
-  end
+
+  luh = _obj_integral(tnrj, κ, xh)
+  lag_hess = Gridap.FESpaces._hessian(x -> _obj_integral(tnrj, κ, x), xh, luh)
+
   matdata = Gridap.FESpaces.collect_cell_matrix(lag_hess)
   assem = SparseMatrixAssembler(Y, X)
   n = Gridap.FESpaces.count_matrix_nnz_coo(assem, matdata)

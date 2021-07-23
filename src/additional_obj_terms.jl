@@ -78,7 +78,7 @@ function NoFETerm()
   return NoFETerm(x -> 0.0)
 end
 
-_obj_integral(term::NoFETerm, κ::AbstractVector, x::FEFunctionType) = term.f(κ)
+_obj_integral(tnrj::NoFETerm, κ::AbstractVector, x) = tnrj.f(κ)
 
 function _compute_gradient!(
   g::AbstractVector,
@@ -99,13 +99,13 @@ function _compute_gradient!(
   return g
 end
 
-function _compute_gradient_k(term::NoFETerm, κ::AbstractVector, yu::FEFunctionType)
-  return ForwardDiff.gradient(term.f, κ)
+function _compute_gradient_k(tnrj::NoFETerm, κ::AbstractVector, yu::FEFunctionType)
+  return ForwardDiff.gradient(tnrj.f, κ)
 end
 
 #=
 function _compute_hess_coo(
-  term::NoFETerm,
+  tnrj::NoFETerm,
   κ::AbstractVector{T},
   yu::FEFunctionType,
   Y::FESpace,
@@ -117,11 +117,11 @@ end
 
 function _compute_hess_k_vals(
   nlp::AbstractNLPModel,
-  term::NoFETerm,
+  tnrj::NoFETerm,
   κ::AbstractVector,
   xyu::AbstractVector,
 )
-  return LowerTriangular(ForwardDiff.hessian(term.f, κ))[:]
+  return LowerTriangular(ForwardDiff.hessian(tnrj.f, κ))[:]
 end
 
 @doc raw"""
@@ -147,11 +147,23 @@ struct EnergyFETerm <: AbstractEnergyTerm
   f::Function
   trian::Triangulation # TODO: Is this useful as it is contained in Measure?
   quad::Measure
+
+  Ypde::FESpace
+  Ycon::FESpace
 end
 
-function _obj_integral(term::EnergyFETerm, κ::AbstractVector, x::FEFunctionType)
+function EnergyFETerm(f::Function, trian::Triangulation, quad::Measure, Ypde)
+  return EnergyFETerm(f, trian, quad, Ypde, VoidFESpace())
+end
+
+function _obj_integral(tnrj::EnergyFETerm, κ::AbstractVector, x)
   @lencheck 0 κ
-  return term.f(x) # integrate(term.f(x), term.quad)
+  if typeof(tnrj.Ycon) <: VoidFESpace
+    return tnrj.f(x) # integrate(tnrj.f(x), tnrj.quad)
+  else
+    y, u = _split_FEFunction(x, tnrj.Ypde, tnrj.Ycon)
+    return tnrj.f(y, u)
+  end
 end
 
 function _compute_gradient!(
@@ -167,7 +179,7 @@ function _compute_gradient!(
   cell_yu = Gridap.FESpaces.get_cell_dof_values(yu)
   cell_id_yu = Gridap.Arrays.IdentityVector(length(cell_yu))
 
-  cell_r_yu = get_array(gradient(tnrj.f, yu))
+  cell_r_yu = get_array(gradient(x -> _obj_integral(tnrj, κ, x), yu))
   #Put the result in the format expected by Gridap.FESpaces.assemble_matrix
   vecdata_yu = [[cell_r_yu], [cell_id_yu]] #TODO would replace by Tuple work?
   #Assemble the gradient in the "good" space
@@ -178,7 +190,7 @@ function _compute_gradient!(
 end
 
 #=
-function _compute_gradient_k(term::EnergyFETerm, κ::AbstractVector{T}, yu::FEFunctionType) where {T}
+function _compute_gradient_k(tnrj::EnergyFETerm, κ::AbstractVector{T}, yu::FEFunctionType) where {T}
   @lencheck 0 κ
   return T[]
 end
@@ -207,7 +219,7 @@ end
 
 function _compute_hess_k_vals(
   nlp::AbstractNLPModel,
-  term::EnergyFETerm,
+  tnrj::EnergyFETerm,
   κ::AbstractVector{T},
   xyu::AbstractVector{T},
 ) where {T}
@@ -241,8 +253,10 @@ struct MixedEnergyFETerm <: AbstractEnergyTerm
   quad::Measure
 
   nparam::Integer #number of discrete unkonwns.
-
   inde::Bool
+
+  Ypde::FESpace
+  Ycon::FESpace
 
   function MixedEnergyFETerm(
     f::Function,
@@ -250,60 +264,74 @@ struct MixedEnergyFETerm <: AbstractEnergyTerm
     quad::Measure,
     n::Integer,
     inde::Bool,
+    Ypde::FESpace,
+    Ycon::FESpace,
   )
     @assert n > 0
-    return new(f, trian, quad, n, inde)
+    return new(f, trian, quad, n, inde, Ypde, Ycon)
   end
 end
 
-function MixedEnergyFETerm(f::Function, trian::Triangulation, quad::Measure, n::Integer)
+function MixedEnergyFETerm(f::Function, trian::Triangulation, quad::Measure, n::Integer, Ypde, Ycon)
   inde = false
-  return MixedEnergyFETerm(f, trian, quad, n, inde)
+  return MixedEnergyFETerm(f, trian, quad, n, inde, Ypde, Ycon)
 end
 
-function _obj_integral(term::MixedEnergyFETerm, κ::AbstractVector, x::FEFunctionType)
-  @lencheck term.nparam κ
-  #=kf = interpolate_everywhere(term.ispace, κ)
-  return integrate(term.f(kf, x), term.quad)=#
-  return term.f(κ, x) # integrate(term.f(κ, x), term.quad)
+function MixedEnergyFETerm(f::Function, trian::Triangulation, quad::Measure, n::Integer, Ypde)
+  return MixedEnergyFETerm(f, trian, quad, n, false, Ypde, VoidFESpace())
+end
+
+function MixedEnergyFETerm(f::Function, trian::Triangulation, quad::Measure, n::Integer, inde::Bool, Ypde)
+  return MixedEnergyFETerm(f, trian, quad, n, inde, Ypde, VoidFESpace())
+end
+
+function _obj_integral(tnrj::MixedEnergyFETerm, κ::AbstractVector, x)
+  @lencheck tnrj.nparam κ
+  #kf = interpolate_everywhere(tnrj.ispace, κ)
+  if typeof(tnrj.Ycon) <: VoidFESpace
+    return tnrj.f(κ, x) # integrate(tnrj.f(x), tnrj.quad)
+  else
+    y, u = _split_FEFunction(x, tnrj.Ypde, tnrj.Ycon)
+    return tnrj.f(κ, y, u)
+  end
 end
 
 function _compute_gradient!(
   g::AbstractVector,
-  term::MixedEnergyFETerm,
+  tnrj::MixedEnergyFETerm,
   κ::AbstractVector,
   yu::FEFunctionType,
   Y::FESpace,
   X::FESpace,
 )
-  @lencheck term.nparam κ
+  @lencheck tnrj.nparam κ
   nyu = num_free_dofs(Y)
-  @lencheck term.nparam + nyu g
+  @lencheck tnrj.nparam + nyu g
 
   cell_yu = Gridap.FESpaces.get_cell_dof_values(yu)
   cell_id_yu = Gridap.Arrays.IdentityVector(length(cell_yu))
 
-  cell_r_yu = get_array(gradient(x -> term.f(κ, x), yu))
+  cell_r_yu = get_array(gradient(x -> _obj_integral(tnrj, κ, x), yu))
   #Put the result in the format expected by Gridap.FESpaces.assemble_matrix
   vecdata_yu = [[cell_r_yu], [cell_id_yu]] #TODO would replace by Tuple work?
   #Assemble the gradient in the "good" space
   assem = Gridap.FESpaces.SparseMatrixAssembler(Y, X)
-  g[(term.nparam + 1):(term.nparam + nyu)] .= Gridap.FESpaces.assemble_vector(assem, vecdata_yu)
+  g[(tnrj.nparam + 1):(tnrj.nparam + nyu)] .= Gridap.FESpaces.assemble_vector(assem, vecdata_yu)
 
-  g[1:(term.nparam)] .= _compute_gradient_k(term, κ, yu)
+  g[1:(tnrj.nparam)] .= _compute_gradient_k(tnrj, κ, yu)
 
   return g
 end
 
-function _compute_gradient_k(term::MixedEnergyFETerm, κ::AbstractVector, yu::FEFunctionType)
-  @lencheck term.nparam κ
-  intf = @closure k -> sum(term.f(k, yu)) # sum(integrate(term.f(k, yu), term.quad))
+function _compute_gradient_k(tnrj::MixedEnergyFETerm, κ::AbstractVector, yu::FEFunctionType)
+  @lencheck tnrj.nparam κ
+  intf = @closure k -> sum(_obj_integral(tnrj, k, yu)) # sum(integrate(tnrj.f(k, yu), tnrj.quad))
   return ForwardDiff.gradient(intf, κ)
 end
 
 #=
 function _compute_hess_coo(
-  term::MixedEnergyFETerm,
+  tnrj::MixedEnergyFETerm,
   κ::AbstractVector,
   yu::FEFunctionType,
   Y::FESpace,
@@ -312,7 +340,7 @@ function _compute_hess_coo(
   cell_yu = Gridap.FESpaces.get_cell_dof_values(yu)
   cell_id_yu = Gridap.Arrays.IdentityVector(length(cell_yu))
 
-  cell_r_yu = get_array(hessian(x -> term.f(κ, x), yu))
+  cell_r_yu = get_array(hessian(x -> tnrj.f(κ, x), yu))
   #Assemble the matrix in the "good" space
   assem = Gridap.FESpaces.SparseMatrixAssembler(Y, X)
   (I, J, V) = assemble_hess(assem, cell_r_yu, cell_id_yu)
@@ -323,7 +351,7 @@ end
 
 function _compute_hess_k_vals(
   nlp::AbstractNLPModel,
-  term::MixedEnergyFETerm,
+  tnrj::MixedEnergyFETerm,
   κ::AbstractVector{T},
   xyu::AbstractVector{T},
 ) where {T}
@@ -350,7 +378,7 @@ function _compute_hess_k_vals(
     #=
     function _grad(k)
         g = similar(k, nlp.meta.nvar)
-        _compute_gradient!(g, term, k, yu, nlp.pdemeta.Y, nlp.pdemeta.X)
+        _compute_gradient!(g, tnrj, k, yu, nlp.pdemeta.Y, nlp.pdemeta.X)
         return g
     end
     @show _grad(κ), _grad(κ .+ 1.)
@@ -358,7 +386,7 @@ function _compute_hess_k_vals(
     @show Hxk
     =#
     #@show "2nd try:"
-    #intf = k -> ForwardDiff.gradient(x -> sum(integrate(term.f(k, x), term.quad)), xyu)
+    #intf = k -> ForwardDiff.gradient(x -> sum(integrate(tnrj.f(k, x), tnrj.quad)), xyu)
     #Hxk2 = ForwardDiff.jacobian(intf, κ)
     #@show Hxk2
     #We need the gradient w.r.t. yu and then derive by k

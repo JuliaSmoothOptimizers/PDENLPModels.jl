@@ -77,7 +77,7 @@ function GridapPDENLPModel(
   nvar_pde = Gridap.FESpaces.num_free_dofs(Ypde)
   nparam = length(x0) - nvar_pde
 
-  tnrj = nparam > 0 ? MixedEnergyFETerm(f, trian, quad, nparam) : EnergyFETerm(f, trian, quad)
+  tnrj = nparam > 0 ? MixedEnergyFETerm(f, trian, quad, nparam, Ypde) : EnergyFETerm(f, trian, quad, Ypde)
 
   return GridapPDENLPModel(x0, tnrj, Ypde, Xpde, lvar = lvar, uvar = uvar, name = name)
 end
@@ -97,7 +97,7 @@ function GridapPDENLPModel(
   nvar_pde = Gridap.FESpaces.num_free_dofs(Ypde)
   nparam = length(x0) - nvar_pde
 
-  tnrj = nparam > 0 ? MixedEnergyFETerm(f, trian, quad, nparam) : EnergyFETerm(f, trian, quad)
+  tnrj = nparam > 0 ? MixedEnergyFETerm(f, trian, quad, nparam, Ypde) : EnergyFETerm(f, trian, quad, Ypde)
 
   return GridapPDENLPModel(x0, tnrj, Ypde, Xpde, c, lvar = lvar, uvar = uvar, name = name)
 end
@@ -289,7 +289,7 @@ function GridapPDENLPModel(
   nvar_con = num_free_dofs(Ycon)
   nparam = nvar - (nvar_pde + nvar_con)
 
-  tnrj = nparam > 0 ? MixedEnergyFETerm(f, trian, quad, nparam) : EnergyFETerm(f, trian, quad)
+  tnrj = nparam > 0 ? MixedEnergyFETerm(f, trian, quad, nparam, Ypde, Ycon) : EnergyFETerm(f, trian, quad, Ypde, Ycon)
 
   return GridapPDENLPModel(
     x0,

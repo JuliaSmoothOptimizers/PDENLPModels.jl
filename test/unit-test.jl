@@ -13,8 +13,11 @@ Ypde = TrialFESpace(Xpde, u0)
 
 f(x) = dot(x, x)
 fxh = x -> ∫(f(x)) * dΩ
-function fyuh(yu)
-  y, u = yu
+function fyuh(y, u)
+  ∫(y * 1.0) * dΩ
+end
+fkxh = (k, x) -> ∫(f(x)) * dΩ
+function fkyuh(k, y, u)
   ∫(y * 1.0) * dΩ
 end
 
@@ -51,28 +54,30 @@ end
 
 @testset "Constructors for GridapPDENLPModel" begin
   x0 = zeros(3)
+  xk0 = zeros(4)
   lvar, uvar = -ones(3), ones(3)
-  badlvar, baduvar = -ones(4), ones(4)
+  lvark, uvark = -ones(4), ones(4)
+  badlvar, baduvar = -ones(5), ones(5)
   badx0 = ones(2)
 
   NT = NoFETerm()
   NTf = NoFETerm(f)
-  EFT = EnergyFETerm(fxh, trian, dΩ)
-  MEFT = MixedEnergyFETerm(fxh, trian, dΩ, 1)
+  EFT = EnergyFETerm(fxh, trian, dΩ, Ypde)
+  MEFT = MixedEnergyFETerm(fkxh, trian, dΩ, 1, Ypde)
 
-  EFTmixed = EnergyFETerm(fyuh, trian, dΩ)
-  MEFTmixed = MixedEnergyFETerm(fyuh, trian, dΩ, 1)
+  EFTmixed = EnergyFETerm(fyuh, trian, dΩ, Ypde, Ycon)
+  MEFTmixed = MixedEnergyFETerm(fkyuh, trian, dΩ, 1, Ypde, Ycon)
 
   nlp = GridapPDENLPModel(x0, NT, Ypde, Xpde)
   nlp = GridapPDENLPModel(x0, NTf, Ypde, Xpde)
   nlp = GridapPDENLPModel(x0, EFT, Ypde, Xpde)
-  nlp = GridapPDENLPModel(x0, MEFT, Ypde, Xpde)
+  nlp = GridapPDENLPModel(xk0, MEFT, Ypde, Xpde)
   nlp = GridapPDENLPModel(x0, fxh, trian, dΩ, Ypde, Xpde)
   # nlp = GridapPDENLPModel(fxh, trian, dΩ, Ypde, Xpde)
   nlp = GridapPDENLPModel(x0, NT, Ypde, Xpde, lvar = lvar, uvar = uvar)
   nlp = GridapPDENLPModel(x0, NTf, Ypde, Xpde, lvar = lvar, uvar = uvar)
   nlp = GridapPDENLPModel(x0, EFT, Ypde, Xpde, lvar = lvar, uvar = uvar)
-  nlp = GridapPDENLPModel(x0, MEFT, Ypde, Xpde, lvar = lvar, uvar = uvar)
+  nlp = GridapPDENLPModel(xk0, MEFT, Ypde, Xpde, lvar = lvark, uvar = uvark)
   nlp = GridapPDENLPModel(x0, fxh, trian, dΩ, Ypde, Xpde, lvar = lvar, uvar = uvar)
   # nlp = GridapPDENLPModel(fxh, trian, dΩ, Ypde, Xpde, lvar = lvar, uvar = uvar)
 
@@ -100,11 +105,19 @@ end
   )
 
   x0 = zeros(8)
+  xk0 = zeros(9)
   x0y = zeros(3)
+  xk0y = zeros(4)
   function res(y, u, v)
     ∫(y * v) * dΩ
   end
+  function res(k, y, u, v)
+    ∫(y * v) * dΩ
+  end
   ctermixed = FEOperator(res, Y, Xpde)
+  function res(k::AbstractVector, y, v)
+    ∫(y * v) * dΩ
+  end
   function res(y, v)
     ∫(y * v) * dΩ
   end
@@ -117,13 +130,14 @@ end
   caff = AffineFEOperator(resff, rhs, Y, Xpde)
 
   lvary, uvary, lvaru, uvaru = -ones(3), ones(3), -ones(5), ones(5)
+  lvaryk, uvaryk = -ones(4), ones(4)
   lcon, ucon, y0 = -ones(3), ones(3), zeros(3)
   badlvary, baduvary, badlvaru, baduvaru = -ones(4), ones(5), -ones(3), ones(3)
   badlcon, baducon, bady0 = -ones(2), ones(2), zeros(2)
   nlp = GridapPDENLPModel(x0, NT, Ypde, Ycon, Xpde, Xcon, ctermixed)
   nlp = GridapPDENLPModel(x0, NTf, Ypde, Ycon, Xpde, Xcon, ctermixed)
   nlp = GridapPDENLPModel(x0, EFTmixed, Ypde, Ycon, Xpde, Xcon, ctermixed)
-  nlp = GridapPDENLPModel(x0, MEFTmixed, Ypde, Ycon, Xpde, Xcon, ctermixed)
+  nlp = GridapPDENLPModel(xk0, MEFTmixed, Ypde, Ycon, Xpde, Xcon, ctermixed)
   nlp = GridapPDENLPModel(x0, fyuh, trian, dΩ, Ypde, Ycon, Xpde, Xcon, ctermixed)
   #nlp = GridapPDENLPModel(fxh, trian, dΩ, Ypde, Ycon, Xpde, Xcon, cter)
   #nlp = GridapPDENLPModel(NT, Ypde, Xpde, cter)
@@ -133,11 +147,11 @@ end
   nlp = GridapPDENLPModel(x0y, NT, Ypde, Xpde, cter)
   nlp = GridapPDENLPModel(x0y, NTf, Ypde, Xpde, cter)
   nlp = GridapPDENLPModel(x0y, EFT, Ypde, Xpde, cter)
-  nlp = GridapPDENLPModel(x0y, MEFT, Ypde, Xpde, cter)
+  nlp = GridapPDENLPModel(xk0y, MEFT, Ypde, Xpde, cter)
   nlp = GridapPDENLPModel(x0y, NT, Ypde, Xpde, cter, lvar = lvary, uvar = uvary)
   nlp = GridapPDENLPModel(x0y, NTf, Ypde, Xpde, cter, lvar = lvary, uvar = uvary)
   nlp = GridapPDENLPModel(x0y, EFT, Ypde, Xpde, cter, lvar = lvary, uvar = uvary)
-  nlp = GridapPDENLPModel(x0y, MEFT, Ypde, Xpde, cter, lvar = lvary, uvar = uvary)
+  nlp = GridapPDENLPModel(xk0y, MEFT, Ypde, Xpde, cter, lvar = lvaryk, uvar = uvaryk)
   nlp =
     GridapPDENLPModel(x0, NT, Ypde, Ycon, Xpde, Xcon, ctermixed, y0 = y0, lcon = lcon, ucon = ucon)
   nlp =
@@ -155,7 +169,7 @@ end
     ucon = ucon,
   )
   nlp = GridapPDENLPModel(
-    x0,
+    xk0,
     MEFTmixed,
     Ypde,
     Ycon,
@@ -234,7 +248,7 @@ end
     uvaru = uvaru,
   )
   nlp = GridapPDENLPModel(
-    x0,
+    xk0,
     MEFTmixed,
     Ypde,
     Ycon,
@@ -311,7 +325,7 @@ end
     ucon = ucon,
   )
   nlp = GridapPDENLPModel(
-    x0,
+    xk0,
     MEFTmixed,
     Ypde,
     Ycon,
@@ -938,7 +952,7 @@ function check_counters(nlp::AbstractNLPModel)
 end
 
 @testset "Check counters" begin
-  EFT = EnergyFETerm(x -> ∫(1.0)dΩ, trian, dΩ)
+  EFT = EnergyFETerm((y, u) -> ∫(1.0)dΩ, trian, dΩ, Ypde, Ycon)
   function res(y, u, v)
     ∫(y * v)dΩ
   end
