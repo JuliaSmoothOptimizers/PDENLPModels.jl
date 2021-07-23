@@ -167,10 +167,6 @@ function bounds_functions_to_vectors(
   lu::AbstractVector,
   uu::AbstractVector,
 )
-  ny = Gridap.FESpaces.num_free_dofs(Ypde)
-
-  @lencheck ny ly uy
-
   return ly, uy
 end
 
