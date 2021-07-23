@@ -41,9 +41,7 @@ function GridapPDENLPModel(
     name = name,
   )
 
-  return GridapPDENLPModel(
-    meta,
-    Counters(),
+  pdemeta = PDENLPMeta{NRJ, Nothing}(
     tnrj,
     Ypde,
     VoidFESpace(),
@@ -61,6 +59,8 @@ function GridapPDENLPModel(
     Int[],
     Int[],
   )
+
+  return GridapPDENLPModel(meta, Counters(), pdemeta)
 end
 
 function GridapPDENLPModel(
@@ -234,9 +234,7 @@ function GridapPDENLPModel(
     name = name,
   )
 
-  return GridapPDENLPModel(
-    meta,
-    Counters(),
+  pdemeta = PDENLPMeta{NRJ, typeof(c)}(
     tnrj,
     Ypde,
     Ycon,
@@ -254,6 +252,8 @@ function GridapPDENLPModel(
     vcat(Jkrows, Jrows),
     vcat(Jkcols, Jcols .+ nparam),
   )
+
+  return GridapPDENLPModel(meta, Counters(), pdemeta)
 end
 
 function GridapPDENLPModel(

@@ -49,10 +49,10 @@ end
 function poissonparam_test()
   nlp = poissonparam(n = 5)
 
-  nUg = num_free_dofs(nlp.Ypde)
+  nUg = num_free_dofs(nlp.pdemeta.Ypde)
   x0 = zeros(nUg + 1)
 
-  @test nlp.nparam == 1
+  @test nlp.pdemeta.nparam == 1
   x1 = vcat(1.0, rand(nUg))
   @test obj(nlp, x0) == 0.5
   @test obj(nlp, x1) == 0.0

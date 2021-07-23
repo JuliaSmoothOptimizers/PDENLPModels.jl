@@ -105,7 +105,7 @@ function burger1d_test(; udc = false)
   uh = solve(solver, op_pde)
   sol_gridap = vcat(get_free_values(uh), 0.5 * ones(513))
 
-  Y = MultiFieldFESpace([nlp.Ypde, nlp.Ycon])
+  Y = MultiFieldFESpace([nlp.pdemeta.Ypde, nlp.pdemeta.Ycon])
   xin = zeros(Gridap.FESpaces.num_free_dofs(Y))
   nlp = burger1d()
 

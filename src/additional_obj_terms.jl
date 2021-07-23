@@ -327,30 +327,30 @@ function _compute_hess_k_vals(
   κ::AbstractVector{T},
   xyu::AbstractVector{T},
 ) where {T}
-  inde = (typeof(nlp.tnrj) <: MixedEnergyFETerm && nlp.tnrj.inde) || typeof(nlp.tnrj) <: NoFETerm
+  inde = (typeof(nlp.pdemeta.tnrj) <: MixedEnergyFETerm && nlp.pdemeta.tnrj.inde) || typeof(nlp.pdemeta.tnrj) <: NoFETerm
 
   if inde
-    nnz = Int(nlp.nparam * (nlp.nparam + 1) / 2)
-    prows = nlp.nparam
-    yu = FEFunction(nlp.Y, xyu)
+    nnz = Int(nlp.pdemeta.nparam * (nlp.pdemeta.nparam + 1) / 2)
+    prows = nlp.pdemeta.nparam
+    yu = FEFunction(nlp.pdemeta.Y, xyu)
 
-    gk = @closure k -> _compute_gradient_k(nlp.tnrj, k, yu)
+    gk = @closure k -> _compute_gradient_k(nlp.pdemeta.tnrj, k, yu)
     Hxk = ForwardDiff.jacobian(gk, κ)
   else
-    nnz = Int(nlp.nparam * (nlp.nparam + 1) / 2) + (nlp.meta.nvar - nlp.nparam) * nlp.nparam
+    nnz = Int(nlp.pdemeta.nparam * (nlp.pdemeta.nparam + 1) / 2) + (nlp.meta.nvar - nlp.pdemeta.nparam) * nlp.pdemeta.nparam
     prows = nlp.meta.nvar
     #Hxk = ForwardDiff.jacobian(k -> grad(nlp, vcat(k, xyu)), κ) #doesn't work :(
     function _obj(x)
-      κ, xyu = x[1:(nlp.nparam)], x[(nlp.nparam + 1):(nlp.meta.nvar)]
-      yu = FEFunction(nlp.Y, xyu)
-      int = _obj_integral(nlp.tnrj, κ, yu)
+      κ, xyu = x[1:(nlp.pdemeta.nparam)], x[(nlp.pdemeta.nparam + 1):(nlp.meta.nvar)]
+      yu = FEFunction(nlp.pdemeta.Y, xyu)
+      int = _obj_integral(nlp.pdemeta.tnrj, κ, yu)
       return sum(int)
     end
     Hxk = ForwardDiff.jacobian(k -> ForwardDiff.gradient(_obj, vcat(k, xyu)), κ)
     #=
     function _grad(k)
         g = similar(k, nlp.meta.nvar)
-        _compute_gradient!(g, term, k, yu, nlp.Y, nlp.X)
+        _compute_gradient!(g, term, k, yu, nlp.pdemeta.Y, nlp.pdemeta.X)
         return g
     end
     @show _grad(κ), _grad(κ .+ 1.)
@@ -367,7 +367,7 @@ function _compute_hess_k_vals(
 
   # simplify?
   k = 1
-  for j = 1:(nlp.nparam)
+  for j = 1:(nlp.pdemeta.nparam)
     for i = j:prows
       if j ≤ i
         vals[k] = Hxk[i, j]
