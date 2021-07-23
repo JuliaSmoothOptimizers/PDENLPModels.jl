@@ -1,3 +1,26 @@
+"""
+    PDENLPMeta
+A composite type that represents the main features of the PDE-constrained optimization problem
+
+---
+The following arguments are accepted:
+- tnrj : structure representing the objective term
+- Ypde : TrialFESpace for the solution of the PDE
+- Ycon : TrialFESpace for the parameter
+- Xpde : TestFESpace for the solution of the PDE
+- Xcon : TestFESpace for the parameter
+- Y : concatenated TrialFESpace
+- X : concatenated TestFESpace
+- op : operator representing the PDE-constraint (nothing if no constraints)
+- nvar_pde :number of dofs in the solution functions
+- nvar_con : number of dofs in the control functions
+- nparam: : number of real unknowns
+- nnzh_obj : number of nonzeros elements in the objective hessian
+- Hrows : store the structure for the hessian of the lagrangian
+- Hcols : store the structure for the hessian of the lagrangian
+- Jrows : store the structure for the hessian of the jacobian
+- Jcols : store the structure for the hessian of the jacobian
+"""
 struct PDENLPMeta{NRJ <: AbstractEnergyTerm, Op <: Union{FEOperator, Nothing}}
   # For the objective function
   tnrj::NRJ
@@ -80,6 +103,20 @@ mutable struct GridapPDENLPModel{T, S, NRJ, Op} <: AbstractNLPModel{T, S}
   meta::NLPModelMeta{T, S}
   counters::Counters
   pdemeta::PDENLPMeta{NRJ, Op}
+end
+
+for field in fieldnames(PDENLPMeta)
+  meth = Symbol("get_", field)
+  @eval begin
+    @doc """
+        $($meth)(nlp)
+        $($meth)(meta)
+    Return the value $($(QuoteNode(field))) from meta or nlp.meta.
+    """
+    $meth(meta::PDENLPMeta) = getproperty(meta, $(QuoteNode(field)))
+  end
+  @eval $meth(nlp::GridapPDENLPModel) = $meth(nlp.pdemeta)
+  @eval export $meth
 end
 
 include("bounds_function.jl")

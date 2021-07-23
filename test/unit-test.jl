@@ -945,4 +945,22 @@ end
 
   nlp2 = GridapPDENLPModel(x0, EFT, Ypde, Ycon, Xpde, Xcon, caff)
   check_counters(nlp2)
+
+  # increase coverage
+  get_tnrj(nlp)
+  get_Ypde(nlp)
+  get_Ycon(nlp)
+  get_Xpde(nlp)
+  get_Xcon(nlp)
+  get_Y(nlp)
+  get_X(nlp)
+  get_op(nlp)
+  get_nvar_pde(nlp)
+  get_nvar_con(nlp)
+  get_nparam(nlp)
+  get_nnzh_obj(nlp)
+  get_Hrows(nlp)
+  get_Hcols(nlp)
+  get_Jrows(nlp)
+  get_Jcols(nlp)
 end
