@@ -41,7 +41,7 @@ end
 
 function penalizedpoisson_test(; udc = false)
   nlp = penalizedpoisson()
-  x1 = vcat(rand(Gridap.FESpaces.num_free_dofs(nlp.Ypde)))
+  x1 = vcat(rand(Gridap.FESpaces.num_free_dofs(nlp.pdemeta.Ypde)))
   v = x1
 
   fx = obj(nlp, x1)
