@@ -14,8 +14,8 @@ function cellincrease(args...; x0 = [0.6, 0.1], n = 10, T = 7, kwargs...)
   Xcon = MultiFieldFESpace([Vcon])
   Ycon = MultiFieldFESpace([Ucon])
 
-  function f(yu)
-    cf, pf, uf = yu
+  function f(y, u)
+    cf, pf = y
     ∫(kp * pf)dΩ
   end
 

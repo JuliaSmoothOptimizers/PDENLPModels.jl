@@ -42,10 +42,7 @@ function poissonmixed(args...; n = 3, kwargs...)
       0.5 * (k[2] - 1.0) * (k[2] - 1.0),
     )dΩ
   end
-  Vp = TestFESpace(model, reffe; conformity = :H1)
-  #Large = MultiFieldFESpace(repeat([Vp], 2))
-  #nrj = MixedEnergyFETerm(fk, trian, dΩ, 2, Large) #length(k)=2
-  nrj = MixedEnergyFETerm(fk, trian, dΩ, 2, true)
+  nrj = MixedEnergyFETerm(fk, trian, dΩ, 2, true, Ug)
 
   nUg = num_free_dofs(Ug)
   x0 = zeros(nUg + 2) #zeros(nUg + 2)
