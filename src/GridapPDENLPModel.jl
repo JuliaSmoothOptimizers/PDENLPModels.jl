@@ -48,6 +48,17 @@ struct PDENLPMeta{NRJ <: AbstractEnergyTerm, Op <: Union{FEOperator, Nothing}}
   Jcols::AbstractVector{Int}
 end
 
+mutable struct PDEWorkspace # {T, S}
+  Hvals # vector of values of the Hessian matrix
+  Jvals # vector of values of the Jacobian matrix
+end
+
+function PDEWorkspace(T, S, nnzh, nnzj)
+  Hvals = S(undef, nnzh)
+  Jvals = S(undef, nnzj)
+  return PDEWorkspace(Hvals, Jvals)
+end
+
 @doc raw"""
 PDENLPModels using Gridap.jl
 
@@ -103,6 +114,7 @@ mutable struct GridapPDENLPModel{T, S, NRJ, Op} <: AbstractNLPModel{T, S}
   meta::NLPModelMeta{T, S}
   counters::Counters
   pdemeta::PDENLPMeta{NRJ, Op}
+  workspace::PDEWorkspace
 end
 
 for field in fieldnames(PDENLPMeta)
@@ -195,7 +207,7 @@ function hprod!(
   end
 
   rows, cols = hess_structure(nlp)
-  vals = hess_coord(nlp, x, obj_weight = obj_weight) # store in a workspace in the model
+  vals = hess_coord!(nlp, x, nlp.workspace.Hvals, obj_weight = obj_weight)
   decrement!(nlp, :neval_hess)
   coo_sym_prod!(cols, rows, vals, v, Hv)
 
@@ -212,11 +224,9 @@ function hess_structure!(
   cols::AbstractVector{T},
 ) where {T <: Integer}
   @lencheck nlp.meta.nnzh rows cols
-
   rows .= T.(nlp.pdemeta.Hrows)
   cols .= T.(nlp.pdemeta.Hcols)
-
-  (rows, cols)
+  return (rows, cols)
 end
 
 function hess_coord!(
@@ -252,8 +262,7 @@ function hess_coord!(
   end
 
   if typeof(nlp.pdemeta.op) <: Gridap.FESpaces.FEOperatorFromWeakForm
-    # λ = zeros(Gridap.FESpaces.num_free_dofs(nlp.pdemeta.Ypde))
-    λf = FEFunction(nlp.pdemeta.Xpde, λ) # or Ypde
+    λf = FEFunction(nlp.pdemeta.Xpde, λ)
     xh = FEFunction(nlp.pdemeta.Y, x)
 
     function split_res(x, λ)
@@ -296,7 +305,7 @@ function hprod!(
   increment!(nlp, :neval_hprod)
 
   rows, cols = hess_structure(nlp)
-  vals = hess_coord(nlp, x, λ, obj_weight = obj_weight)
+  vals = hess_coord!(nlp, x, λ, nlp.workspace.Hvals, obj_weight = obj_weight)
   decrement!(nlp, :neval_hess)
   coo_sym_prod!(cols, rows, vals, v, Hv)
 
@@ -315,7 +324,7 @@ function cons!(nlp::GridapPDENLPModel{T, S, NRJ, Nothing}, x::AbstractVector, c:
   @lencheck nlp.meta.nvar x
   @lencheck nlp.meta.ncon c
   increment!(nlp, :neval_cons)
-  return T[]
+  return c
 end
 
 function jprod!(nlp::GridapPDENLPModel, x::AbstractVector, v::AbstractVector, Jv::AbstractVector)
@@ -323,7 +332,7 @@ function jprod!(nlp::GridapPDENLPModel, x::AbstractVector, v::AbstractVector, Jv
   @lencheck nlp.meta.ncon Jv
   increment!(nlp, :neval_jprod)
   rows, cols = jac_structure(nlp)
-  vals = jac_coord(nlp, x)
+  vals = jac_coord!(nlp, x, nlp.workspace.Jvals)
   decrement!(nlp, :neval_jac)
   coo_prod!(rows, cols, vals, v, Jv)
   return Jv
@@ -334,7 +343,7 @@ function jtprod!(nlp::GridapPDENLPModel, x::AbstractVector, v::AbstractVector, J
   @lencheck nlp.meta.ncon v
   increment!(nlp, :neval_jtprod)
   rows, cols = jac_structure(nlp)
-  vals = jac_coord(nlp, x)
+  vals = jac_coord!(nlp, x, nlp.workspace.Jvals)
   decrement!(nlp, :neval_jac)
   coo_prod!(cols, rows, vals, v, Jtv)
   return Jtv
@@ -376,5 +385,5 @@ function jac_coord!(nlp::GridapPDENLPModel{T, S, NRJ, Nothing}, x::AbstractVecto
   @lencheck nlp.meta.nvar x
   @lencheck nlp.meta.nnzj vals
   increment!(nlp, :neval_jac)
-  return T[]
+  return vals
 end
