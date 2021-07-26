@@ -48,15 +48,15 @@ struct PDENLPMeta{NRJ <: AbstractEnergyTerm, Op <: Union{FEOperator, Nothing}}
   Jcols::AbstractVector{Int}
 end
 
-mutable struct PDEWorkspace # {T, S}
-  Hvals # vector of values of the Hessian matrix
-  Jvals # vector of values of the Jacobian matrix
+mutable struct PDEWorkspace{T, S}
+  Hvals::S # vector of values of the Hessian matrix
+  Jvals::S # vector of values of the Jacobian matrix
 end
 
 function PDEWorkspace(T, S, nnzh, nnzj)
   Hvals = S(undef, nnzh)
   Jvals = S(undef, nnzj)
-  return PDEWorkspace(Hvals, Jvals)
+  return PDEWorkspace{T, S}(Hvals, Jvals)
 end
 
 @doc raw"""
