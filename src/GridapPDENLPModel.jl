@@ -171,7 +171,7 @@ function hess_coord!(
   yu = FEFunction(nlp.pdemeta.Y, xyu)
 
   nnz_hess_k = get_nnz_hess_k(nlp.pdemeta.tnrj, nlp.meta.nvar, nlp.pdemeta.nparam)
-  vals[1:nnz_hess_k] .= _compute_hess_k_vals(nlp, nlp.pdemeta.tnrj, κ, xyu) # do in-place
+  _compute_hess_k_vals!(view(vals, 1:nnz_hess_k), nlp, nlp.pdemeta.tnrj, κ, xyu)
   nini = nnz_hess_k
 
   if typeof(nlp.pdemeta.tnrj) != NoFETerm
