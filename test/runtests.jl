@@ -5,7 +5,7 @@ using PDENLPModels:
   _split_vector,
   _split_FEFunction,
   _obj_integral,
-  _compute_gradient_k,
+  _compute_gradient_k!,
   _compute_gradient!
 #Testing
 using NLPModels, NLPModelsIpopt, NLPModelsTest, Random, Test
@@ -39,16 +39,10 @@ else
   [
     "BURGER1D",
     "BURGER1D_PARAM",
-    # "CELLINCREASE",
-    # "SIS",
     "CONTROLSIR", # similar SIS, CELLINCREASE, DYNAMICSIR
-    # "DYNAMICSIR",
-    # "BASICUNCONSTRAINED", # simplified PENALIZEDPOISSON
-    "PENALIZEDPOISSON",
-    #"INCOMPRESSIBLENAVIERSTOKES", #too slow (tested locally only)
-    "POISSONMIXED",
+    "PENALIZEDPOISSON", # "BASICUNCONSTRAINED", # simplified PENALIZEDPOISSON
+    "POISSONMIXED", # "POISSONMIXED2", # similar POISSONMIXED
     "POISSONPARAM",
-    # "POISSONMIXED2", # similar POISSONMIXED
     "TOREBRACHISTOCHRONE",
     "CONTROLELASTICMEMBRANE",
   ]

@@ -14,12 +14,12 @@ function _obj_integral end
 """
 Return the derivative of the objective function w.r.t. κ.
 
-`_compute_gradient_k(:: AbstractEnergyTerm, :: FEFunctionType, :: AbstractVector)`
+`_compute_gradient_k!(::AbstractVector, :: AbstractEnergyTerm, :: FEFunctionType, :: AbstractVector)`
 
 See also: `MixedEnergyFETerm`, `EnergyFETerm`, `NoFETerm`, `_obj_integral`,
 `_obj_cell_integral`, `_compute_hess_coo`, `_compute_hess_k_coo`
 """
-function _compute_gradient_k end
+function _compute_gradient_k! end
 
 """
 Return the gradient of the objective function and set it in place.
@@ -81,26 +81,31 @@ end
 _obj_integral(tnrj::NoFETerm, κ::AbstractVector, x) = tnrj.f(κ)
 
 function _compute_gradient!(
-  g::AbstractVector,
+  g::AbstractVector{T},
   tnrj::NoFETerm,
   κ::AbstractVector,
   yu::FEFunctionType,
   Y::FESpace,
   X::FESpace,
-)
+) where {T}
   nparam = length(κ)
   nyu = num_free_dofs(Y)
   nvar = nparam + nyu
   @lencheck nvar g
 
-  g[(nparam + 1):nvar] .= zeros(nyu)
-  g[1:nparam] .= _compute_gradient_k(tnrj, κ, yu)
+  g[(nparam + 1):nvar] .= zero(T)
+  _compute_gradient_k!(view(g, 1:nparam), tnrj, κ, yu)
 
   return g
 end
 
-function _compute_gradient_k(tnrj::NoFETerm, κ::AbstractVector, yu::FEFunctionType)
-  return ForwardDiff.gradient(tnrj.f, κ)
+function _compute_gradient_k!(
+  g::AbstractVector,
+  tnrj::NoFETerm,
+  κ::AbstractVector,
+  yu::FEFunctionType,
+)
+  return ForwardDiff.gradient!(g, tnrj.f, κ)
 end
 
 #=
@@ -190,9 +195,9 @@ function _compute_gradient!(
 end
 
 #=
-function _compute_gradient_k(tnrj::EnergyFETerm, κ::AbstractVector{T}, yu::FEFunctionType) where {T}
+function _compute_gradient_k!(g::AbstractVector, tnrj::EnergyFETerm, κ::AbstractVector{T}, yu::FEFunctionType) where {T}
   @lencheck 0 κ
-  return T[]
+  return g
 end
 =#
 
@@ -318,12 +323,27 @@ function _compute_gradient!(
   assem = Gridap.FESpaces.SparseMatrixAssembler(Y, X)
   g[(tnrj.nparam + 1):(tnrj.nparam + nyu)] .= Gridap.FESpaces.assemble_vector(assem, vecdata_yu)
 
-  g[1:(tnrj.nparam)] .= _compute_gradient_k(tnrj, κ, yu)
+  _compute_gradient_k!(view(g, 1:(tnrj.nparam)), tnrj, κ, yu)
 
   return g
 end
 
-function _compute_gradient_k(tnrj::MixedEnergyFETerm, κ::AbstractVector, yu::FEFunctionType)
+function _compute_gradient_k!(
+  g::AbstractVector,
+  tnrj::MixedEnergyFETerm,
+  κ::AbstractVector,
+  yu::FEFunctionType,
+)
+  @lencheck tnrj.nparam κ
+  intf = @closure k -> sum(_obj_integral(tnrj, k, yu)) # sum(integrate(tnrj.f(k, yu), tnrj.quad))
+  return ForwardDiff.gradient!(g, intf, κ)
+end
+
+function _compute_gradient_k(
+  tnrj::MixedEnergyFETerm,
+  κ::AbstractVector,
+  yu::FEFunctionType,
+)
   @lencheck tnrj.nparam κ
   intf = @closure k -> sum(_obj_integral(tnrj, k, yu)) # sum(integrate(tnrj.f(k, yu), tnrj.quad))
   return ForwardDiff.gradient(intf, κ)
@@ -361,7 +381,6 @@ function _compute_hess_k_vals(
     nnz = Int(nlp.pdemeta.nparam * (nlp.pdemeta.nparam + 1) / 2)
     prows = nlp.pdemeta.nparam
     yu = FEFunction(nlp.pdemeta.Y, xyu)
-
     gk = @closure k -> _compute_gradient_k(nlp.pdemeta.tnrj, k, yu)
     Hxk = ForwardDiff.jacobian(gk, κ)
   else
@@ -385,11 +404,6 @@ function _compute_hess_k_vals(
     Hxk = ForwardDiff.jacobian(_grad, κ)
     @show Hxk
     =#
-    #@show "2nd try:"
-    #intf = k -> ForwardDiff.gradient(x -> sum(integrate(tnrj.f(k, x), tnrj.quad)), xyu)
-    #Hxk2 = ForwardDiff.jacobian(intf, κ)
-    #@show Hxk2
-    #We need the gradient w.r.t. yu and then derive by k
   end
   vals = zeros(T, nnz)#Array{T,1}(undef, nnz) #TODO not smart
 
