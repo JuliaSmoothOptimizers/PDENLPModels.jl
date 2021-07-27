@@ -41,7 +41,7 @@ function poissonmixed2(args...; n = 3, kwargs...)
     k1(x) = k[1]
     ∫(k1 * (sol - y) * (sol - y) + 0.5 * (k[2] - 1.0) * (k[2] - 1.0))dΩ
   end
-  nrj = MixedEnergyFETerm(fk, trian, dΩ, 2, Ug, V0)
+  nrj = MixedEnergyFETerm(fk, trian, 2, Ug, V0)
 
   nUg = num_free_dofs(Ug)
   x0 = zeros(nUg + 2) #zeros(nUg + 2)

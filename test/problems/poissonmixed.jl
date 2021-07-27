@@ -42,7 +42,7 @@ function poissonmixed(args...; n = 3, kwargs...)
       0.5 * (k[2] - 1.0) * (k[2] - 1.0),
     )dΩ
   end
-  nrj = MixedEnergyFETerm(fk, trian, dΩ, 2, true, Ug)
+  nrj = MixedEnergyFETerm(fk, trian, 2, true, Ug)
 
   nUg = num_free_dofs(Ug)
   x0 = zeros(nUg + 2) #zeros(nUg + 2)

@@ -115,9 +115,6 @@ FETerm modeling the objective function of the optimization problem.
 \int_{\Omega} f(y,u) d\Omega,
 \end{aligned}
 ```
-where Ω is described by:
- - trian :: Triangulation
- - quad  :: Measure
 
 Constructor:
 
@@ -128,15 +125,13 @@ See also: MixedEnergyFETerm, NoFETerm, `_obj_cell_integral`, `_obj_integral`,
 """
 struct EnergyFETerm <: AbstractEnergyTerm
   f::Function
-  trian::Triangulation # TODO: Is this useful as it is contained in Measure?
-  quad::Measure
-
+  trian::Triangulation
   Ypde::FESpace
   Ycon::FESpace
 end
 
-function EnergyFETerm(f::Function, trian::Triangulation, quad::Measure, Ypde)
-  return EnergyFETerm(f, trian, quad, Ypde, VoidFESpace())
+function EnergyFETerm(f::Function, trian::Triangulation, Ypde)
+  return EnergyFETerm(f, trian, Ypde, VoidFESpace())
 end
 
 function _obj_integral(tnrj::EnergyFETerm, κ::AbstractVector, x)
@@ -196,13 +191,10 @@ functional and discrete unknowns.
 \int_{\Omega} f(y,u,\kappa) d\Omega,
 \end{aligned}
 ```
-where Ω is described by:
- - trian :: Triangulation
- - quad  :: Measure
 
 Constructor:
 
-`MixedEnergyFETerm(:: Function, :: Triangulation, :: Measure, :: Int)`
+`MixedEnergyFETerm(:: Function, :: Triangulation, :: Int)`
 
 See also: `EnergyFETerm`, `NoFETerm`, `_obj_cell_integral`, `_obj_integral`,
 `_compute_gradient_k!`
@@ -210,39 +202,35 @@ See also: `EnergyFETerm`, `NoFETerm`, `_obj_cell_integral`, `_obj_integral`,
 struct MixedEnergyFETerm <: AbstractEnergyTerm
   f::Function
   trian::Triangulation
-  quad::Measure
-
   nparam::Integer #number of discrete unkonwns.
   inde::Bool
-
   Ypde::FESpace
   Ycon::FESpace
 
   function MixedEnergyFETerm(
     f::Function,
     trian::Triangulation,
-    quad::Measure,
     n::Integer,
     inde::Bool,
     Ypde::FESpace,
     Ycon::FESpace,
   )
     @assert n > 0
-    return new(f, trian, quad, n, inde, Ypde, Ycon)
+    return new(f, trian, n, inde, Ypde, Ycon)
   end
 end
 
-function MixedEnergyFETerm(f::Function, trian::Triangulation, quad::Measure, n::Integer, Ypde, Ycon)
+function MixedEnergyFETerm(f::Function, trian::Triangulation, n::Integer, Ypde, Ycon)
   inde = false
-  return MixedEnergyFETerm(f, trian, quad, n, inde, Ypde, Ycon)
+  return MixedEnergyFETerm(f, trian, n, inde, Ypde, Ycon)
 end
 
-function MixedEnergyFETerm(f::Function, trian::Triangulation, quad::Measure, n::Integer, Ypde)
-  return MixedEnergyFETerm(f, trian, quad, n, false, Ypde, VoidFESpace())
+function MixedEnergyFETerm(f::Function, trian::Triangulation, n::Integer, Ypde)
+  return MixedEnergyFETerm(f, trian, n, false, Ypde, VoidFESpace())
 end
 
-function MixedEnergyFETerm(f::Function, trian::Triangulation, quad::Measure, n::Integer, inde::Bool, Ypde)
-  return MixedEnergyFETerm(f, trian, quad, n, inde, Ypde, VoidFESpace())
+function MixedEnergyFETerm(f::Function, trian::Triangulation, n::Integer, inde::Bool, Ypde)
+  return MixedEnergyFETerm(f, trian, n, inde, Ypde, VoidFESpace())
 end
 
 function _obj_integral(tnrj::MixedEnergyFETerm, κ::AbstractVector, x)
@@ -337,9 +325,6 @@ functional and discrete unknowns, describe as a norm and a regularizer.
  + \frac{1}{2}\|Fk(κ)\|^2 + \mu lk(κ)
 \end{aligned}
 ```
-where Ω is described by:
- - trian :: Triangulation
- - quad  :: Measure
 
 Constructor:
 
@@ -352,7 +337,6 @@ struct ResidualEnergyFETerm <: AbstractEnergyTerm
   #lyu      :: Function #regularizer
   #λ        :: Real
   trian::Triangulation
-  quad::Measure
   Fk::Function
   #lk       :: Function #regularizer
   #μ        :: Real
@@ -364,12 +348,11 @@ struct ResidualEnergyFETerm <: AbstractEnergyTerm
   function ResidualEnergyFETerm(
     Fyu::Function,
     trian::Triangulation,
-    quad::Measure,
     Fk::Function,
     n::Integer,
   )
     @assert n > 0
-    return new(Fyu, trian, quad, Fk, n)
+    return new(Fyu, trian, Fk, n)
   end
 end
 
