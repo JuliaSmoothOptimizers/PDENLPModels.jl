@@ -48,15 +48,23 @@ struct PDENLPMeta{NRJ <: AbstractEnergyTerm, Op <: Union{FEOperator, Nothing}}
   Jcols::AbstractVector{Int}
 end
 
-mutable struct PDEWorkspace{T, S}
+struct PDEWorkspace{T, S, M}
   Hvals::S # vector of values of the Hessian matrix
   Jvals::S # vector of values of the Jacobian matrix
+  g::S
+  Hk::M
+  c::S
+  Jk::M
 end
 
-function PDEWorkspace(T, S, nnzh, nnzj)
+function PDEWorkspace(T, S, nvar, ncon, nparam, nnzh, nnzj)
   Hvals = S(undef, nnzh)
   Jvals = S(undef, nnzj)
-  return PDEWorkspace{T, S}(Hvals, Jvals)
+  g = S(undef, nvar)
+  Hk = Array{T, 2}(undef, nvar, nparam)
+  c = S(undef, ncon)
+  Jk = Array{T, 2}(undef, ncon, nparam)
+  return PDEWorkspace{T, S, Array{T, 2}}(Hvals, Jvals, g, Hk, c, Jk)
 end
 
 @doc raw"""
@@ -241,7 +249,7 @@ function hess_coord!(
   @lencheck nlp.meta.nnzh vals
   increment!(nlp, :neval_hess)
 
-  hess_coord!(nlp, x, vals, obj_weight = obj_weight) # @view vals[1:nnzh_obj]
+  hess_coord!(nlp, x, vals, obj_weight = obj_weight)
   decrement!(nlp, :neval_hess)
   nini = nlp.pdemeta.nnzh_obj
 
@@ -255,10 +263,8 @@ function hess_coord!(
       _from_terms_to_residual!(nlp.pdemeta.op, x, nlp.pdemeta.nparam, nlp.pdemeta.Y, nlp.pdemeta.Ypde, nlp.pdemeta.Ycon, c)
       return dot(c, λ)
     end
-    gstore = similar(nlp.meta.x0)
     agrad = @closure (g, k) -> ForwardDiff.gradient!(g, x -> ℓ(x, λ), vcat(k, xyu))
-    Hk = Array{T, 2}(undef, n, p)
-    Hk = ForwardDiff.jacobian!(Hk, agrad, gstore, κ)
+    Hk = ForwardDiff.jacobian!(nlp.workspace.Hk, agrad, nlp.workspace.g, κ)
     vals[(nini + 1):(nini + nnz_hess_k)] .= [Hk[i, j] for i = 1:n, j = 1:p if j ≤ i]
     nini += nnz_hess_k
   end
@@ -380,6 +386,8 @@ function jac_coord!(nlp::GridapPDENLPModel, x::AbstractVector, vals::AbstractVec
     nlp.pdemeta.Ycon,
     x,
     vals,
+    nlp.workspace.c,
+    nlp.workspace.Jk,
   )
 end
 

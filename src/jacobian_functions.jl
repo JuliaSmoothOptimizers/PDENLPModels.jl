@@ -44,6 +44,8 @@ function _jac_coord!(
   Ycon::FESpace,
   x::AbstractVector,
   vals::AbstractVector,
+  c::AbstractVector,
+  Jk,
 )
   _, _, V = findnz(get_matrix(op))
   vals .= V
@@ -160,17 +162,16 @@ function _jac_coord!(
   Ycon::FESpace,
   x::AbstractVector{T},
   vals::AbstractVector,
+  c::AbstractVector,
+  Jk,
 ) where {T}
   nnz_jac_k = nparam > 0 ? ncon * nparam : 0
   if nparam > 0
     κ, xyu = x[1:(nparam)], x[(nparam + 1):end]
-    c = Array{T}(undef, ncon)
     ck = @closure (c, k) -> _from_terms_to_residual!(op, vcat(k, xyu), nparam, Y, Ypde, Ycon, c)
-    jac_k = Array{T, 2}(undef, ncon, nparam)
-    ForwardDiff.jacobian!(jac_k, ck, c, κ)
-    vals[1:nnz_jac_k] .= jac_k[:]
+    ForwardDiff.jacobian!(Jk, ck, c, κ)
+    vals[1:nnz_jac_k] .= Jk[:]
   end
-
   nini = _from_terms_to_jacobian_vals!(op, x, Y, Xpde, Ypde, Ycon, vals, nfirst = nnz_jac_k)
   return vals
 end

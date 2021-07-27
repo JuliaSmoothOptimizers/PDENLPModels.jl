@@ -166,7 +166,6 @@ function _compute_gradient!(
   #Assemble the gradient in the "good" space
   assem = Gridap.FESpaces.SparseMatrixAssembler(Y, X)
   Gridap.FESpaces.assemble_vector!(g, assem, vecdata_yu)
-
   return g
 end
 
@@ -307,11 +306,11 @@ function _compute_hess_k_vals!(
 ) where {T}
   yu = FEFunction(nlp.pdemeta.Y, xyu)
   prows = nlp.pdemeta.tnrj.inde ? nlp.pdemeta.nparam : nlp.meta.nvar
-  gstore = Array{T}(undef, prows)
-  Hxk = Array{T, 2}(undef, prows, nlp.pdemeta.nparam)
+  gk = @view nlp.workspace.g[1:prows]
+  Hk = @view nlp.workspace.Hk[1:prows, 1:nlp.pdemeta.nparam]
 
   if nlp.pdemeta.tnrj.inde
-    gk = @closure (g, k) -> _compute_gradient_k!(g, nlp.pdemeta.tnrj, k, yu)
+    agrad = @closure (g, k) -> _compute_gradient_k!(g, nlp.pdemeta.tnrj, k, yu)
   else
     function _obj(x)
       κ, xyu = x[1:(nlp.pdemeta.nparam)], x[(nlp.pdemeta.nparam + 1):(nlp.meta.nvar)]
@@ -319,10 +318,10 @@ function _compute_hess_k_vals!(
       int = _obj_integral(nlp.pdemeta.tnrj, κ, yu)
       return sum(int)
     end
-    gk = (g, k) -> ForwardDiff.gradient!(g, _obj, vcat(k, xyu))
+    agrad = (g, k) -> ForwardDiff.gradient!(g, _obj, vcat(k, xyu))
   end
-  ForwardDiff.jacobian!(Hxk, gk, gstore, κ)
-  vals .= [Hxk[i, j] for i = 1:prows, j = 1:nlp.pdemeta.nparam if j ≤ i]
+  ForwardDiff.jacobian!(Hk, agrad, gk, κ)
+  vals .= [Hk[i, j] for i = 1:prows, j = 1:nlp.pdemeta.nparam if j ≤ i]
 
   return vals
 end
