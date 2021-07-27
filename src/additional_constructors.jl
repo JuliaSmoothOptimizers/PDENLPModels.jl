@@ -69,7 +69,6 @@ function GridapPDENLPModel(
   x0::S,
   f::Function,
   trian::Triangulation,
-  quad::Measure,
   Ypde::FESpace,
   Xpde::FESpace;
   lvar::S = fill!(similar(x0), -eltype(S)(Inf)),
@@ -79,7 +78,7 @@ function GridapPDENLPModel(
   nvar_pde = Gridap.FESpaces.num_free_dofs(Ypde)
   nparam = length(x0) - nvar_pde
 
-  tnrj = nparam > 0 ? MixedEnergyFETerm(f, trian, quad, nparam, Ypde) : EnergyFETerm(f, trian, quad, Ypde)
+  tnrj = nparam > 0 ? MixedEnergyFETerm(f, trian, nparam, Ypde) : EnergyFETerm(f, trian, Ypde)
 
   return GridapPDENLPModel(x0, tnrj, Ypde, Xpde, lvar = lvar, uvar = uvar, name = name)
 end
@@ -88,7 +87,6 @@ function GridapPDENLPModel(
   x0::S,
   f::Function,
   trian::Triangulation,
-  quad::Measure,
   Ypde::FESpace,
   Xpde::FESpace,
   c::FEOperator;
@@ -99,7 +97,7 @@ function GridapPDENLPModel(
   nvar_pde = Gridap.FESpaces.num_free_dofs(Ypde)
   nparam = length(x0) - nvar_pde
 
-  tnrj = nparam > 0 ? MixedEnergyFETerm(f, trian, quad, nparam, Ypde) : EnergyFETerm(f, trian, quad, Ypde)
+  tnrj = nparam > 0 ? MixedEnergyFETerm(f, trian, nparam, Ypde) : EnergyFETerm(f, trian, Ypde)
 
   return GridapPDENLPModel(x0, tnrj, Ypde, Xpde, c, lvar = lvar, uvar = uvar, name = name)
 end
@@ -264,7 +262,6 @@ function GridapPDENLPModel(
   x0::S,
   f::Function,
   trian::Triangulation,
-  quad::Measure,
   Ypde::FESpace,
   Ycon::FESpace,
   Xpde::FESpace,
@@ -293,7 +290,7 @@ function GridapPDENLPModel(
   nvar_con = num_free_dofs(Ycon)
   nparam = nvar - (nvar_pde + nvar_con)
 
-  tnrj = nparam > 0 ? MixedEnergyFETerm(f, trian, quad, nparam, Ypde, Ycon) : EnergyFETerm(f, trian, quad, Ypde, Ycon)
+  tnrj = nparam > 0 ? MixedEnergyFETerm(f, trian, nparam, Ypde, Ycon) : EnergyFETerm(f, trian, Ypde, Ycon)
 
   return GridapPDENLPModel(
     x0,
