@@ -60,7 +60,7 @@ function GridapPDENLPModel(
     Int[],
   )
 
-  workspace = PDEWorkspace(T, S, nnzh, 0)
+  workspace = PDEWorkspace(T, S, nvar, 0, nparam, nnzh, 0)
 
   return GridapPDENLPModel(meta, Counters(), pdemeta, workspace)
 end
@@ -255,7 +255,7 @@ function GridapPDENLPModel(
     vcat(Jkcols, Jcols .+ nparam),
   )
 
-  workspace = PDEWorkspace(T, S, nnzh, nnzj)
+  workspace = PDEWorkspace(T, S, nvar, ncon, nparam, nnzh, nnzj)
 
   return GridapPDENLPModel(meta, Counters(), pdemeta, workspace)
 end
