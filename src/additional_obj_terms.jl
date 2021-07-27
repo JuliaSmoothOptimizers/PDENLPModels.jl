@@ -34,12 +34,12 @@ function _compute_gradient! end
 """
 Return the values of the hessian w.r.t. κ of the objective function.
 
-`_compute_hess_k_vals(:: AbstractNLPModel, :: AbstractEnergyTerm, :: AbstractVector, :: AbstractVector)`
+`_compute_hess_k_vals!(:: AbstractVector, :: AbstractNLPModel, :: AbstractEnergyTerm, :: AbstractVector, :: AbstractVector)`
 
 See also: `MixedEnergyFETerm`, `EnergyFETerm`, `NoFETerm`, `_obj_integral`,
 `_obj_cell_integral`, `_compute_gradient_k`
 """
-function _compute_hess_k_vals end
+function _compute_hess_k_vals! end
 
 @doc raw"""
 FETerm modeling the objective function when there are no integral objective.
@@ -272,7 +272,7 @@ function _compute_gradient!(
   cell_id_yu = Gridap.Arrays.IdentityVector(length(cell_yu))
 
   cell_r_yu = get_array(gradient(x -> _obj_integral(tnrj, κ, x), yu))
-  #Put the result in the format expected by Gridap.FESpaces.assemble_matrix
+  #Put the result in the format expected by Gridap.FESpaces.assemble_vector
   vecdata_yu = [[cell_r_yu], [cell_id_yu]] #TODO would replace by Tuple work?
   #Assemble the gradient in the "good" space
   assem = Gridap.FESpaces.SparseMatrixAssembler(Y, X)
@@ -298,16 +298,6 @@ function _compute_gradient_k!(
   return ForwardDiff.gradient!(g, intf, κ)
 end
 
-function _compute_gradient_k(
-  tnrj::MixedEnergyFETerm,
-  κ::AbstractVector,
-  yu::FEFunctionType,
-)
-  @lencheck tnrj.nparam κ
-  intf = @closure k -> sum(_obj_integral(tnrj, k, yu))
-  return ForwardDiff.gradient(intf, κ)
-end
-
 function _compute_hess_k_vals!(
   vals::AbstractVector,
   nlp::AbstractNLPModel,
@@ -315,46 +305,24 @@ function _compute_hess_k_vals!(
   κ::AbstractVector{T},
   xyu::AbstractVector{T},
 ) where {T}
+  yu = FEFunction(nlp.pdemeta.Y, xyu)
   prows = nlp.pdemeta.tnrj.inde ? nlp.pdemeta.nparam : nlp.meta.nvar
+  gstore = Array{T}(undef, prows)
+  Hxk = Array{T, 2}(undef, prows, nlp.pdemeta.nparam)
+
   if nlp.pdemeta.tnrj.inde
-    # nnz = Int(nlp.pdemeta.nparam * (nlp.pdemeta.nparam + 1) / 2)
-    # prows = nlp.pdemeta.nparam
-    yu = FEFunction(nlp.pdemeta.Y, xyu)
-    gk = @closure k -> _compute_gradient_k(nlp.pdemeta.tnrj, k, yu)
-    Hxk = ForwardDiff.jacobian(gk, κ)
+    gk = @closure (g, k) -> _compute_gradient_k!(g, nlp.pdemeta.tnrj, k, yu)
   else
-    # nnz = Int(nlp.pdemeta.nparam * (nlp.pdemeta.nparam + 1) / 2) + (nlp.meta.nvar - nlp.pdemeta.nparam) * nlp.pdemeta.nparam
-    # prows = nlp.meta.nvar
-    #Hxk = ForwardDiff.jacobian(k -> grad(nlp, vcat(k, xyu)), κ) #doesn't work :(
     function _obj(x)
       κ, xyu = x[1:(nlp.pdemeta.nparam)], x[(nlp.pdemeta.nparam + 1):(nlp.meta.nvar)]
       yu = FEFunction(nlp.pdemeta.Y, xyu)
       int = _obj_integral(nlp.pdemeta.tnrj, κ, yu)
       return sum(int)
     end
-    Hxk = ForwardDiff.jacobian(k -> ForwardDiff.gradient(_obj, vcat(k, xyu)), κ)
-    #=
-    function _grad(k)
-        g = similar(k, nlp.meta.nvar)
-        _compute_gradient!(g, tnrj, k, yu, nlp.pdemeta.Y, nlp.pdemeta.X)
-        return g
-    end
-    @show _grad(κ), _grad(κ .+ 1.)
-    Hxk = ForwardDiff.jacobian(_grad, κ)
-    @show Hxk
-    =#
+    gk = (g, k) -> ForwardDiff.gradient!(g, _obj, vcat(k, xyu))
   end
-
-  # simplify?
-  k = 1
-  for j = 1:(nlp.pdemeta.nparam)
-    for i = j:prows
-      if j ≤ i
-        vals[k] = Hxk[i, j]
-        k += 1
-      end
-    end
-  end
+  ForwardDiff.jacobian!(Hxk, gk, gstore, κ)
+  vals .= [Hxk[i, j] for i = 1:prows, j = 1:nlp.pdemeta.nparam if j ≤ i]
 
   return vals
 end
@@ -425,5 +393,5 @@ function _compute_gradient! end
 
 function _compute_hess_k_coo end
 
-function _compute_hess_k_vals end
+function _compute_hess_k_vals! end
 =#

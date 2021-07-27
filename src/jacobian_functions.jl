@@ -164,13 +164,10 @@ function _jac_coord!(
   nnz_jac_k = nparam > 0 ? ncon * nparam : 0
   if nparam > 0
     κ, xyu = x[1:(nparam)], x[(nparam + 1):end]
-    function _cons(xyu, k)
-      c = similar(k, ncon)
-      _from_terms_to_residual!(op, vcat(k, xyu), nparam, Y, Ypde, Ycon, c)
-      return c
-    end
-    ck = @closure k -> _cons(xyu, k)
-    jac_k = ForwardDiff.jacobian(ck, κ)
+    c = Array{T}(undef, ncon)
+    ck = @closure (c, k) -> _from_terms_to_residual!(op, vcat(k, xyu), nparam, Y, Ypde, Ycon, c)
+    jac_k = Array{T, 2}(undef, ncon, nparam)
+    ForwardDiff.jacobian!(jac_k, ck, c, κ)
     vals[1:nnz_jac_k] .= jac_k[:]
   end
 

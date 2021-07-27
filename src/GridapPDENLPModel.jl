@@ -255,8 +255,10 @@ function hess_coord!(
       _from_terms_to_residual!(nlp.pdemeta.op, x, nlp.pdemeta.nparam, nlp.pdemeta.Y, nlp.pdemeta.Ypde, nlp.pdemeta.Ycon, c)
       return dot(c, λ)
     end
-    agrad = @closure k -> ForwardDiff.gradient(x -> ℓ(x, λ), vcat(k, xyu))
-    Hk = ForwardDiff.jacobian(agrad, κ)
+    gstore = similar(nlp.meta.x0)
+    agrad = @closure (g, k) -> ForwardDiff.gradient!(g, x -> ℓ(x, λ), vcat(k, xyu))
+    Hk = Array{T, 2}(undef, n, p)
+    Hk = ForwardDiff.jacobian!(Hk, agrad, gstore, κ)
     vals[(nini + 1):(nini + nnz_hess_k)] .= [Hk[i, j] for i = 1:n, j = 1:p if j ≤ i]
     nini += nnz_hess_k
   end
