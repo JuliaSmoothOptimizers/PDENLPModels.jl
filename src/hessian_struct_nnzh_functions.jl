@@ -10,10 +10,10 @@ function _compute_hess_structure(tnrj::AbstractEnergyTerm, Y, X, x0, nparam)
   return vcat(rk, ro), vcat(ck, co), nk + no
 end
 
-function _compute_hess_structure(tnrj::AbstractEnergyTerm, op, Y, Ypde, Ycon, X, x0, nparam)
+function _compute_hess_structure(tnrj::AbstractEnergyTerm, op, Y, Ypde, Ycon, X, Xpde, x0, nparam)
   robj, cobj, nobj = _compute_hess_structure(tnrj, Y, X, x0, nparam)
   rck, cck, nck = _compute_hess_structure_k(op, Y, X, x0, nparam)
-  rc, cc, nc = _compute_hess_structure(op, Y, Ypde, Ycon, X, x0, nparam)
+  rc, cc, nc = _compute_hess_structure(op, Y, Ypde, Ycon, X, Xpde, x0, nparam)
   return vcat(robj, rck, rc), vcat(cobj, cck, cc), nobj + nck + nc
 end
 
@@ -64,7 +64,7 @@ function get_nnz_hess_k(tnrj::AbstractEnergyTerm, nvar, nparam)
   return nnz_hess_k
 end
 
-function _compute_hess_structure(op::AffineFEOperator, Y, Ypde, Ycon, X, x0, nparam) where {T}
+function _compute_hess_structure(op::AffineFEOperator, Y, Ypde, Ycon, X, Xpde, x0, nparam) where {T}
   return Int[], Int[], 0
 end
 
@@ -74,11 +74,12 @@ function _compute_hess_structure(
   Ypde,
   Ycon,
   X,
+  Xpde,
   x0,
   nparam,
 ) where {T}
   λ = zeros(Gridap.FESpaces.num_free_dofs(Ypde))
-  λf = FEFunction(Ypde, λ) # or Ypde
+  λf = FEFunction(Xpde, λ) # or Ypde
   nvar = length(x0)
   κ, xyu = x0[1:nparam], x0[(nparam + 1):nvar]
   xh = FEFunction(Y, xyu)
