@@ -64,7 +64,7 @@ with $a=1$ and $c=3$.
   c = 3
   function f(x)
     φ, θ = x
-    ∫( a * a * ∇(φ) ⊙ ∇(φ) + (c + a * operate(cos, φ)) * (c + a * operate(cos, φ)) * ∇(θ) ⊙ ∇(θ) )dΩ
+    ∫(a * a * ∇(φ) ⊙ ∇(φ) + (c + a * (cos ∘ φ)) * (c + a * (cos ∘ φ)) * ∇(θ) ⊙ ∇(θ))dΩ
   end
 
   # boundaries
@@ -72,21 +72,22 @@ with $a=1$ and $c=3$.
   xmax = 2*π
   
   nlp = GridapPDENLPModel(
-    zeros(nU0 + nU1), 
-    f, 
-    trian, 
-    dΩ, 
-    U, 
-    V, 
-    lvar = xmin * ones(nU0+nU1), 
+    zeros(nU0 + nU1),
+    f,
+    trian,
+    U,
+    V,
+    lvar = xmin * ones(nU0+nU1),
     uvar = xmax * ones(nU0+nU1),
   )
 ```
 Then, one can solve the problem with Ipopt via [NLPModelsIpopt.jl](https://github.com/JuliaSmoothOptimizers/NLPModelsIpopt.jl) and plot the solution.
 ```
+using NLPModelsIpopt
+
 stats = ipopt(nlp, print_level = 0)
 
-nn = Int(nlp.nvar_pde/2)
+nn = Int(nlp.pdemeta.nvar_pde/2)
 φs = stats.solution[1:nn]
 θs = stats.solution[nn+1:2*nn]
 
