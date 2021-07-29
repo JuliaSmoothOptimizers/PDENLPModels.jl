@@ -5,14 +5,15 @@ using NLPModels, BenchmarkProfiles, SolverBenchmark
 #This package
 using Gridap, PDENLPModels, PDEOptimizationProblems
 
-fun    = Dict(:obj => (nlp, x) -> obj(nlp, x), 
-              :grad => (nlp, x) -> grad(nlp, x),
-              :hess_coord => (nlp, x) -> hess_coord(nlp, x), 
-              :hess_structure => (nlp, x) -> hess_structure(nlp),
-              :jac_coord => (nlp, x) -> (nlp.meta.ncon > 0 ? jac_coord(nlp, x) : zero(eltype(x))),
-              :jac_structure => (nlp, x) -> (nlp.meta.ncon > 0 ? jac_structure(nlp) : zero(eltype(x))),
-              :hess_lag_coord => (nlp, x) -> hess_coord(nlp, x, ones(nlp.meta.ncon)),
-              )
+fun = Dict(
+  :obj => (nlp, x) -> obj(nlp, x),
+  :grad => (nlp, x) -> grad(nlp, x),
+  :hess_coord => (nlp, x) -> hess_coord(nlp, x),
+  :hess_structure => (nlp, x) -> hess_structure(nlp),
+  :jac_coord => (nlp, x) -> (nlp.meta.ncon > 0 ? jac_coord(nlp, x) : zero(eltype(x))),
+  :jac_structure => (nlp, x) -> (nlp.meta.ncon > 0 ? jac_structure(nlp) : zero(eltype(x))),
+  :hess_lag_coord => (nlp, x) -> hess_coord(nlp, x, ones(nlp.meta.ncon)),
+)
 problems = PDEOptimizationProblems.problems[1:3]
 
 const SUITE = BenchmarkGroup()

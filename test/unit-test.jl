@@ -504,16 +504,7 @@ end
     ucon = baducon,
   )
   #@test_throws DimensionError GridapPDENLPModel(fyuh, trian, Ypde, Ycon, Xpde, Xcon, caff, lvary = badlvary, uvary = baduvary, y0 = bady0, lcon = lcon, ucon = baducon)
-  @test_throws DimensionError GridapPDENLPModel(
-    badx0,
-    fyuh,
-    trian,
-    Ypde,
-    Ycon,
-    Xpde,
-    Xcon,
-    cter,
-  )
+  @test_throws DimensionError GridapPDENLPModel(badx0, fyuh, trian, Ypde, Ycon, Xpde, Xcon, cter)
   @test_throws DimensionError GridapPDENLPModel(
     badx0,
     fyuh,
@@ -558,16 +549,7 @@ end
     lcon = lcon,
     ucon = ucon,
   )
-  @test_throws DimensionError GridapPDENLPModel(
-    badx0,
-    fyuh,
-    trian,
-    Ypde,
-    Ycon,
-    Xpde,
-    Xcon,
-    caff,
-  )
+  @test_throws DimensionError GridapPDENLPModel(badx0, fyuh, trian, Ypde, Ycon, Xpde, Xcon, caff)
   @test_throws DimensionError GridapPDENLPModel(
     badx0,
     fyuh,

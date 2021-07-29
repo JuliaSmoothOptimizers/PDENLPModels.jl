@@ -290,7 +290,9 @@ function GridapPDENLPModel(
   nvar_con = num_free_dofs(Ycon)
   nparam = nvar - (nvar_pde + nvar_con)
 
-  tnrj = nparam > 0 ? MixedEnergyFETerm(f, trian, nparam, Ypde, Ycon) : EnergyFETerm(f, trian, Ypde, Ycon)
+  tnrj =
+    nparam > 0 ? MixedEnergyFETerm(f, trian, nparam, Ypde, Ycon) :
+    EnergyFETerm(f, trian, Ypde, Ycon)
 
   return GridapPDENLPModel(
     x0,
