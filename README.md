@@ -54,46 +54,37 @@ using Gridap, PDENLPModels
   partition = (n, n)
   model = CartesianDiscreteModel(domain, partition)
 
-  # Definition of the spaces
-  Xpde = TestFESpace(
-    reffe=:Lagrangian, 
-    conformity=:H1, 
-    valuetype=Float64, 
-    model=model, 
-    order=2, 
-    dirichlet_tags="boundary"
-  )
-  Ypde = TrialFESpace(Xpde, 0.0)
-  Xcon = TestFESpace(
-    reffe=:Lagrangian, 
-    order=1, 
-    valuetype=Float64,
-    conformity=:H1, 
-    model=model
-  )
-  Ycon = TrialFESpace(Xcon)
+  # Definition of the spaces:
+  valuetype = Float64
+  reffe = ReferenceFE(lagrangian, valuetype, 2)
+  Xpde = TestFESpace(model, reffe; conformity = :H1, dirichlet_tags = "boundary")
+  y0(x) = 0.0
+  Ypde = TrialFESpace(Xpde, y0)
 
-  #Integration machinery
+  reffe_con = ReferenceFE(lagrangian, valuetype, 1)
+  Xcon = TestFESpace(model, reffe_con; conformity = :H1)
+  Ycon = TrialFESpace(Xcon)
+  Y = MultiFieldFESpace([Ypde, Ycon])
+
+  # Integration machinery
   trian = Triangulation(model)
   degree = 1
-  quad = CellQuadrature(trian,degree)
+  dΩ = Measure(trian, degree)
 
-  #Definition of the objective function:
+  # Objective function:
   yd(x) = -x[1]^2
   α = 1e-2
-  function f(yu)
-    y, u = yu
-    0.5 * (yd - y) * (yd - y) + 0.5 * α * u * u
+  function f(y, u)
+    ∫(0.5 * (yd - y) * (yd - y) + 0.5 * α * u * u) * dΩ
   end
 
-  #Definition of the constraint operator
-  function res(yu, v)
-    y, u = yu
-    ∇(v)⊙∇(y) - v*u
+  # Definition of the constraint operator
+  ω = π - 1 / 8
+  h(x) = -sin(ω * x[1]) * sin(ω * x[2])
+  function res(y, u, v)
+    ∫(∇(v) ⊙ ∇(y) - v * u - v * h) * dΩ
   end
-  h(x) = 1.0
-  t_Ω = AffineFETerm(res, v -> v * h, trian, quad)
-  op  = AffineFEOperator(Y, Xpde, t_Ω)
+  op = FEOperator(res, Y, Xpde)
 
   nlp = GridapPDENLPModel(f, trian, quad, Ypde, Ycon, Xpde, Xcon, op, name = "Control elastic membrane")
 ```

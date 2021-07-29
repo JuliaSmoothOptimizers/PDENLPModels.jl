@@ -42,6 +42,7 @@ The implementation as a `GridapPDENLPModel` is given as follows.
     Ypde = TrialFESpace(Xpde, 0.0)
     Xcon = TestFESpace(model, reffe; conformity = :L2)
     Ycon = TrialFESpace(Xcon)
+    Y = MultiFieldFESpace([Ypde, Ycon])
 
     #Integration machinery
     trian = Triangulation(model)
@@ -50,8 +51,7 @@ The implementation as a `GridapPDENLPModel` is given as follows.
 
     #Objective function:
     yd(x) = min(x[1]-0.25, 0.75-x[1],x[2]-0.25, 0.75-x[2])>=0. ? 10. : 5.
-    function f(yu)
-        y, u = yu
+    function f(y, u)
         ∫( 0.5 * (yd - y) * (yd - y) + 0.5 * 1e-4 * u * u )dΩ
     end
 
@@ -59,24 +59,23 @@ The implementation as a `GridapPDENLPModel` is given as follows.
     ω = π - 1/8
     h(x) = - sin(ω*x[1])*sin(ω*x[2])
     function res(y, u, v)
-     ∫( ∇(v) ⊙ ∇(y) + operate(sinh, y)*v - u*v - v * h )dΩ
+     ∫( ∇(v) ⊙ ∇(y) + (sinh ∘ y)*v - u*v - v * h )dΩ
     end
     op = FEOperator(res, Y, Xpde)
-
-    Y = MultiFieldFESpace([Ypde, Ycon])
     xin = zeros(Gridap.FESpaces.num_free_dofs(Y))
-    nlp = GridapPDENLPModel(xin, f, trian, dΩ, Ypde, Ycon, Xpde, Xcon, op)
+    nlp = GridapPDENLPModel(xin, f, trian, Ypde, Ycon, Xpde, Xcon, op)
 ```
 
 Then, one can solve the problem with Ipopt via [NLPModelsIpopt.jl](https://github.com/JuliaSmoothOptimizers/NLPModelsIpopt.jl) and plot the solution as a VTK file.
 ```
+using NLPModelsIpopt
 stats = ipopt(nlp, print_level = 0)
 ```
 Switching again the discrete solution as a `FEFunction` the result can written as a VTK-file using Gridap's facilities.
 ```
-yfv = stats.solution[1:Gridap.FESpaces.num_free_dofs(nlp.Ypde)]
-yh  = FEFunction(nlp.Ypde, yfv)
-ufv = stats.solution[1+Gridap.FESpaces.num_free_dofs(nlp.Ypde):end]
+yfv = stats.solution[1:Gridap.FESpaces.num_free_dofs(nlp.pdemeta.Ypde)]
+yh  = FEFunction(nlp.pdemeta.Ypde, yfv)
+ufv = stats.solution[1+Gridap.FESpaces.num_free_dofs(nlp.pdemeta.Ypde):end]
 uh  = FEFunction(nlp.Ycon, ufv)
 writevtk(nlp.tnrj.trian,"results",cellfields=["uh"=>uh, "yh"=>yh])
 ```
