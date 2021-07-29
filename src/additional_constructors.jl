@@ -203,7 +203,7 @@ function GridapPDENLPModel(
   @lencheck nvar lvar uvar
   @lencheck ncon ucon y0
 
-  rows, cols, nnzh = _compute_hess_structure(tnrj, c, Y, Ypde, Ycon, X, x0, nparam)
+  rows, cols, nnzh = _compute_hess_structure(tnrj, c, Y, Ypde, Ycon, X, Xpde, x0, nparam)
   _, _, nnzh_obj = _compute_hess_structure(tnrj, Y, X, x0, nparam)
 
   if typeof(c) <: AffineFEOperator #Here we expect ncon = nvar_pde
