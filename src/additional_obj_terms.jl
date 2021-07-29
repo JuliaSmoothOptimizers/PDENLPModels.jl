@@ -295,7 +295,7 @@ function _compute_hess_k_vals!(
   yu = FEFunction(nlp.pdemeta.Y, xyu)
   prows = nlp.pdemeta.tnrj.inde ? nlp.pdemeta.nparam : nlp.meta.nvar
   gk = @view nlp.workspace.g[1:prows]
-  Hk = @view nlp.workspace.Hk[1:prows, 1:nlp.pdemeta.nparam]
+  Hk = @view nlp.workspace.Hk[1:prows, 1:(nlp.pdemeta.nparam)]
 
   if nlp.pdemeta.tnrj.inde
     agrad = @closure (g, k) -> _compute_gradient_k!(g, nlp.pdemeta.tnrj, k, yu)
@@ -309,7 +309,7 @@ function _compute_hess_k_vals!(
     agrad = (g, k) -> ForwardDiff.gradient!(g, _obj, vcat(k, xyu))
   end
   ForwardDiff.jacobian!(Hk, agrad, gk, κ)
-  vals .= [Hk[i, j] for i = 1:prows, j = 1:nlp.pdemeta.nparam if j ≤ i]
+  vals .= [Hk[i, j] for i = 1:prows, j = 1:(nlp.pdemeta.nparam) if j ≤ i]
 
   return vals
 end

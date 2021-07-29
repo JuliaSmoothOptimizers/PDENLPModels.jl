@@ -258,7 +258,15 @@ function hess_coord!(
     nnz_hess_k = Int(p * (p + 1) / 2) + (n - p) * p
     function ℓ(x, λ)
       c = similar(x, nlp.meta.ncon)
-      _from_terms_to_residual!(nlp.pdemeta.op, x, nlp.pdemeta.nparam, nlp.pdemeta.Y, nlp.pdemeta.Ypde, nlp.pdemeta.Ycon, c)
+      _from_terms_to_residual!(
+        nlp.pdemeta.op,
+        x,
+        nlp.pdemeta.nparam,
+        nlp.pdemeta.Y,
+        nlp.pdemeta.Ypde,
+        nlp.pdemeta.Ycon,
+        c,
+      )
       return dot(c, λ)
     end
     agrad = @closure (g, k) -> ForwardDiff.gradient!(g, x -> ℓ(x, λ), vcat(k, xyu))
@@ -322,11 +330,23 @@ function cons!(nlp::GridapPDENLPModel, x::AbstractVector, c::AbstractVector)
   @lencheck nlp.meta.nvar x
   @lencheck nlp.meta.ncon c
   increment!(nlp, :neval_cons)
-  _from_terms_to_residual!(nlp.pdemeta.op, x, nlp.pdemeta.nparam, nlp.pdemeta.Y, nlp.pdemeta.Ypde, nlp.pdemeta.Ycon, c)
+  _from_terms_to_residual!(
+    nlp.pdemeta.op,
+    x,
+    nlp.pdemeta.nparam,
+    nlp.pdemeta.Y,
+    nlp.pdemeta.Ypde,
+    nlp.pdemeta.Ycon,
+    c,
+  )
   return c
 end
 
-function cons!(nlp::GridapPDENLPModel{T, S, NRJ, Nothing}, x::AbstractVector, c::AbstractVector) where {T, S, NRJ}
+function cons!(
+  nlp::GridapPDENLPModel{T, S, NRJ, Nothing},
+  x::AbstractVector,
+  c::AbstractVector,
+) where {T, S, NRJ}
   @lencheck nlp.meta.nvar x
   @lencheck nlp.meta.ncon c
   increment!(nlp, :neval_cons)
@@ -389,7 +409,11 @@ function jac_coord!(nlp::GridapPDENLPModel, x::AbstractVector, vals::AbstractVec
   )
 end
 
-function jac_coord!(nlp::GridapPDENLPModel{T, S, NRJ, Nothing}, x::AbstractVector, vals::AbstractVector) where {T, S, NRJ}
+function jac_coord!(
+  nlp::GridapPDENLPModel{T, S, NRJ, Nothing},
+  x::AbstractVector,
+  vals::AbstractVector,
+) where {T, S, NRJ}
   @lencheck nlp.meta.nvar x
   @lencheck nlp.meta.nnzj vals
   increment!(nlp, :neval_jac)
