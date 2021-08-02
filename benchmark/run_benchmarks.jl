@@ -9,7 +9,7 @@ bmarkname = lowercase(repo_name)
 
 # if we are running these benchmarks from the git repository
 # we want to develop the package instead of using the release
-if isdir(joinpath(bmark_dir, "..", ".git")) && false
+if isdir(joinpath(bmark_dir, "..", ".git"))
   Pkg.develop(PackageSpec(url = joinpath(bmark_dir, "..")))
 end
 

@@ -14,7 +14,7 @@ fun = Dict(
   :jac_structure => (nlp, x) -> (nlp.meta.ncon > 0 ? jac_structure(nlp) : zero(eltype(x))),
   :hess_lag_coord => (nlp, x) -> hess_coord(nlp, x, ones(nlp.meta.ncon)),
 )
-problems = PDEOptimizationProblems.problems[1:3]
+problems = ["burger1d_param", "apinene", "gasoil"]
 
 const SUITE = BenchmarkGroup()
 for f in keys(fun)
