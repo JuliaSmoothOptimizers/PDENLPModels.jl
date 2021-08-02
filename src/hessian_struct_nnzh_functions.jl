@@ -19,8 +19,8 @@ end
 
 function _compute_hess_structure_obj(tnrj::AbstractEnergyTerm, Y, X, x0, nparam)
   nini = 0
-  nvar = length(x0)
-  κ, xyu = x0[1:nparam], x0[(nparam + 1):nvar]
+  κ = @view x0[1:nparam]
+  xyu = @view x0[(nparam + 1):end]
   xh = FEFunction(Y, xyu)
 
   luh = _obj_integral(tnrj, κ, xh)
@@ -79,11 +79,10 @@ function _compute_hess_structure(
   nparam,
 ) where {T}
   λ = zeros(Gridap.FESpaces.num_free_dofs(Ypde))
-  λf = FEFunction(Xpde, λ) # or Ypde
-  nvar = length(x0)
-  κ, xyu = x0[1:nparam], x0[(nparam + 1):nvar]
+  λf = FEFunction(Xpde, λ)
+  κ = @view x0[1:nparam]
+  xyu = @view x0[(nparam + 1):end]
   xh = FEFunction(Y, xyu)
-  nvar = length(xyu)
 
   function split_res(x, λ)
     if typeof(Ycon) <: VoidFESpace

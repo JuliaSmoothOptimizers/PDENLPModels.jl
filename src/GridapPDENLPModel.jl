@@ -146,7 +146,8 @@ function obj(nlp::GridapPDENLPModel, x::AbstractVector)
   @lencheck nlp.meta.nvar x
   increment!(nlp, :neval_obj)
 
-  κ, xyu = x[1:(nlp.pdemeta.nparam)], x[(nlp.pdemeta.nparam + 1):(nlp.meta.nvar)]
+  κ = @view x[1:(nlp.pdemeta.nparam)]
+  xyu = @view x[(nlp.pdemeta.nparam + 1):(nlp.meta.nvar)]
   yu = FEFunction(nlp.pdemeta.Y, xyu)
   int = _obj_integral(nlp.pdemeta.tnrj, κ, yu)
 
@@ -157,7 +158,8 @@ function grad!(nlp::GridapPDENLPModel, x::AbstractVector, g::AbstractVector)
   @lencheck nlp.meta.nvar x g
   increment!(nlp, :neval_grad)
 
-  κ, xyu = x[1:(nlp.pdemeta.nparam)], x[(nlp.pdemeta.nparam + 1):(nlp.meta.nvar)]
+  κ = @view x[1:(nlp.pdemeta.nparam)]
+  xyu = @view x[(nlp.pdemeta.nparam + 1):(nlp.meta.nvar)]
   yu = FEFunction(nlp.pdemeta.Y, xyu)
 
   return _compute_gradient!(g, nlp.pdemeta.tnrj, κ, yu, nlp.pdemeta.Y, nlp.pdemeta.X)
@@ -173,7 +175,8 @@ function hess_coord!(
   @lencheck nlp.meta.nnzh vals
   increment!(nlp, :neval_hess)
 
-  κ, xyu = x[1:(nlp.pdemeta.nparam)], x[(nlp.pdemeta.nparam + 1):(nlp.meta.nvar)]
+  κ = @view x[1:(nlp.pdemeta.nparam)]
+  xyu = @view x[(nlp.pdemeta.nparam + 1):(nlp.meta.nvar)]
   yu = FEFunction(nlp.pdemeta.Y, xyu)
 
   nnz_hess_k = get_nnz_hess_k(nlp.pdemeta.tnrj, nlp.meta.nvar, nlp.pdemeta.nparam)
@@ -252,7 +255,8 @@ function hess_coord!(
   nini = nlp.pdemeta.nnzh_obj
 
   p, n = nlp.pdemeta.nparam, nlp.meta.nvar
-  κ, xyu = x[1:p], x[(p + 1):n]
+  κ = @view x[1:p]
+  xyu = @view x[(p + 1):n]
 
   if p > 0
     nnz_hess_k = Int(p * (p + 1) / 2) + (n - p) * p

@@ -301,7 +301,8 @@ function _compute_hess_k_vals!(
     agrad = @closure (g, k) -> _compute_gradient_k!(g, nlp.pdemeta.tnrj, k, yu)
   else
     function _obj(x)
-      κ, xyu = x[1:(nlp.pdemeta.nparam)], x[(nlp.pdemeta.nparam + 1):(nlp.meta.nvar)]
+      κ = @view x[1:(nlp.pdemeta.nparam)]
+      xyu = @view x[(nlp.pdemeta.nparam + 1):(nlp.meta.nvar)]
       yu = FEFunction(nlp.pdemeta.Y, xyu)
       int = _obj_integral(nlp.pdemeta.tnrj, κ, yu)
       return sum(int)

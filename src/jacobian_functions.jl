@@ -61,8 +61,8 @@ function _from_terms_to_residual!(
   Ycon::FESpace,
   res::AbstractVector,
 )
-  κ, xyu = x[1:(nparam)], x[(nparam + 1):end]
-  yu = FEFunction(Y, xyu)
+  κ = @view x[1:(nparam)]
+  xyu = @view x[(nparam + 1):end]
   y, u = _split_FEFunction(xyu, Ypde, Ycon)
 
   # Gridap.FESpaces.residual(op, FEFunction(Y, x))
@@ -101,8 +101,7 @@ function _jacobian_struct(
   nyu = num_free_dofs(Y)
   nparam = nvar - nyu
   yh, uh = _split_FEFunction(x, Ypde, Ycon)
-  κ, xyu = x[1:nparam], x[(nparam + 1):nvar]
-  yu = FEFunction(Y, xyu)
+  κ = @view x[1:nparam]
 
   v = Gridap.FESpaces.get_cell_shapefuns(Xpde)
 
@@ -167,7 +166,8 @@ function _jac_coord!(
 ) where {T}
   nnz_jac_k = nparam > 0 ? ncon * nparam : 0
   if nparam > 0
-    κ, xyu = x[1:(nparam)], x[(nparam + 1):end]
+    κ = @view x[1:(nparam)]
+    xyu = @view x[(nparam + 1):end]
     ck = @closure (c, k) -> _from_terms_to_residual!(op, vcat(k, xyu), nparam, Y, Ypde, Ycon, c)
     ForwardDiff.jacobian!(Jk, ck, c, κ)
     vals[1:nnz_jac_k] .= Jk[:]
@@ -189,7 +189,8 @@ function _from_terms_to_jacobian_vals!(
   nvar = length(x)
   nyu = num_free_dofs(Y)
   nparam = nvar - nyu
-  κ, xyu = x[1:nparam], x[(nparam + 1):nvar]
+  κ = @view x[1:nparam]
+  xyu = @view x[(nparam + 1):end]
   yh, uh = _split_FEFunction(xyu, Ypde, Ycon)
 
   v = Gridap.FESpaces.get_cell_shapefuns(Xpde)
