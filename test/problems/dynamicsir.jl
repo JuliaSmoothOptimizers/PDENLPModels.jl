@@ -109,7 +109,7 @@ function dynamicsir_test(; x0 = [1, 2], n = 10, T = 1)
   # check the value at the solution:
   kmax = 6 #beyond is tough
   for k = 1:kmax
-    local sol_Ih , sol_Sh , h , n , nlp
+    local sol_Ih, sol_Sh, h, n, nlp
     n = 10^k
     nlp = dynamicsir(x0 = x0, n = n, T = T)
     h = T / n
