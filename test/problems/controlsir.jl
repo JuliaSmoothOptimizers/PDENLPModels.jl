@@ -13,15 +13,13 @@ function controlsir(args...; x0 = [1, 2], n = 10, a = 0.2, b = 0.1, μ = 0.1, T 
   X = MultiFieldFESpace([VI, VS])
   Y = MultiFieldFESpace([UI, US])
 
-  conv(u, ∇u) = (∇u ⋅ one(∇u)) ⊙ u
-  c(u, v) = conv ∘ (v, ∇(u))
   _a(x) = a
   _b(x) = b
   _μ(x) = μ
   function res(u, v)
     I, S = u
     p, q = v
-    ∫(c(I, p) + c(S, q) - p * (_a * S * I - _b * I) - q * (_μ - _b * I - _a * S * I))dΩ
+    ∫(dt(I, p) + dt(S, q) - p * (_a * S * I - _b * I) - q * (_μ - _b * I - _a * S * I))dΩ
   end
 
   trian = Triangulation(model)
