@@ -1,6 +1,7 @@
 module PDENLPModels
 
 #This package contains a list of NLPModels for PDE optimization.
+using LinearAlgebra: length
 using ForwardDiff, LinearAlgebra, SparseArrays, FastClosures
 
 #JSO packages
@@ -157,5 +158,16 @@ export has_bounds,
 #counters functions
 import NLPModels: reset!
 export reset!
+
+export split_vectors
+
+"""
+    `split_vectors(::GridapPDENLPModel, x)`
+
+Take a vector x and returns a splitting in terms of `y`, `u` and `θ`.
+"""
+function split_vectors(nlp::GridapPDENLPModel, x::AbstractVector)
+  return _split_vectors(x, nlp.pdemeta.Ypde, nlp.pdemeta.Ycon)
+end
 
 end #end of module
