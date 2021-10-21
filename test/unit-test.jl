@@ -133,9 +133,11 @@ end
   badlvary, baduvary, badlvaru, baduvaru = -ones(4), ones(5), -ones(3), ones(3)
   badlcon, baducon, bady0 = -ones(2), ones(2), zeros(2)
   nlp = GridapPDENLPModel(x0, NT, Ypde, Ycon, Xpde, Xcon, ctermixed)
+  @test split_vectors(nlp, x0) == ([0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0])
   nlp = GridapPDENLPModel(x0, NTf, Ypde, Ycon, Xpde, Xcon, ctermixed)
   nlp = GridapPDENLPModel(x0, EFTmixed, Ypde, Ycon, Xpde, Xcon, ctermixed)
   nlp = GridapPDENLPModel(xk0, MEFTmixed, Ypde, Ycon, Xpde, Xcon, ctermixed)
+  @test split_vectors(nlp, xk0) == ([0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0], [0.0])
   nlp = GridapPDENLPModel(x0, fyuh, trian, Ypde, Ycon, Xpde, Xcon, ctermixed)
   #nlp = GridapPDENLPModel(fxh, trian, Ypde, Ycon, Xpde, Xcon, cter)
   #nlp = GridapPDENLPModel(NT, Ypde, Xpde, cter)
@@ -145,7 +147,9 @@ end
   nlp = GridapPDENLPModel(x0y, NT, Ypde, Xpde, cter)
   nlp = GridapPDENLPModel(x0y, NTf, Ypde, Xpde, cter)
   nlp = GridapPDENLPModel(x0y, EFT, Ypde, Xpde, cter)
+  @test split_vectors(nlp, x0y) == [0.0, 0.0, 0.0]
   nlp = GridapPDENLPModel(xk0y, MEFT, Ypde, Xpde, cter)
+  @test split_vectors(nlp, xk0y) == ([0.0, 0.0, 0.0], [0.0])
   nlp = GridapPDENLPModel(x0y, NT, Ypde, Xpde, cter, lvar = lvary, uvar = uvary)
   nlp = GridapPDENLPModel(x0y, NTf, Ypde, Xpde, cter, lvar = lvary, uvar = uvary)
   nlp = GridapPDENLPModel(x0y, EFT, Ypde, Xpde, cter, lvar = lvary, uvar = uvary)
@@ -654,6 +658,7 @@ yh, uh = _split_FEFunction(x0, Ypde, PDENLPModels.VoidFESpace())
 x0 = ones(8)
 y, u, k = _split_vector(x0, Ypde, Ycon)
 @test y == x0[1:3] && u == x0[4:8]
+
 x0 = ones(3)
 y, u, k = _split_vector(x0, Ypde, PDENLPModels.VoidFESpace())
 @test y == x0 && u == [] && k == []
