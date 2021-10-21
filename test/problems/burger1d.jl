@@ -27,8 +27,6 @@ function burger1d(args...; n = 512, kwargs...)
   uD1 = VectorValue(-1)
   U = TrialFESpace(V, [uD0, uD1])
 
-  conv(u, ∇u) = (∇u ⋅ one(∇u)) ⊙ u
-  c(u, v) = v ⊙ (conv ∘ (u, ∇(u)))
   nu = 0.08
 
   # Now we move to the optimization:
@@ -41,7 +39,7 @@ function burger1d(args...; n = 512, kwargs...)
   end
 
   function res(y, u, v) #u is the solution of the PDE and z the control
-    ∫(-nu * (∇(v) ⊙ ∇(y)) + c(y, v) - v * u - v * h)dΩ
+    ∫(-nu * (∇(v) ⊙ ∇(y)) + dt(y, v) - v * u - v * h)dΩ
   end
   op = FEOperator(res, U, V)
 

@@ -30,13 +30,10 @@ function cellincrease(args...; x0 = [0.6, 0.1], n = 10, T = 7, kwargs...)
   degree = 1
   dΩ = Measure(trian, degree)
 
-  conv(u, ∇u) = (∇u ⋅ one(∇u)) ⊙ u
-  c(u, v) = conv ∘ (v, ∇(u)) #v⊙conv(u,∇(u))
-
   function res(y, u, v)
     cf, pf = y
     p, q = v
-    ∫(-p * (kp * pf * (1.0 - cf) - kr * cf * (1.0 - cf - pf)))dΩ #  c(cf, p) + c(pf, q) )dΩ  + q * (u * kr * cf * (1.0 - cf - pf) - kp * pf * pf)
+    ∫(-p * (kp * pf * (1.0 - cf) - kr * cf * (1.0 - cf - pf)))dΩ #  dt(cf, p) + dt(pf, q) )dΩ  + q * (u * kr * cf * (1.0 - cf - pf) - kp * pf * pf)
   end
 
   Y = MultiFieldFESpace([UI, US, Ucon])

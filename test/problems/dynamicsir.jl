@@ -27,13 +27,11 @@ function dynamicsir(args...; x0 = [1, 2], n = 10, T = 1, kwargs...)
     ∫( -p * (bf * S * I - cf * I) + q * bf * S * I )dΩ
   end
   =#
-  conv(u, ∇u) = (∇u ⋅ one(∇u)) ⊙ u
-  c(u, v) = conv ∘ (v, ∇(u))
   function res(y, u, v)
     I, S = y
     bf, cf = u
     p, q = v
-    ∫(c(I, p) + c(S, q) - p * (bf * S * I - cf * I) + q * bf * S * I)dΩ
+    ∫(dt(I, p) + dt(S, q) - p * (bf * S * I - cf * I) + q * bf * S * I)dΩ
   end
 
   trian = Triangulation(model)
