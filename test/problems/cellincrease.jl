@@ -11,8 +11,6 @@ function cellincrease(args...; x0 = [0.6, 0.1], n = 10, T = 7, kwargs...)
 
   Vcon = TestFESpace(model, reffe, conformity = :L2)
   Ucon = TrialFESpace(Vcon)
-  Xcon = MultiFieldFESpace([Vcon])
-  Ycon = MultiFieldFESpace([Ucon])
 
   function f(y, u)
     cf, pf = y
@@ -33,14 +31,15 @@ function cellincrease(args...; x0 = [0.6, 0.1], n = 10, T = 7, kwargs...)
   function res(y, u, v)
     cf, pf = y
     p, q = v
-    ∫(-p * (kp * pf * (1.0 - cf) - kr * cf * (1.0 - cf - pf)))dΩ #  dt(cf, p) + dt(pf, q) )dΩ  + q * (u * kr * cf * (1.0 - cf - pf) - kp * pf * pf)
+    ∫(dt(cf, p) - p * (kp * pf * (1.0 - cf) - kr * cf * (1.0 - cf - pf)) +
+    dt(pf, q) + q * (u * kr * cf * (1.0 - cf - pf) - kp * pf * pf))dΩ 
   end
 
   Y = MultiFieldFESpace([UI, US, Ucon])
   op_sir = FEOperator(res, Ypde, Xpde)
 
   xin = zeros(Gridap.FESpaces.num_free_dofs(Y))
-  return GridapPDENLPModel(xin, f, trian, Ypde, Ycon, Xpde, Xcon, op_sir)
+  return GridapPDENLPModel(xin, f, trian, Ypde, Ucon, Xpde, Vcon, op_sir)
 end
 
 ################################################################
