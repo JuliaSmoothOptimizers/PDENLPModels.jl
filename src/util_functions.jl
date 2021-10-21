@@ -101,3 +101,9 @@ function _split_vectors(x::AbstractVector, Ypde::FESpace, Ycon::FESpace)
 
   return y, u, θ
 end
+
+export dt
+
+# for the weak formulation of dy/dt
+conv(u, ∇u) = (∇u ⋅ one(∇u)) ⊙ u
+dt(u, v) = conv ∘ (v, ∇(u))
