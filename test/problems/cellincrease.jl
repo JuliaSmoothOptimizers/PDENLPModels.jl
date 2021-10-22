@@ -31,8 +31,11 @@ function cellincrease(args...; x0 = [0.6, 0.1], n = 10, T = 7, kwargs...)
   function res(y, u, v)
     cf, pf = y
     p, q = v
-    ∫(dt(cf, p) - p * (kp * pf * (1.0 - cf) - kr * cf * (1.0 - cf - pf)) +
-    dt(pf, q) + q * (u * kr * cf * (1.0 - cf - pf) - kp * pf * pf))dΩ 
+    ∫(
+      dt(cf, p) - p * (kp * pf * (1.0 - cf) - kr * cf * (1.0 - cf - pf)) +
+      dt(pf, q) +
+      q * (u * kr * cf * (1.0 - cf - pf) - kp * pf * pf),
+    )dΩ
   end
 
   Y = MultiFieldFESpace([UI, US, Ucon])
