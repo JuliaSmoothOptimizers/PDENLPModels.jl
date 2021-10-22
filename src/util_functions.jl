@@ -73,15 +73,16 @@ function _split_vectors(x::AbstractVector, Ypde::FESpace, Ycon::FESpace)
   nparam = length(x) - nvar_pde - nvar_con
   θ = x[(nvar_pde + nvar_con + 1):end]
 
-  leng(S::MultiFieldFESpace, i) = sum([Gridap.FESpaces.num_free_dofs(S.spaces[j]) for j=1:i])
-  sum_old(S::MultiFieldFESpace, i) = if i == 1 
-    0
-  else 
-    sum([Gridap.FESpaces.num_free_dofs(S[j]) for j=1:i-1])
-  end
+  leng(S::MultiFieldFESpace, i) = sum([Gridap.FESpaces.num_free_dofs(S.spaces[j]) for j = 1:i])
+  sum_old(S::MultiFieldFESpace, i) =
+    if i == 1
+      0
+    else
+      sum([Gridap.FESpaces.num_free_dofs(S[j]) for j = 1:(i - 1)])
+    end
 
   y = if typeof(Ypde) <: MultiFieldFESpace
-    (x[sum_old(Ypde, i)+1:leng(Ypde, i)] for i=1:length(Ypde.spaces))
+    (x[(sum_old(Ypde, i) + 1):leng(Ypde, i)] for i = 1:length(Ypde.spaces))
   else
     x[1:nvar_pde]
   end
@@ -91,7 +92,7 @@ function _split_vectors(x::AbstractVector, Ypde::FESpace, Ycon::FESpace)
     return y, θ
   end
   u = if typeof(Ycon) <: MultiFieldFESpace
-    (x[(sum_old(Ycon, i) + 1 + nvar_pde):leng(Ycon, i)] for i=1:length(Ycon.spaces))
+    (x[(sum_old(Ycon, i) + 1 + nvar_pde):leng(Ycon, i)] for i = 1:length(Ycon.spaces))
   else
     x[(1 + nvar_pde):(nvar_pde + nvar_con)]
   end
