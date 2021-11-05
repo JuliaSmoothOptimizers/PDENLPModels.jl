@@ -197,8 +197,8 @@ function _functions_to_vectors!(
     cell_l = lazy_map(x -> lfunc(x)[i], cell_xm) #this is a vector of size num_cells(trian)
     cell_u = lazy_map(x -> ufunc(x)[i], cell_xm) #this is a vector of size num_cells(trian)
 
-    lvaru = get_free_values(Gridap.FESpaces.interpolate(cell_l, Yi))
-    uvaru = get_free_values(Gridap.FESpaces.interpolate(cell_u, Yi))
+    lvaru = get_free_dof_values(Gridap.FESpaces.interpolate(cell_l, Yi))
+    uvaru = get_free_dof_values(Gridap.FESpaces.interpolate(cell_u, Yi))
     new = length(lvaru)
 
     @assert new == length(uvaru)

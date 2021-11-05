@@ -94,7 +94,7 @@ function penalizedpoisson_test(; udc = false)
   ls = LUSolver()
   solver = LinearFESolver(ls)
   uh = solve(solver, op_pde)
-  sol = get_free_values(uh)
+  sol = get_free_dof_values(uh)
 
   _fxsol = obj(nlp, sol)
   _ngxsol = norm(grad(nlp, sol))
