@@ -106,5 +106,5 @@ end
 export dt
 
 # for the weak formulation of dy/dt
-conv(u, ∇u) = (∇u ⋅ one(∇u)) ⊙ u
+conv(u, ∇u) = (∇u')⋅u #(∇u ⋅ one(∇u)) ⊙ u
 dt(u, v) = conv ∘ (v, ∇(u))
