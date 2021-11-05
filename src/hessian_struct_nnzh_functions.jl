@@ -26,7 +26,7 @@ function _compute_hess_structure_obj(tnrj::AbstractEnergyTerm, Y, X, x0, nparam)
   luh = _obj_integral(tnrj, κ, xh)
   lag_hess = Gridap.FESpaces._hessian(x -> _obj_integral(tnrj, κ, x), xh, luh)
 
-  matdata = Gridap.FESpaces.collect_cell_matrix(lag_hess)
+  matdata = Gridap.FESpaces.collect_cell_matrix(nlp.Y, nlp.X, lag_hess)
   assem = SparseMatrixAssembler(Y, X)
   n = Gridap.FESpaces.count_matrix_nnz_coo(assem, matdata)
   rows, cols, _ = Gridap.FESpaces.allocate_coo_vectors(Gridap.FESpaces.get_matrix_type(assem), n)
@@ -103,7 +103,7 @@ function _compute_hess_structure(
   luh = split_res(xh, λf)
 
   lag_hess = Gridap.FESpaces._hessian(x -> split_res(x, λf), xh, luh)
-  matdata = Gridap.FESpaces.collect_cell_matrix(lag_hess)
+  matdata = Gridap.FESpaces.collect_cell_matrix(nlp.Y, nlp.X, lag_hess)
   assem = SparseMatrixAssembler(Y, X)
   #=
   A = Gridap.FESpaces.allocate_matrix(assem, matdata)

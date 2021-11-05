@@ -123,7 +123,7 @@ function _jacobian_struct(
       dcjacy = Gridap.FESpaces._jacobian(x -> op.res(κ, x, uh, du), yh, resuh)
     end
   end
-  matdata_y = Gridap.FESpaces.collect_cell_matrix(dcjacy)
+  matdata_y = Gridap.FESpaces.collect_cell_matrix(Ypde, Xpde, dcjacy)
   assem = SparseMatrixAssembler(Ypde, Xpde)
   n = Gridap.FESpaces.count_matrix_nnz_coo(assem, matdata_y)
   Iy, Jy, Vy = Gridap.FESpaces.allocate_coo_vectors(Gridap.FESpaces.get_matrix_type(assem), n)
@@ -138,7 +138,7 @@ function _jacobian_struct(
       resuh = op.res(κ, yh, uh, v)
       dcjacu = _jacobian2(x -> op.res(κ, yh, x, du), uh, resuh)
     end
-    matdata_u = Gridap.FESpaces.collect_cell_matrix(dcjacu)
+    matdata_u = Gridap.FESpaces.collect_cell_matrix(Ycon, Xpde, dcjacu)
     assem = SparseMatrixAssembler(Ycon, Xpde)
     n = Gridap.FESpaces.count_matrix_nnz_coo(assem, matdata_u)
     Iu, Ju, Vu = Gridap.FESpaces.allocate_coo_vectors(Gridap.FESpaces.get_matrix_type(assem), n)
@@ -213,7 +213,7 @@ function _from_terms_to_jacobian_vals!(
       dcjacy = Gridap.FESpaces._jacobian(x -> op.res(κ, x, uh, du), yh, resuh)
     end
   end
-  matdata_y = Gridap.FESpaces.collect_cell_matrix(dcjacy)
+  matdata_y = Gridap.FESpaces.collect_cell_matrix(Ypde, Xpde, dcjacy)
   assem = SparseMatrixAssembler(Ypde, Xpde)
   I, J = zeros(Int, length(vals)), zeros(Int, length(vals)) # nlp.Jrows, nlp.Jcols
   nini = Gridap.FESpaces.fill_matrix_coo_numeric!(I, J, vals, assem, matdata_y, nfirst)
@@ -226,7 +226,7 @@ function _from_terms_to_jacobian_vals!(
       resuh = op.res(κ, yh, uh, v)
       dcjacu = _jacobian2(x -> op.res(κ, yh, x, du), uh, resuh)
     end
-    matdata_u = Gridap.FESpaces.collect_cell_matrix(dcjacu)
+    matdata_u = Gridap.FESpaces.collect_cell_matrix(Ycon, Xpde, dcjacu)
     assem = SparseMatrixAssembler(Ycon, Xpde)
     I, J = zeros(Int, length(vals)), zeros(Int, length(vals)) # nlp.Jrows, nlp.Jcols
     nini = Gridap.FESpaces.fill_matrix_coo_numeric!(I, J, vals, assem, matdata_u, nini)
