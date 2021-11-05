@@ -153,14 +153,10 @@ function _compute_gradient!(
   X::FESpace,
 )
   @lencheck 0 κ
-  cell_yu = Gridap.FESpaces.get_cell_dof_values(yu)
-  cell_id_yu = Gridap.Arrays.IdentityVector(length(cell_yu))
-  cell_r_yu = get_array(gradient(x -> _obj_integral(tnrj, κ, x), yu))
-  #Put the result in the format expected by Gridap.FESpaces.assemble_vector!
-  vecdata_yu = [[cell_r_yu], [cell_id_yu]] #TODO would replace by Tuple work?
+  vec = Gridap.FESpaces.collect_cell_vector(X, gradient(tnrj.f, yu))
   #Assemble the gradient in the "good" space
   assem = Gridap.FESpaces.SparseMatrixAssembler(Y, X)
-  Gridap.FESpaces.assemble_vector!(g, assem, vecdata_yu)
+  Gridap.FESpaces.assemble_vector!(g, assem, vec)
   return g
 end
 
@@ -255,18 +251,13 @@ function _compute_gradient!(
   nyu = num_free_dofs(Y)
   @lencheck tnrj.nparam + nyu g
 
-  cell_yu = Gridap.FESpaces.get_cell_dof_values(yu)
-  cell_id_yu = Gridap.Arrays.IdentityVector(length(cell_yu))
-
-  cell_r_yu = get_array(gradient(x -> _obj_integral(tnrj, κ, x), yu))
-  #Put the result in the format expected by Gridap.FESpaces.assemble_vector
-  vecdata_yu = [[cell_r_yu], [cell_id_yu]] #TODO would replace by Tuple work?
+  vec = Gridap.FESpaces.collect_cell_vector(X, gradient(x -> term.f(κ, x), yu))
   #Assemble the gradient in the "good" space
   assem = Gridap.FESpaces.SparseMatrixAssembler(Y, X)
   Gridap.FESpaces.assemble_vector!(
     view(g, (tnrj.nparam + 1):(tnrj.nparam + nyu)),
     assem,
-    vecdata_yu,
+    vec,
   )
 
   _compute_gradient_k!(view(g, 1:(tnrj.nparam)), tnrj, κ, yu)
