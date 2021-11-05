@@ -5,7 +5,7 @@ function AffineFEOperator(weakform::Function,assem::Assembler)
   trial = get_trial(assem)
   test = get_test(assem)
 
-  u = get_cell_shapefuns_trial(trial)
+  u = get_trial_fe_basis(trial)
   v = get_cell_shapefuns(test)
 
   uhd = zero(trial)

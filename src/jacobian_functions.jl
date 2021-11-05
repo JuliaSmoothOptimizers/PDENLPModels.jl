@@ -105,7 +105,7 @@ function _jacobian_struct(
 
   v = Gridap.FESpaces.get_cell_shapefuns(Xpde)
 
-  du = Gridap.FESpaces.get_cell_shapefuns_trial(Ypde)
+  du = Gridap.FESpaces.get_trial_fe_basis(Ypde)
   if nparam == 0
     if typeof(Ycon) <: VoidFESpace
       resuh = op.res(yh, v)
@@ -195,7 +195,7 @@ function _from_terms_to_jacobian_vals!(
 
   v = Gridap.FESpaces.get_cell_shapefuns(Xpde)
 
-  du = Gridap.FESpaces.get_cell_shapefuns_trial(Ypde)
+  du = Gridap.FESpaces.get_trial_fe_basis(Ypde)
   if nparam == 0
     if typeof(Ycon) <: VoidFESpace
       resuh = op.res(yh, v)
