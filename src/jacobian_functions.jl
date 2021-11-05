@@ -68,7 +68,7 @@ function _from_terms_to_residual!(
   # Gridap.FESpaces.residual(op, FEFunction(Y, x))
   # Split the call of: b = allocate_residual(op, u)
   V = Gridap.FESpaces.get_test(op)
-  v = Gridap.FESpaces.get_cell_shapefuns(V)
+  v = Gridap.FESpaces.get_fe_basis(V)
   if nparam == 0
     if typeof(Ycon) <: VoidFESpace
       vecdata = Gridap.FESpaces.collect_cell_vector(op.res(y, v))
@@ -103,7 +103,7 @@ function _jacobian_struct(
   yh, uh = _split_FEFunction(x, Ypde, Ycon)
   κ = @view x[1:nparam]
 
-  v = Gridap.FESpaces.get_cell_shapefuns(Xpde)
+  v = Gridap.FESpaces.get_fe_basis(Xpde)
 
   du = Gridap.FESpaces.get_trial_fe_basis(Ypde)
   if nparam == 0
@@ -193,7 +193,7 @@ function _from_terms_to_jacobian_vals!(
   xyu = @view x[(nparam + 1):end]
   yh, uh = _split_FEFunction(xyu, Ypde, Ycon)
 
-  v = Gridap.FESpaces.get_cell_shapefuns(Xpde)
+  v = Gridap.FESpaces.get_fe_basis(Xpde)
 
   du = Gridap.FESpaces.get_trial_fe_basis(Ypde)
   if nparam == 0
