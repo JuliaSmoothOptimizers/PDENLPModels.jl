@@ -31,7 +31,7 @@ function penalizedpoisson(args...; n = 2^4, kwargs...)
 
   w(x) = 1
   function f(y)
-    ∫(0.5 * ∇(y) ⊙ ∇(y) - w * y) * dΩ
+    ∫(0.5 * ∇(y) ⋅ ∇(y) - w * y) * dΩ
   end
 
   xin = zeros(Gridap.FESpaces.num_free_dofs(Ypde))
@@ -52,7 +52,7 @@ function penalizedpoisson_test(; udc = false)
   Hx = hess(nlp, x1)
   _Hx = hess(nlp, rand(nlp.meta.nvar))
   @test norm(Hx - _Hx) <= eps(Float64) #the hesian is constant
-  Hxv = Symmetric(Hx, :L) * v
+  Hxv = Hx * v
   _Hxv = hprod(nlp, x1, v)
   @test norm(Hxv - _Hxv) <= sqrt(eps(Float64))
 

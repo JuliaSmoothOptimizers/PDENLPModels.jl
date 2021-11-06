@@ -13,27 +13,27 @@ using LinearAlgebra, SparseArrays
 
 Random.seed!(1998)
 
-n = 3
+n = 5
 #Tanj: for each problem there is a lowercase(problem) function that returns a GridapPDENLPModel
 #++ would be to also have a lowercase(problem)_test that test the problem with the exact solution.
-local_test = false # tested locally only
+local_test = true # tested locally only
 
 pde_problems = if local_test
   [
-    "BURGER1D",
-    "BURGER1D_PARAM",
-    "CELLINCREASE",
-    "SIS",
-    "CONTROLSIR",
-    "DYNAMICSIR",
-    "BASICUNCONSTRAINED",
+    #"BURGER1D",
+    #"BURGER1D_PARAM",
+    #"CELLINCREASE",
+    #"SIS",
+    #"CONTROLSIR",
+    #"DYNAMICSIR",
+    "BASICUNCONSTRAINED", # ????????
     "PENALIZEDPOISSON",
     # "INCOMPRESSIBLENAVIERSTOKES", #too slow (tested locally only)
-    "POISSONMIXED",
-    "POISSONPARAM",
-    "POISSONMIXED2",
-    "TOREBRACHISTOCHRONE",
-    "CONTROLELASTICMEMBRANE",
+    #"POISSONMIXED",
+    #"POISSONPARAM",
+    #"POISSONMIXED2",
+    #"TOREBRACHISTOCHRONE",
+    #"CONTROLELASTICMEMBRANE",
   ]
 else
   [
@@ -56,11 +56,18 @@ end
   for problem in pde_problems
     @info "$(problem)"
     @time nlp = eval(Meta.parse("$(lowercase(problem))(n=$(n))"))
+    x = nlp.meta.x0
+    obj(nlp, x)
+    grad(nlp, x)
+    hess(nlp, x)
+    y = nlp.meta.y0
+    hess(nlp, x, y)
     @testset "Test problem scenario" begin
       if local_test
         @time eval(Meta.parse("$(lowercase(problem))_test()"))
       end
     end
+    
     @testset "Problem $(nlp.meta.name)" begin
       @info "$(problem) consistency"
       @testset "Consistency" begin
@@ -84,8 +91,9 @@ end
         end
       end
     end
+   #= =#
   end
 end
 
 # Test constructors, util_functions.jl and additional_obj_terms.jl
-include("unit-test.jl")
+#include("unit-test.jl")

@@ -19,7 +19,8 @@ function basicunconstrained(args...; n = 2^4, kwargs...)
   dΩ = Measure(trian, degree) # CellQuadrature(trian, degree)
 
   ubis(x) = x[1]^2 + x[2]^2
-  function f(y, u)
+  function f(yu)
+    y, u = yu
     ∫(0.5 * (ubis - u) * (ubis - u) + 0.5 * y * y) * dΩ
   end
 
