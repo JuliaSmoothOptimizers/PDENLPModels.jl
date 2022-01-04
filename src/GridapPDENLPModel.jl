@@ -185,7 +185,6 @@ function hess_coord!(
 
   if typeof(nlp.pdemeta.tnrj) != NoFETerm
     luh = _obj_integral(nlp.pdemeta.tnrj, κ, yu)
-    # lag_hess = Gridap.FESpaces.jacobian(Gridap.FESpaces._gradient(x -> nlp.tnrj.f(κ, x), yu, luh), yu) # 
     lag_hess = Gridap.FESpaces._hessian(x -> _obj_integral(nlp.pdemeta.tnrj, κ, x), yu, luh)
 
     matdata = Gridap.FESpaces.collect_cell_matrix(nlp.pdemeta.Y, nlp.pdemeta.X, lag_hess)

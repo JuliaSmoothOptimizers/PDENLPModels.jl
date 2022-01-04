@@ -17,57 +17,6 @@ function _compute_hess_structure(tnrj::AbstractEnergyTerm, op, Y, Ypde, Ycon, X,
   return vcat(robj, rck, rc), vcat(cobj, cck, cc), nobj + nck + nc
 end
 
-# https://github.com/gridap/Gridap.jl/blob/30b52053cba997008a75cc6fc79242fbf19a31ec/src/MultiField/MultiFieldFEAutodiff.jl#L123
-# Tanj: November, 5th 2021. Why is this function commented in Gridap?
-function Gridap.FESpaces._change_argument(
-  op::typeof(hessian),f,trian,uh::Gridap.MultiField.MultiFieldFEFunction) 
-
-  U = Gridap.FESpaces.get_fe_space(uh)
-  function g(cell_u)
-    single_fields = Gridap.FESpaces.GenericCellField[]
-    nfields = length(U.spaces)
-    for i in 1:nfields
-      cell_values_field = lazy_map(a->a.array[i],cell_u)
-      cf = CellField(U.spaces[i],cell_values_field)
-      cell_data = lazy_map(Gridap.FESpaces.BlockMap((nfields,nfields),i),Gridap.FESpaces.get_data(cf))
-      uhi = Gridap.FESpaces.GenericCellField(cell_data,Gridap.FESpaces.get_triangulation(cf),DomainStyle(cf))
-      push!(single_fields,uhi)
-    end
-    xh = Gridap.MultiField.MultiFieldCellField(single_fields)
-    cell_grad = f(xh)
-    Gridap.FESpaces.get_contribution(cell_grad,trian)
-  end
-  g
-end
-
-#=
-# this is a direct adaptation of the one for the jacobian
-function Gridap.FESpaces._change_argument(
-  op::typeof(hessian),f,trian,uh::Gridap.MultiField.MultiFieldFEFunction)
-
-  U = Gridap.FESpaces.get_fe_space(uh)
-  function g(cell_u)
-    single_fields = Gridap.FESpaces.GenericCellField[]
-    nfields = length(U.spaces)
-    cell_dofs_field_offsets=Gridap.MultiField._get_cell_dofs_field_offsets(uh)
-    for i in 1:nfields
-      view_range=cell_dofs_field_offsets[i]:cell_dofs_field_offsets[i+1]-1
-      cell_values_field = lazy_map(a->view(a,view_range),cell_u)
-      cf = CellField(U.spaces[i],cell_values_field)
-      push!(single_fields,cf)
-    end
-    xh = Gridap.MultiField.MultiFieldCellField(single_fields)
-    cell_grad = f(xh)
-    cell_grad_cont_block=Gridap.FESpaces.get_contribution(cell_grad,trian)
-    bs = [cell_dofs_field_offsets[i+1]-cell_dofs_field_offsets[i] for i=1:nfields]
-    lazy_map(Gridap.MultiField.DensifyInnerMostBlockLevelMap(),
-             Gridap.MultiField.Fill(bs,length(cell_grad_cont_block)),
-             cell_grad_cont_block)
-  end
-  g
-end
-=#
-
 function _compute_hess_structure_obj(tnrj::AbstractEnergyTerm, Y, X, x0, nparam)
   nini = 0
   κ = @view x0[1:nparam]
@@ -75,8 +24,7 @@ function _compute_hess_structure_obj(tnrj::AbstractEnergyTerm, Y, X, x0, nparam)
   xh = FEFunction(Y, xyu)
 
   luh = _obj_integral(tnrj, κ, xh)
-  lag_hess = Gridap.FESpaces._hessian(x -> _obj_integral(tnrj, κ, x), xh, luh) # issue with the _change_argument function
-  # lag_hess = Gridap.FESpaces.jacobian(xx -> Gridap.FESpaces._gradient(x -> _obj_integral(tnrj, κ, x), xx, luh), xh) # try again here converting the output of _gradient....
+  lag_hess = Gridap.FESpaces._hessian(x -> _obj_integral(tnrj, κ, x), xh, luh)
 
   matdata = Gridap.FESpaces.collect_cell_matrix(Y, X, lag_hess)
   assem = SparseMatrixAssembler(Y, X)
