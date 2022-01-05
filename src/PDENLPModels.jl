@@ -1,7 +1,6 @@
 module PDENLPModels
 
 #This package contains a list of NLPModels for PDE optimization.
-using LinearAlgebra: length
 using ForwardDiff, LinearAlgebra, SparseArrays, FastClosures
 
 #JSO packages
@@ -38,6 +37,8 @@ function Gridap.FESpaces.scatter_free_and_dirichlet_values(
   cell_dof_ids = get_cell_dof_ids(f)
   lazy_map(Broadcasting(Gridap.Arrays.PosNegReindex(free_values, dirichlet_values)), cell_dof_ids)
 end
+
+include("gridap_autodiff.jl")
 
 #Regroup the different types of FEFunction
 const FEFunctionType =
