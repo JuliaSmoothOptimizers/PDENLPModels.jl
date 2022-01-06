@@ -137,7 +137,7 @@ function _jacobian_struct(
   Gridap.FESpaces.symbolic_loop_matrix!(m1, assem, matdata_y)
   m2 = Gridap.FESpaces.nz_allocation(m1) # Gridap.Algebra.InserterCSC
   Gridap.FESpaces.symbolic_loop_matrix!(m2, assem, matdata_y)
-  m3 = sparse(LowerTriangular(Gridap.FESpaces.create_from_nz(m2)))
+  m3 = sparse(Gridap.FESpaces.create_from_nz(m2))
   Iy, Jy, _ = findnz(m3) # If I remember correctly, this is what I wanted to avoid...
   # Gridap.FESpaces.numeric_loop_matrix!(m2, assem, matdata)
   ny = length(Iy)
@@ -165,7 +165,7 @@ function _jacobian_struct(
     Gridap.FESpaces.symbolic_loop_matrix!(m1, assem, matdata_u)
     m2 = Gridap.FESpaces.nz_allocation(m1) # Gridap.Algebra.InserterCSC
     Gridap.FESpaces.symbolic_loop_matrix!(m2, assem, matdata_u)
-    m3 = sparse(LowerTriangular(Gridap.FESpaces.create_from_nz(m2)))
+    m3 = sparse(Gridap.FESpaces.create_from_nz(m2))
     Iu, Ju, _ = findnz(m3) # If I remember correctly, this is what I wanted to avoid...
     # Gridap.FESpaces.numeric_loop_matrix!(m2, assem, matdata)
     nu = length(Iu)
@@ -253,10 +253,10 @@ function _from_terms_to_jacobian_vals!(
   Gridap.FESpaces.symbolic_loop_matrix!(m1, assem, matdata_y)
   m2 = Gridap.FESpaces.nz_allocation(m1) # Gridap.Algebra.InserterCSC
   Gridap.FESpaces.symbolic_loop_matrix!(m2, assem, matdata_y)
-  m3 = sparse(LowerTriangular(Gridap.FESpaces.create_from_nz(m2)))
-  _, _, v = findnz(m3)
-  vals[(nini + 1):(nini + length(v))] .= v
-  nini += length(v)
+  m3 = sparse(Gridap.FESpaces.create_from_nz(m2))
+  _, _, vv = findnz(m3)
+  vals[(nini + 1):(nini + length(vv))] .= vv
+  nini += length(vv)
   # Gridap.FESpaces.numeric_loop_matrix!(m2, assem, matdata)
 
   if Ycon != VoidFESpace()
@@ -282,10 +282,10 @@ function _from_terms_to_jacobian_vals!(
     Gridap.FESpaces.symbolic_loop_matrix!(m1, assem, matdata_u)
     m2 = Gridap.FESpaces.nz_allocation(m1) # Gridap.Algebra.InserterCSC
     Gridap.FESpaces.numeric_loop_matrix!(m2, assem, matdata_u)
-    m3 = sparse(LowerTriangular(Gridap.FESpaces.create_from_nz(m2)))
-    _, _, v = findnz(m3)
-    vals[(nini + 1):(nini + length(v))] .= v
-    nini += length(v)
+    m3 = sparse(Gridap.FESpaces.create_from_nz(m2))
+    _, _, vv = findnz(m3)
+    vals[(nini + 1):(nini + length(vv))] .= vv
+    nini += length(vv)
     ##############################################################
   else
     vals[(nini + 1):end] .= zero(T)
