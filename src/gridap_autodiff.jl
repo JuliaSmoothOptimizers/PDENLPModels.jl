@@ -36,3 +36,6 @@ function _hessianv1(f,uh::Gridap.MultiField.MultiFieldFEFunction,fuh::Gridap.FES
   end
   terms
 end
+
+# For SingleField functions, we can use the default Gridap's function
+_hessianv1(f,uh,fuh) = Gridap.FESpaces._hessian(f,uh,fuh)
