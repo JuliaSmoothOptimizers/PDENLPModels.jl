@@ -1,3 +1,11 @@
+trial_check(::TrialFESpace) = true
+trial_check(::Gridap.FESpaces.DirichletFESpace) = true
+trial_check(::Gridap.FESpaces.FESpaceWithConstantFixed) = true
+trial_check(::Gridap.FESpaces.ZeroMeanFESpace) = true
+trial_check(::Gridap.FESpaces.UnconstrainedFESpace) = true # When Ycon = TrialFESpace(Xcon), we have typeof(Xcon) == typeof(Ycon)
+trial_check(::VoidFESpace) = true
+trial_check(Y::MultiFieldFESpace) = all(trial_check, Y)
+
 abstract type AbstractEnergyTerm end
 
 """
@@ -128,6 +136,12 @@ struct EnergyFETerm <: AbstractEnergyTerm
   trian::Triangulation
   Ypde::FESpace
   Ycon::FESpace
+
+  function EnergyFETerm(f, trian, Ypde, Ycon)
+    @assert trial_check(Ypde)
+    @assert trial_check(Ycon)
+    return new(f, trian, Ypde, Ycon)
+  end
 end
 
 function EnergyFETerm(f::Function, trian::Triangulation, Ypde)
@@ -218,6 +232,8 @@ struct MixedEnergyFETerm <: AbstractEnergyTerm
     Ycon::FESpace,
   )
     @assert n > 0
+    @assert trial_check(Ypde)
+    @assert trial_check(Ycon)
     return new(f, trian, n, inde, Ypde, Ycon)
   end
 end

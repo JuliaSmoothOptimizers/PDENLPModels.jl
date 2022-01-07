@@ -48,7 +48,6 @@ function burger1d_param(args...; n = 512, kwargs...)
 
   Xcon = TestFESpace(model, reffe; conformity = :H1)
   Ycon = TrialFESpace(Xcon)
-  Ycon = TrialFESpace(Xcon)
 
   Y = MultiFieldFESpace([U, Ycon])
   xin = zeros(Gridap.FESpaces.num_free_dofs(Y) + 1)
