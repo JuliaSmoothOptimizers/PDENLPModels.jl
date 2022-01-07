@@ -257,7 +257,13 @@ function _compute_gradient!(
   nyu = num_free_dofs(Y)
   @lencheck tnrj.nparam + nyu g
 
-  vec = Gridap.FESpaces.collect_cell_vector(X, gradient(x -> term.f(κ, x), yu))
+  fsplit(x) = if typeof(tnrj.Ycon) <: VoidFESpace
+    return tnrj.f(κ, x)
+  else
+    y, u = _split_FEFunction(x, tnrj.Ypde, tnrj.Ycon)
+    return tnrj.f(κ, y, u)
+  end
+  vec = Gridap.FESpaces.collect_cell_vector(X, gradient(fsplit, yu))
   #Assemble the gradient in the "good" space
   assem = Gridap.FESpaces.SparseMatrixAssembler(Y, X)
   Gridap.FESpaces.assemble_vector!(

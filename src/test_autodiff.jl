@@ -76,7 +76,7 @@ function _jacobian2(f, uh::Gridap.MultiField.MultiFieldFEFunction, fuh::Gridap.C
     blocks        = [] # TO-DO type unstable. How can I infer the type of its entries?
     blocks_coords = Tuple{Int,Int}[]
     nfields = length(U.spaces)
-    cell_dofs_field_offsets = Gridap.FESpaces._get_cell_dofs_field_offsets(uh)
+    cell_dofs_field_offsets = Gridap.MultiField._get_cell_dofs_field_offsets(uh)
     for j=1:nfields
       view_range_j=cell_dofs_field_offsets[j]:cell_dofs_field_offsets[j+1]-1
       for i=1:nfields
