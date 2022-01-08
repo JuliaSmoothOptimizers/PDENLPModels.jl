@@ -169,23 +169,7 @@ function GridapPDENLPModel(
 
   @assert nparam >= 0 throw(DimensionError("x0", nvar_pde + nvar_con, nvar))
 
-  if !(typeof(Xcon) <: VoidFESpace) && !(typeof(Ycon) <: VoidFESpace)
-    _xpde = _fespace_to_multifieldfespace(Xpde)
-    _xcon = _fespace_to_multifieldfespace(Xcon)
-    #Handle the case where Ypde or Ycon are single field FE space(s).
-    _ypde = _fespace_to_multifieldfespace(Ypde)
-    _ycon = _fespace_to_multifieldfespace(Ycon)
-    #Build Y (resp. X) the trial (resp. test) space of the Multi Field function [y,u]
-    X = MultiFieldFESpace(vcat(_xpde.spaces, _xcon.spaces))
-    Y = MultiFieldFESpace(vcat(_ypde.spaces, _ycon.spaces))
-  elseif (typeof(Xcon) <: VoidFESpace) ⊻ (typeof(Ycon) <: VoidFESpace)
-    throw(ErrorException("Error: Xcon or Ycon are both nothing or must be specified."))
-  else
-    #_xpde = _fespace_to_multifieldfespace(Xpde)
-    X = Xpde #_xpde
-    #_ypde = _fespace_to_multifieldfespace(Ypde)
-    Y = Ypde #_ypde
-  end
+  Y, X = _to_multifieldfespace(Ypde, Xpde, Ycon, Xcon)
 
   if NRJ == NoFETerm && typeof(lvary) <: AbstractVector && typeof(uvary) <: AbstractVector
     lvar, uvar = vcat(lvary, lvaru, lvark), vcat(uvary, uvaru, uvark)

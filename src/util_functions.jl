@@ -1,3 +1,24 @@
+function _to_multifieldfespace(Ypde, Xpde, Ycon, Xcon)
+  if !(typeof(Xcon) <: VoidFESpace) && !(typeof(Ycon) <: VoidFESpace)
+    _xpde = _fespace_to_multifieldfespace(Xpde)
+    _xcon = _fespace_to_multifieldfespace(Xcon)
+    #Handle the case where Ypde or Ycon are single field FE space(s).
+    _ypde = _fespace_to_multifieldfespace(Ypde)
+    _ycon = _fespace_to_multifieldfespace(Ycon)
+    #Build Y (resp. X) the trial (resp. test) space of the Multi Field function [y,u]
+    X = MultiFieldFESpace(vcat(_xpde.spaces, _xcon.spaces))
+    Y = MultiFieldFESpace(vcat(_ypde.spaces, _ycon.spaces))
+  elseif (typeof(Xcon) <: VoidFESpace) ⊻ (typeof(Ycon) <: VoidFESpace)
+    throw(ErrorException("Error: Xcon or Ycon are both nothing or must be specified."))
+  else
+    #_xpde = _fespace_to_multifieldfespace(Xpde)
+    X = Xpde #_xpde
+    #_ypde = _fespace_to_multifieldfespace(Ypde)
+    Y = Ypde #_ypde
+  end
+  return Y, X
+end
+
 """
 `_split_FEFunction(:: AbstractVector,  :: FESpace, :: Union{FESpace, Nothing})`
 
@@ -23,16 +44,19 @@ function _split_FEFunction(x::AbstractVector, Ypde::FESpace, ::VoidFESpace)
   return yh, nothing
 end
 
+# Base.length(y::Gridap.MultiField.MultiFieldFEFunction) = length(Gridap.FESpaces.get_fe_space(y).spaces)
+# Base.length(a::Gridap.MultiField.MultiFieldCellField) = num_fields(a)
+
 function _split_FEFunction(x, Ypde::FESpace, Ycon::FESpace)
   ny = typeof(Ypde) <: MultiFieldFESpace ? length(Ypde.spaces) : 1
   nu = typeof(Ycon) <: MultiFieldFESpace ? length(Ycon.spaces) : 1
   if typeof(Ypde) <: MultiFieldFESpace
-    y = collect(first(x, ny))
+    y = first(x, ny)
   else
     y = first(x)
   end
   if typeof(Ycon) <: MultiFieldFESpace
-    u = collect(first(Iterators.drop(x, ny), nu))
+    u = first(Iterators.drop(x, ny), nu)
   else
     u = first(Iterators.drop(x, ny))
   end
