@@ -39,6 +39,7 @@ function Gridap.FESpaces.scatter_free_and_dirichlet_values(
 end
 
 include("gridap_autodiff.jl")
+include("gridap_utils.jl")
 
 #Regroup the different types of FEFunction
 const FEFunctionType =
