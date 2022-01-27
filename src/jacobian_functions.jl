@@ -186,6 +186,10 @@ function _jac_coord!(
   Xpde::FESpace,
   Ycon::FESpace,
   x::AbstractVector{T},
+  Jyrows,
+  Jycols,
+  Jurows,
+  Jucols,
   vals::AbstractVector,
   c::AbstractVector,
   Jk,
@@ -198,10 +202,13 @@ function _jac_coord!(
     ForwardDiff.jacobian!(Jk, ck, c, κ)
     vals[1:nnz_jac_k] .= Jk[:]
   end
-  nini = _from_terms_to_jacobian_vals!(op, x, Y, Xpde, Ypde, Ycon, vals, nfirst = nnz_jac_k)
+  nini = _from_terms_to_jacobian_vals!(op, x, Y, Xpde, Ypde, Ycon, Jyrows, Jycols, Jurows, Jucols, vals, nfirst = nnz_jac_k)
   return vals
 end
 
+# T.M.: We could now split this in two
+# To avoid using  a sparse matrix, one would have to dive into this:
+# https://github.com/gridap/Gridap.jl/blob/baa3ced8f28418bd63f12ac9b5d167ea78a9ae6d/src/FESpaces/SparseMatrixAssemblers.jl#L35
 function _from_terms_to_jacobian_vals!(
   op::Gridap.FESpaces.FEOperatorFromWeakForm,
   x::AbstractVector{T},
@@ -209,6 +216,10 @@ function _from_terms_to_jacobian_vals!(
   Xpde::FESpace,
   Ypde::FESpace,
   Ycon::FESpace,
+  Jyrows,
+  Jycols,
+  Jurows,
+  Jucols,
   vals::AbstractVector{T};
   nfirst::Integer = 0,
 ) where {T <: Number}
@@ -218,6 +229,12 @@ function _from_terms_to_jacobian_vals!(
   κ = @view x[1:nparam]
   xyu = @view x[(nparam + 1):end]
   yh, uh = _split_FEFunction(xyu, Ypde, Ycon)
+
+  nini = nfirst
+  ny = num_free_dofs(Ypde)
+  nnzh_y = length(Jyrows)
+  nu = num_free_dofs(Ycon) 
+  nnzh_u = length(Jurows)
 
   v = Gridap.FESpaces.get_fe_basis(Xpde)
   # du = Gridap.FESpaces.get_trial_fe_basis(Ypde)
@@ -241,24 +258,11 @@ function _from_terms_to_jacobian_vals!(
   end
   matdata_y = Gridap.FESpaces.collect_cell_matrix(Ypde, Xpde, dcjacy)
   assem = SparseMatrixAssembler(Ypde, Xpde)
-  #= Gridap 0.15.5
-  I, J = zeros(Int, length(vals)), zeros(Int, length(vals)) # nlp.Jrows, nlp.Jcols
-  nini = Gridap.FESpaces.fill_matrix_coo_numeric!(I, J, vals, assem, matdata_y, nfirst)
-  =#
-  nini = nfirst
-  m1 = Gridap.FESpaces.nz_counter(
-    Gridap.FESpaces.get_matrix_builder(assem),
-    (Gridap.FESpaces.get_rows(assem), Gridap.FESpaces.get_cols(assem)),
-  ) # Gridap.Algebra.CounterCS
-  Gridap.FESpaces.symbolic_loop_matrix!(m1, assem, matdata_y)
-  m2 = Gridap.FESpaces.nz_allocation(m1) # Gridap.Algebra.InserterCSC
-  # Gridap.FESpaces.symbolic_loop_matrix!(m2, assem, matdata_y)
-  Gridap.FESpaces.numeric_loop_matrix!(m2, assem, matdata_y)
-  m3 = sparse(Gridap.FESpaces.create_from_nz(m2))
-  _, _, vv = findnz(m3)
-  vals[(nini + 1):(nini + length(vv))] .= vv
-  nini += length(vv)
-  # Gridap.FESpaces.numeric_loop_matrix!(m2, assem, matdata)
+
+  ms = sparse(Jyrows, Jycols, zeros(nnzh_y), ny, ny) # SparseArrays.sparse!
+  Gridap.FESpaces.numeric_loop_matrix!(ms, assem, matdata_y)
+  vals[(nini + 1):(nini + nnzh_y)] .= ms.nzval
+  nini += nnzh_y
 
   if Ycon != VoidFESpace()
     if nparam == 0
@@ -270,24 +274,11 @@ function _from_terms_to_jacobian_vals!(
     end
     matdata_u = Gridap.FESpaces.collect_cell_matrix(Ycon, Xpde, dcjacu)
     assem = SparseMatrixAssembler(Ycon, Xpde)
-    #=
-    I, J = zeros(Int, length(vals)), zeros(Int, length(vals)) # nlp.Jrows, nlp.Jcols
-    nini = Gridap.FESpaces.fill_matrix_coo_numeric!(I, J, vals, assem, matdata_u, nini)
-    =#
-    ##############################################################
-    # TO BE IMPROVED
-    m1 = Gridap.FESpaces.nz_counter(
-      Gridap.FESpaces.get_matrix_builder(assem),
-      (Gridap.FESpaces.get_rows(assem), Gridap.FESpaces.get_cols(assem)),
-    ) # Gridap.Algebra.CounterCS
-    Gridap.FESpaces.symbolic_loop_matrix!(m1, assem, matdata_u)
-    m2 = Gridap.FESpaces.nz_allocation(m1) # Gridap.Algebra.InserterCSC
-    Gridap.FESpaces.numeric_loop_matrix!(m2, assem, matdata_u)
-    m3 = sparse(Gridap.FESpaces.create_from_nz(m2))
-    _, _, vv = findnz(m3)
-    vals[(nini + 1):(nini + length(vv))] .= vv
-    nini += length(vv)
-    ##############################################################
+
+    ms = sparse(Jurows, Jucols, zeros(nnzh_u), ny, nu) # SparseArrays.sparse!
+    Gridap.FESpaces.numeric_loop_matrix!(ms, assem, matdata_u)
+    vals[(nini + 1):(nini + nnzh_u)] .= ms.nzval
+    nini += nnzh_u
   else
     vals[(nini + 1):end] .= zero(T)
   end

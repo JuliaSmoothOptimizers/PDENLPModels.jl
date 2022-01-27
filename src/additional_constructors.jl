@@ -58,6 +58,10 @@ function GridapPDENLPModel(
     cols,
     Int[],
     Int[],
+    Int[],
+    Int[],
+    Int[],
+    Int[],
   )
 
   workspace = PDEWorkspace(T, S, nvar, 0, nparam, nnzh, 0)
