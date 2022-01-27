@@ -18,8 +18,12 @@ The following arguments are accepted:
 - nnzh_obj : number of nonzeros elements in the objective hessian
 - Hrows : store the structure for the hessian of the lagrangian
 - Hcols : store the structure for the hessian of the lagrangian
-- Jrows : store the structure for the hessian of the jacobian
-- Jcols : store the structure for the hessian of the jacobian
+- Jkrows : store the structure for the hessian of the jacobian
+- Jkcols : store the structure for the hessian of the jacobian
+- Jyrows : store the structure for the hessian of the jacobian
+- Jycols : store the structure for the hessian of the jacobian
+- Jurows : store the structure for the hessian of the jacobian
+- Jucols : store the structure for the hessian of the jacobian
 """
 struct PDENLPMeta{NRJ <: AbstractEnergyTerm, Op <: Union{FEOperator, Nothing}}
   # For the objective function
@@ -44,8 +48,12 @@ struct PDENLPMeta{NRJ <: AbstractEnergyTerm, Op <: Union{FEOperator, Nothing}}
   # store the structure for hessian and jacobian matrix
   Hrows::AbstractVector{Int}
   Hcols::AbstractVector{Int}
-  Jrows::AbstractVector{Int}
-  Jcols::AbstractVector{Int}
+  Jkrows::AbstractVector{Int}
+  Jkcols::AbstractVector{Int}
+  Jyrows::AbstractVector{Int}
+  Jycols::AbstractVector{Int}
+  Jurows::AbstractVector{Int}
+  Jucols::AbstractVector{Int}
 end
 
 struct PDEWorkspace{T, S, M}
@@ -410,7 +418,9 @@ function jtprod!(nlp::GridapPDENLPModel, x::AbstractVector, v::AbstractVector, J
 end
 
 function jac_structure(nlp::GridapPDENLPModel)
-  return (nlp.pdemeta.Jrows, nlp.pdemeta.Jcols)
+  nparam = nlp.pdemeta.nparam
+  ny = num_free_dofs(nlp.pdemeta.Ypde)
+  return (vcat(nlp.pdemeta.Jkrows, nlp.pdemeta.Jyrows, nlp.pdemeta.Jurows), vcat(nlp.pdemeta.Jkcols, nlp.pdemeta.Jycols .+ nparam, nlp.pdemeta.Jucols .+ nparam .+ ny))
 end
 
 function jac_structure!(
@@ -419,8 +429,10 @@ function jac_structure!(
   cols::AbstractVector{T},
 ) where {T <: Integer}
   @lencheck nlp.meta.nnzj rows cols
-  rows .= T.(nlp.pdemeta.Jrows)
-  cols .= T.(nlp.pdemeta.Jcols)
+  nparam = nlp.pdemeta.nparam
+  ny = num_free_dofs(nlp.pdemeta.Ypde)
+  rows .= T.(vcat(nlp.pdemeta.Jkrows, nlp.pdemeta.Jyrows, nlp.pdemeta.Jurows))
+  cols .= T.(vcat(nlp.pdemeta.Jkcols, nlp.pdemeta.Jycols .+ nparam, nlp.pdemeta.Jucols .+ nparam .+ ny))
   return rows, cols
 end
 

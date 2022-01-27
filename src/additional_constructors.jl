@@ -194,8 +194,8 @@ function GridapPDENLPModel(
     lin = 1:ncon
   end
   Jkrows, Jkcols, nnz_jac_k = jac_k_structure(nparam, ncon)
-  Jrows, Jcols, nini = _jacobian_struct(c, x0, Y, Xpde, Ypde, Ycon)
-  nnzj = nini + nnz_jac_k
+  Jyrows, Jurows, Jycols, Jucols, nini_y, nini_u = _jacobian_struct(c, x0, Y, Xpde, Ypde, Ycon)
+  nnzj = nini_y + nini_u + nnz_jac_k
 
   meta = NLPModelMeta{T, S}(
     nvar,
@@ -229,8 +229,12 @@ function GridapPDENLPModel(
     nnzh_obj,
     rows,
     cols,
-    vcat(Jkrows, Jrows),
-    vcat(Jkcols, Jcols .+ nparam),
+    Jkrows,
+    Jkcols,
+    Jyrows,
+    Jycols,
+    Jurows,
+    Jucols,
   )
 
   workspace = PDEWorkspace(T, S, nvar, ncon, nparam, nnzh, nnzj)

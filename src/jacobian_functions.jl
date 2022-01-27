@@ -169,12 +169,12 @@ function _jacobian_struct(
     Iu, Ju, _ = findnz(m3) # If I remember correctly, this is what I wanted to avoid...
     # Gridap.FESpaces.numeric_loop_matrix!(m2, assem, matdata)
     nu = length(Iu)
-    Iu, Ju = Iu[1:nu], Ju[1:nu] .+ num_free_dofs(Ypde)
+    Iu, Ju = Iu[1:nu], Ju[1:nu]
   else
     Iu, Ju, nu = Int[], Int[], 0
   end
 
-  return vcat(Iy, Iu), vcat(Jy, Ju), ny + nu
+  return Iy, Iu, Jy, Ju, ny, nu
 end
 
 function _jac_coord!(
