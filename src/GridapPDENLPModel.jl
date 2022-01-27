@@ -16,14 +16,20 @@ The following arguments are accepted:
 - nvar_con : number of dofs in the control functions
 - nparam: : number of real unknowns
 - nnzh_obj : number of nonzeros elements in the objective hessian
-- Hrows : store the structure for the hessian of the lagrangian
-- Hcols : store the structure for the hessian of the lagrangian
-- Jkrows : store the structure for the hessian of the jacobian
-- Jkcols : store the structure for the hessian of the jacobian
-- Jyrows : store the structure for the hessian of the jacobian
-- Jycols : store the structure for the hessian of the jacobian
-- Jurows : store the structure for the hessian of the jacobian
-- Jucols : store the structure for the hessian of the jacobian
+- Hobjkrows : store the structure for the hessian of the objective w.r.t. k
+- Hobjkcols : store the structure for the hessian of the objective w.r.t. k
+- Hobjrows : store the structure for the hessian of the objective
+- Hobjcols : store the structure for the hessian of the objective
+- Hkrows : store the structure for the hessian of the constraints w.r.t. k
+- Hkcols : store the structure for the hessian of the constraints w.r.t. k
+- Hrows : store the structure for the hessian of the constraints
+- Hcols : store the structure for the hessian of the constraints
+- Jkrows : store the structure for the hessian of the jacobian w.r.t. k
+- Jkcols : store the structure for the hessian of the jacobian w.r.t. k
+- Jyrows : store the structure for the hessian of the jacobian w.r.t. y
+- Jycols : store the structure for the hessian of the jacobian w.r.t. y
+- Jurows : store the structure for the hessian of the jacobian w.r.t. u
+- Jucols : store the structure for the hessian of the jacobian w.r.t. u
 """
 struct PDENLPMeta{NRJ <: AbstractEnergyTerm, Op <: Union{FEOperator, Nothing}}
   # For the objective function
@@ -46,6 +52,12 @@ struct PDENLPMeta{NRJ <: AbstractEnergyTerm, Op <: Union{FEOperator, Nothing}}
   nnzh_obj::Int
 
   # store the structure for hessian and jacobian matrix
+  Hobjkrows::AbstractVector{Int}
+  Hobjkcols::AbstractVector{Int}
+  Hobjrows::AbstractVector{Int}
+  Hobjcols::AbstractVector{Int}
+  Hkrows::AbstractVector{Int}
+  Hkcols::AbstractVector{Int}
   Hrows::AbstractVector{Int}
   Hcols::AbstractVector{Int}
   Jkrows::AbstractVector{Int}
@@ -199,6 +211,7 @@ function hess_coord!(
     assem = SparseMatrixAssembler(nlp.pdemeta.Y, nlp.pdemeta.X)
     ###############################################################
     # TO BE IMPROVED
+    
     m1 = Gridap.FESpaces.nz_counter(
       Gridap.FESpaces.get_matrix_builder(assem),
       (Gridap.FESpaces.get_rows(assem), Gridap.FESpaces.get_cols(assem)),
@@ -210,8 +223,17 @@ function hess_coord!(
     _, _, v = findnz(m3)
     vals[(nini + 1):(nini + length(v))] .= v
     nini += length(v)
+    
     # nini = fill_hess_coo_numeric!(vals, assem, matdata, n = nini)
     ##############################################################
+    #=
+    nnzh = nlp.meta.nnzh - nini
+    ms = sparse(nlp.pdemeta.Hrows, nlp.pdemeta.Hcols, zeros(nnzh), nlp.meta.nvar, nlp.meta.nvar) # SparseArrays.sparse!
+    Gridap.FESpaces.numeric_loop_matrix!(ms, assem, matdata)
+    ms_lower = sparse(LowerTriangular(Gridap.FESpaces.create_from_nz(ms)))
+    vals[(nini + 1):(nini + nnzh)] .= ms_lower.nzval
+    nini += nnzh
+    =#
   end
 
   if nini < nlp.meta.nnzh
@@ -246,7 +268,8 @@ function hprod!(
 end
 
 function hess_structure(nlp::GridapPDENLPModel)
-  return (nlp.pdemeta.Hrows, nlp.pdemeta.Hcols)
+  np = nlp.pdemeta.nparam
+  return (vcat(nlp.pdemeta.Hobjkrows, nlp.pdemeta.Hobjrows .+ np, nlp.pdemeta.Hkrows, nlp.pdemeta.Hrows .+ np), vcat(nlp.pdemeta.Hobjkcols, nlp.pdemeta.Hobjcols .+ np, nlp.pdemeta.Hkcols, nlp.pdemeta.Hcols .+ np))
 end
 
 function hess_structure!(
@@ -255,8 +278,9 @@ function hess_structure!(
   cols::AbstractVector{T},
 ) where {T <: Integer}
   @lencheck nlp.meta.nnzh rows cols
-  rows .= T.(nlp.pdemeta.Hrows)
-  cols .= T.(nlp.pdemeta.Hcols)
+  np = nlp.pdemeta.nparam
+  rows .= T.(vcat(nlp.pdemeta.Hobjkrows, nlp.pdemeta.Hobjrows .+ np, nlp.pdemeta.Hkrows, nlp.pdemeta.Hrows .+ np))
+  cols .= T.(vcat(nlp.pdemeta.Hobjkcols, nlp.pdemeta.Hobjcols .+ np, nlp.pdemeta.Hkcols, nlp.pdemeta.Hcols .+ np))
   return (rows, cols)
 end
 

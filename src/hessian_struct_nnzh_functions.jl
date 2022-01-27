@@ -7,14 +7,14 @@ The rows and cols returned by _compute_hess_structure_obj are already shifter by
 function _compute_hess_structure(tnrj::AbstractEnergyTerm, Y, X, x0, nparam)
   rk, ck, nk = _compute_hess_structure_k(tnrj, Y, X, x0, nparam)
   ro, co, no = _compute_hess_structure_obj(tnrj, Y, X, x0, nparam)
-  return vcat(rk, ro), vcat(ck, co), nk + no
+  return rk, ro, ck, co, nk, no
 end
 
 function _compute_hess_structure(tnrj::AbstractEnergyTerm, op, Y, Ypde, Ycon, X, Xpde, x0, nparam)
-  robj, cobj, nobj = _compute_hess_structure(tnrj, Y, X, x0, nparam)
+  rk, ro, ck, co, nk, no = _compute_hess_structure(tnrj, Y, X, x0, nparam)
   rck, cck, nck = _compute_hess_structure_k(op, Y, X, x0, nparam)
   rc, cc, nc = _compute_hess_structure(op, Y, Ypde, Ycon, X, Xpde, x0, nparam)
-  return vcat(robj, rck, rc), vcat(cobj, cck, cc), nobj + nck + nc
+  return rk, ro, rck, rc, ck, co, cck, cc, nk, no, nck, nc
 end
 
 function _compute_hess_structure_obj(tnrj::AbstractEnergyTerm, Y, X, x0, nparam)
@@ -42,7 +42,7 @@ function _compute_hess_structure_obj(tnrj::AbstractEnergyTerm, Y, X, x0, nparam)
   # Gridap.FESpaces.numeric_loop_matrix!(m2, assem, matdata)
   nini = length(rows) # Gridap 0.15 fill_hessstruct_coo_numeric!(rows, cols, assem, matdata)
 
-  return rows[1:nini] .+ nparam, cols[1:nini] .+ nparam, nini
+  return rows[1:nini], cols[1:nini], nini
 end
 
 function _compute_hess_structure_obj(tnrj::NoFETerm, Y, X, x0, nparam)
@@ -138,7 +138,7 @@ function _compute_hess_structure(
   # Gridap.FESpaces.numeric_loop_matrix!(m2, assem, matdata)
   nini = length(rows) # Gridap 0.15 fill_hessstruct_coo_numeric!(rows, cols, assem, matdata)
 
-  return rows[1:nini] .+ nparam, cols[1:nini] .+ nparam, nini
+  return rows[1:nini], cols[1:nini], nini
 end
 
 function _compute_hess_structure_k(op::FEOperator, Y, X, x0, nparam)

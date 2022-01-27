@@ -24,18 +24,18 @@ local_test = true # tested locally only
 pde_problems = if local_test
   [
     "BURGER1D", # runs, just allocation error
-    # "BURGER1D_PARAM", # runs, just allocation error
+    "BURGER1D_PARAM", # runs, just allocation error
     # "CELLINCREASE", # DimensionMismatch("jacobian(f, x) expects that f(x) is an array. Perhaps you meant gradient(f, x)?")
-    # "SIS", # runs, just allocation error
-    # "CONTROLSIR", # runs, just allocation error
+    "SIS", # runs, just allocation error
+    "CONTROLSIR", # runs, just allocation error
     # "DYNAMICSIR", # MethodError: no method matching length(::Gridap.MultiField.MultiFieldFEFunction{Gridap.MultiField.MultiFieldCellField{ReferenceDomain}})
-    # "BASICUNCONSTRAINED", # OK
-    # "PENALIZEDPOISSON", # OK
+    "BASICUNCONSTRAINED", # OK
+    "PENALIZEDPOISSON", # OK
     # "INCOMPRESSIBLENAVIERSTOKES", #too slow (tested locally only) # runs, but error with the jacobian derivatives
-    # "POISSONMIXED", # just the coord memory test fails (this is not the only one)
-    # "POISSONPARAM", # runs
-    # "POISSONMIXED2", # just the coord memory test fails (this is not the only one)
-    # "TOREBRACHISTOCHRONE", # OK
+    "POISSONMIXED", # just the coord memory test fails (this is not the only one)
+    "POISSONPARAM", # runs
+    "POISSONMIXED2", # just the coord memory test fails (this is not the only one)
+    "TOREBRACHISTOCHRONE", # OK
     # "CONTROLELASTICMEMBRANE",
   ]
 else
