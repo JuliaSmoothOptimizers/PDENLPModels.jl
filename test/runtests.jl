@@ -1,6 +1,6 @@
 #For now it just work, with most up to date version of Gridap
-using Pkg
-Pkg.add("https://github.com/gridap/Gridap.jl#master")
+#using Pkg
+#Pkg.add("https://github.com/gridap/Gridap.jl#master")
 #This package
 using Gridap, PDENLPModels
 using PDENLPModels:
@@ -23,20 +23,20 @@ local_test = true # tested locally only
 
 pde_problems = if local_test
   [
-    # "BURGER1D", # runs, but error with the jacobian w.r.t. y (it is 0)
-    # "BURGER1D_PARAM", # runs, but error with the jacobian derivatives
+    "BURGER1D", # runs, just allocation error
+    # "BURGER1D_PARAM", # runs, just allocation error
     # "CELLINCREASE", # DimensionMismatch("jacobian(f, x) expects that f(x) is an array. Perhaps you meant gradient(f, x)?")
-    # "SIS", # runs, but error with the jacobian derivatives (it is 0)
-    # "CONTROLSIR", # runs, but error with the jacobian derivatives
-    # "DYNAMICSIR", # runs, but error with the jacobian derivatives
-    "BASICUNCONSTRAINED", # OK
-    "PENALIZEDPOISSON", # OK
+    # "SIS", # runs, just allocation error
+    # "CONTROLSIR", # runs, just allocation error
+    # "DYNAMICSIR", # MethodError: no method matching length(::Gridap.MultiField.MultiFieldFEFunction{Gridap.MultiField.MultiFieldCellField{ReferenceDomain}})
+    # "BASICUNCONSTRAINED", # OK
+    # "PENALIZEDPOISSON", # OK
     # "INCOMPRESSIBLENAVIERSTOKES", #too slow (tested locally only) # runs, but error with the jacobian derivatives
     # "POISSONMIXED", # just the coord memory test fails (this is not the only one)
-    # "POISSONPARAM", # runs, but error with the jacobian derivatives
+    # "POISSONPARAM", # runs
     # "POISSONMIXED2", # just the coord memory test fails (this is not the only one)
-    "TOREBRACHISTOCHRONE", # OK
-    "CONTROLELASTICMEMBRANE",
+    # "TOREBRACHISTOCHRONE", # OK
+    # "CONTROLELASTICMEMBRANE",
   ]
 else
   [

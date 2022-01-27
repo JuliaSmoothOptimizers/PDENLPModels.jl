@@ -252,7 +252,8 @@ function _from_terms_to_jacobian_vals!(
   ) # Gridap.Algebra.CounterCS
   Gridap.FESpaces.symbolic_loop_matrix!(m1, assem, matdata_y)
   m2 = Gridap.FESpaces.nz_allocation(m1) # Gridap.Algebra.InserterCSC
-  Gridap.FESpaces.symbolic_loop_matrix!(m2, assem, matdata_y)
+  # Gridap.FESpaces.symbolic_loop_matrix!(m2, assem, matdata_y)
+  Gridap.FESpaces.numeric_loop_matrix!(m2, assem, matdata_y)
   m3 = sparse(Gridap.FESpaces.create_from_nz(m2))
   _, _, vv = findnz(m3)
   vals[(nini + 1):(nini + length(vv))] .= vv
