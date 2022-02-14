@@ -218,22 +218,24 @@ function hess_coord!(
     ) # Gridap.Algebra.CounterCS
     Gridap.FESpaces.symbolic_loop_matrix!(m1, assem, matdata)
     m2 = Gridap.FESpaces.nz_allocation(m1) # Gridap.Algebra.InserterCSC
+    #@show size(Gridap.FESpaces.create_from_nz(m2))
     Gridap.FESpaces.numeric_loop_matrix!(m2, assem, matdata)
     m3 = sparse(LowerTriangular(Gridap.FESpaces.create_from_nz(m2)))
     _, _, v = findnz(m3)
     vals[(nini + 1):(nini + length(v))] .= v
     nini += length(v)
     
-    # nini = fill_hess_coo_numeric!(vals, assem, matdata, n = nini)
     ##############################################################
     #=
-    nnzh = nlp.meta.nnzh - nini
-    ms = sparse(nlp.pdemeta.Hrows, nlp.pdemeta.Hcols, zeros(nnzh), nlp.meta.nvar, nlp.meta.nvar) # SparseArrays.sparse!
+    nnzh = length(nlp.pdemeta.Hobjrows)
+    @show nlp.meta.nvar, nlp.pdemeta.nparam
+    ms = sparse(nlp.pdemeta.Hobjrows, nlp.pdemeta.Hobjcols, zeros(T, nnzh), nlp.meta.nvar - nlp.pdemeta.nparam, nlp.meta.nvar - nlp.pdemeta.nparam) # SparseArrays.sparse!
     Gridap.FESpaces.numeric_loop_matrix!(ms, assem, matdata)
     ms_lower = sparse(LowerTriangular(Gridap.FESpaces.create_from_nz(ms)))
     vals[(nini + 1):(nini + nnzh)] .= ms_lower.nzval
     nini += nnzh
     =#
+    
   end
 
   if nini < nlp.meta.nnzh
@@ -354,6 +356,7 @@ function hess_coord!(
     assem = SparseMatrixAssembler(nlp.pdemeta.Y, nlp.pdemeta.X)
     ##############################################################
     # TO BE IMPROVED
+    
     m1 = Gridap.FESpaces.nz_counter(
       Gridap.FESpaces.get_matrix_builder(assem),
       (Gridap.FESpaces.get_rows(assem), Gridap.FESpaces.get_cols(assem)),
@@ -365,8 +368,19 @@ function hess_coord!(
     _, _, v = findnz(m3)
     vals[(nini + 1):(nini + length(v))] .= v
     nini += length(v)
+    
     # nini = fill_hess_coo_numeric!(vals, assem, matdata, n = nini)
     ##############################################################
+    #=
+    # https://github.com/gridap/Gridap.jl/blob/master/src/FESpaces/SparseMatrixAssemblers.jl
+    nnzh = length(nlp.pdemeta.Hrows)
+    @show nlp.meta.nvar, nlp.pdemeta.nparam
+    ms = sparse(nlp.pdemeta.Hrows, nlp.pdemeta.Hcols, zeros(T, nnzh), nlp.meta.nvar - nlp.pdemeta.nparam, nlp.meta.nvar - nlp.pdemeta.nparam) # SparseArrays.sparse!
+    Gridap.FESpaces.numeric_loop_matrix!(ms, assem, matdata)
+    ms_lower = sparse(LowerTriangular(Gridap.FESpaces.create_from_nz(ms)))
+    vals[(nini + 1):(nini + nnzh)] .= ms_lower.nzval
+    nini += nnzh
+    =#
   end
 
   return vals

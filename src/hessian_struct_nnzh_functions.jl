@@ -85,10 +85,10 @@ function _compute_hess_structure(
   Ycon,
   X,
   Xpde,
-  x0,
+  x0::AbstractVector{T},
   nparam,
 ) where {T}
-  λ = zeros(Gridap.FESpaces.num_free_dofs(Ypde))
+  λ = zeros(T, Gridap.FESpaces.num_free_dofs(Ypde))
   λf = FEFunction(Xpde, λ)
   κ = @view x0[1:nparam]
   xyu = @view x0[(nparam + 1):end]

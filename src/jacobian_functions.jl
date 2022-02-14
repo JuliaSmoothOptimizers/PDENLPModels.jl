@@ -259,7 +259,7 @@ function _from_terms_to_jacobian_vals!(
   matdata_y = Gridap.FESpaces.collect_cell_matrix(Ypde, Xpde, dcjacy)
   assem = SparseMatrixAssembler(Ypde, Xpde)
 
-  ms = sparse(Jyrows, Jycols, zeros(nnzh_y), ny, ny) # SparseArrays.sparse!
+  ms = sparse(Jyrows, Jycols, zeros(T, nnzh_y), ny, ny) # SparseArrays.sparse!
   Gridap.FESpaces.numeric_loop_matrix!(ms, assem, matdata_y)
   vals[(nini + 1):(nini + nnzh_y)] .= ms.nzval
   nini += nnzh_y
@@ -275,7 +275,7 @@ function _from_terms_to_jacobian_vals!(
     matdata_u = Gridap.FESpaces.collect_cell_matrix(Ycon, Xpde, dcjacu)
     assem = SparseMatrixAssembler(Ycon, Xpde)
 
-    ms = sparse(Jurows, Jucols, zeros(nnzh_u), ny, nu) # SparseArrays.sparse!
+    ms = sparse(Jurows, Jucols, zeros(T, nnzh_u), ny, nu) # SparseArrays.sparse!
     Gridap.FESpaces.numeric_loop_matrix!(ms, assem, matdata_u)
     vals[(nini + 1):(nini + nnzh_u)] .= ms.nzval
     nini += nnzh_u
