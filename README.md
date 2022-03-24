@@ -86,7 +86,12 @@ using Gridap, PDENLPModels
   end
   op = FEOperator(res, Y, Xpde)
 
-  nlp = GridapPDENLPModel(f, trian, quad, Ypde, Ycon, Xpde, Xcon, op, name = "Control elastic membrane")
+  # initial guess
+  npde = Gridap.FESpaces.num_free_dofs(Ypde)
+  ncon = Gridap.FESpaces.num_free_dofs(Ycon)
+  xin = zeros(npde + ncon)
+
+  nlp = GridapPDENLPModel(xin, f, trian, Ypde, Ycon, Xpde, Xcon, op, name = "Control elastic membrane")
 ```
 
 ## References
