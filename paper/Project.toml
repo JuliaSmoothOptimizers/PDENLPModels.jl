@@ -1,0 +1,10 @@
+[deps]
+DCISolver = "bee2e536-65f6-11e9-3844-e5bb4c9c55c9"
+Gridap = "56d4f2e9-7ea1-5844-9cf6-b9c51ca7ce8e"
+PDENLPModels = "80da258d-c172-4540-9646-64f172512520"
+
+[compat]
+DCISolver = "~0.3.1"
+Gridap = "~0.15.5"
+PDENLPModels = "~0.3.2"
+julia = "~1.8"
