@@ -1,0 +1,42 @@
+\documentclass[11pt]{minimal}
+
+% Packages
+\usepackage[utf8x]{inputenc}
+\usepackage[usenames,dvipsnames,svgnames]{xcolor}
+\usepackage{textgreek}
+\usepackage{minted}
+\definecolor{bg}{rgb}{0.93,0.93,0.93}
+
+
+\begin{document}
+
+%\begin{minted}[bgcolor=bg]{julia1}
+\begin{minted}{julia}
+using DCISolver, Gridap, PDENLPModels
+# Cartesian discretization of the (-1,1)² square domain in 100² squares.
+model = CartesianDiscreteModel((-1, 1, -1, 1), (100, 100))
+# Definition of the finite-element elements for the state.
+reffe = ReferenceFE(lagrangian, Float64, 2)
+Xpde = TestFESpace(model, reffe; dirichlet_tags = "boundary")
+Ypde = TrialFESpace(Xpde, x -> 0.0) # y is 0 over the boundary of the domain
+# Definition of the finite-element elements for the control.
+reffe_con = ReferenceFE(lagrangian, Float64, 1)
+Xcon = TestFESpace(model, reffe_con)
+Ycon = TrialFESpace(Xcon)
+# Gridap's integration machinery
+dΩ = Measure(Triangulation(model), 1)
+# Define the objective function f
+yd(x) = -x[1]^2
+f(y, u) = ∫(0.5 * (yd - y) * (yd - y) + 0.5 * 1e-2 * u * u) * dΩ
+# Define the constraint operator in weak form
+h(x) = -sin(7π / 8 * x[1]) * sin(7π / 8 * x[2])
+c(y, u, v) = ∫(∇(v) ⊙ ∇(y) - v * u - v * h) * dΩ
+# Define an initial guess for the discretized problem
+x0 = zeros(num_free_dofs(Ypde) + num_free_dofs(Ycon))
+# Build a GridapPDENLPModel, which implements the NLPModel API.
+name = "Control elastic membrane"
+nlp = GridapPDENLPModel(x0, f, dΩ, Ypde, Ycon, Xpde, Xcon, c, name = name)
+dci(nlp, verbose = 1) # solve the problem with DCI
+\end{minted}   
+
+\end{document}
