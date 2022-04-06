@@ -170,4 +170,6 @@ function split_vectors(nlp::GridapPDENLPModel, x::AbstractVector)
   return _split_vectors(x, nlp.pdemeta.Ypde, nlp.pdemeta.Ycon)
 end
 
+include("optimal_control_functions.jl")
+
 end #end of module
