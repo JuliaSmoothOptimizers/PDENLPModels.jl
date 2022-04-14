@@ -16,10 +16,20 @@ The following arguments are accepted:
 - nvar_con : number of dofs in the control functions
 - nparam: : number of real unknowns
 - nnzh_obj : number of nonzeros elements in the objective hessian
-- Hrows : store the structure for the hessian of the lagrangian
-- Hcols : store the structure for the hessian of the lagrangian
-- Jrows : store the structure for the hessian of the jacobian
-- Jcols : store the structure for the hessian of the jacobian
+- Hobjkrows : store the structure for the hessian of the objective w.r.t. k
+- Hobjkcols : store the structure for the hessian of the objective w.r.t. k
+- Hobjrows : store the structure for the hessian of the objective
+- Hobjcols : store the structure for the hessian of the objective
+- Hkrows : store the structure for the hessian of the constraints w.r.t. k
+- Hkcols : store the structure for the hessian of the constraints w.r.t. k
+- Hrows : store the structure for the hessian of the constraints
+- Hcols : store the structure for the hessian of the constraints
+- Jkrows : store the structure for the hessian of the jacobian w.r.t. k
+- Jkcols : store the structure for the hessian of the jacobian w.r.t. k
+- Jyrows : store the structure for the hessian of the jacobian w.r.t. y
+- Jycols : store the structure for the hessian of the jacobian w.r.t. y
+- Jurows : store the structure for the hessian of the jacobian w.r.t. u
+- Jucols : store the structure for the hessian of the jacobian w.r.t. u
 """
 struct PDENLPMeta{NRJ <: AbstractEnergyTerm, Op <: Union{FEOperator, Nothing}}
   # For the objective function
@@ -42,10 +52,20 @@ struct PDENLPMeta{NRJ <: AbstractEnergyTerm, Op <: Union{FEOperator, Nothing}}
   nnzh_obj::Int
 
   # store the structure for hessian and jacobian matrix
+  Hobjkrows::AbstractVector{Int}
+  Hobjkcols::AbstractVector{Int}
+  Hobjrows::AbstractVector{Int}
+  Hobjcols::AbstractVector{Int}
+  Hkrows::AbstractVector{Int}
+  Hkcols::AbstractVector{Int}
   Hrows::AbstractVector{Int}
   Hcols::AbstractVector{Int}
-  Jrows::AbstractVector{Int}
-  Jcols::AbstractVector{Int}
+  Jkrows::AbstractVector{Int}
+  Jkcols::AbstractVector{Int}
+  Jyrows::AbstractVector{Int}
+  Jycols::AbstractVector{Int}
+  Jurows::AbstractVector{Int}
+  Jucols::AbstractVector{Int}
 end
 
 struct PDEWorkspace{T, S, M}
@@ -187,9 +207,35 @@ function hess_coord!(
     luh = _obj_integral(nlp.pdemeta.tnrj, κ, yu)
     lag_hess = Gridap.FESpaces._hessian(x -> _obj_integral(nlp.pdemeta.tnrj, κ, x), yu, luh)
 
-    matdata = Gridap.FESpaces.collect_cell_matrix(lag_hess)
+    matdata = Gridap.FESpaces.collect_cell_matrix(nlp.pdemeta.Y, nlp.pdemeta.X, lag_hess)
     assem = SparseMatrixAssembler(nlp.pdemeta.Y, nlp.pdemeta.X)
-    nini = fill_hess_coo_numeric!(vals, assem, matdata, n = nini)
+    ###############################################################
+    # TO BE IMPROVED
+    
+    m1 = Gridap.FESpaces.nz_counter(
+      Gridap.FESpaces.get_matrix_builder(assem),
+      (Gridap.FESpaces.get_rows(assem), Gridap.FESpaces.get_cols(assem)),
+    ) # Gridap.Algebra.CounterCS
+    Gridap.FESpaces.symbolic_loop_matrix!(m1, assem, matdata)
+    m2 = Gridap.FESpaces.nz_allocation(m1) # Gridap.Algebra.InserterCSC
+    #@show size(Gridap.FESpaces.create_from_nz(m2))
+    Gridap.FESpaces.numeric_loop_matrix!(m2, assem, matdata)
+    m3 = sparse(LowerTriangular(Gridap.FESpaces.create_from_nz(m2)))
+    _, _, v = findnz(m3)
+    vals[(nini + 1):(nini + length(v))] .= v
+    nini += length(v)
+    
+    ##############################################################
+    #=
+    nnzh = length(nlp.pdemeta.Hobjrows)
+    @show nlp.meta.nvar, nlp.pdemeta.nparam
+    ms = sparse(nlp.pdemeta.Hobjrows, nlp.pdemeta.Hobjcols, zeros(T, nnzh), nlp.meta.nvar - nlp.pdemeta.nparam, nlp.meta.nvar - nlp.pdemeta.nparam) # SparseArrays.sparse!
+    Gridap.FESpaces.numeric_loop_matrix!(ms, assem, matdata)
+    ms_lower = sparse(LowerTriangular(Gridap.FESpaces.create_from_nz(ms)))
+    vals[(nini + 1):(nini + nnzh)] .= ms_lower.nzval
+    nini += nnzh
+    =#
+    
   end
 
   if nini < nlp.meta.nnzh
@@ -224,7 +270,8 @@ function hprod!(
 end
 
 function hess_structure(nlp::GridapPDENLPModel)
-  return (nlp.pdemeta.Hrows, nlp.pdemeta.Hcols)
+  np = nlp.pdemeta.nparam
+  return (vcat(nlp.pdemeta.Hobjkrows, nlp.pdemeta.Hobjrows .+ np, nlp.pdemeta.Hkrows, nlp.pdemeta.Hrows .+ np), vcat(nlp.pdemeta.Hobjkcols, nlp.pdemeta.Hobjcols .+ np, nlp.pdemeta.Hkcols, nlp.pdemeta.Hcols .+ np))
 end
 
 function hess_structure!(
@@ -233,8 +280,9 @@ function hess_structure!(
   cols::AbstractVector{T},
 ) where {T <: Integer}
   @lencheck nlp.meta.nnzh rows cols
-  rows .= T.(nlp.pdemeta.Hrows)
-  cols .= T.(nlp.pdemeta.Hcols)
+  np = nlp.pdemeta.nparam
+  rows .= T.(vcat(nlp.pdemeta.Hobjkrows, nlp.pdemeta.Hobjrows .+ np, nlp.pdemeta.Hkrows, nlp.pdemeta.Hrows .+ np))
+  cols .= T.(vcat(nlp.pdemeta.Hobjkcols, nlp.pdemeta.Hobjcols .+ np, nlp.pdemeta.Hkcols, nlp.pdemeta.Hcols .+ np))
   return (rows, cols)
 end
 
@@ -301,10 +349,38 @@ function hess_coord!(
     end
     luh = split_res(xh, λf)
 
-    lag_hess = Gridap.FESpaces._hessian(x -> split_res(x, λf), xh, luh)
-    matdata = Gridap.FESpaces.collect_cell_matrix(lag_hess)
+    # lag_hess = Gridap.FESpaces.jacobian(Gridap.FESpaces._gradient(x -> split_res(x, λf), xh, luh), xh) # 
+    # lag_hess = Gridap.FESpaces._hessian(x -> split_res(x, λf), xh, luh)
+    lag_hess = _hessianv1(x -> split_res(x, λf), xh, luh)
+    matdata = Gridap.FESpaces.collect_cell_matrix(nlp.pdemeta.Y, nlp.pdemeta.X, lag_hess)
     assem = SparseMatrixAssembler(nlp.pdemeta.Y, nlp.pdemeta.X)
-    fill_hess_coo_numeric!(vals, assem, matdata, n = nini)
+    ##############################################################
+    # TO BE IMPROVED
+    
+    m1 = Gridap.FESpaces.nz_counter(
+      Gridap.FESpaces.get_matrix_builder(assem),
+      (Gridap.FESpaces.get_rows(assem), Gridap.FESpaces.get_cols(assem)),
+    ) # Gridap.Algebra.CounterCS
+    Gridap.FESpaces.symbolic_loop_matrix!(m1, assem, matdata)
+    m2 = Gridap.FESpaces.nz_allocation(m1) # Gridap.Algebra.InserterCSC
+    Gridap.FESpaces.numeric_loop_matrix!(m2, assem, matdata)
+    m3 = sparse(LowerTriangular(Gridap.FESpaces.create_from_nz(m2)))
+    _, _, v = findnz(m3)
+    vals[(nini + 1):(nini + length(v))] .= v
+    nini += length(v)
+    
+    # nini = fill_hess_coo_numeric!(vals, assem, matdata, n = nini)
+    ##############################################################
+    #=
+    # https://github.com/gridap/Gridap.jl/blob/master/src/FESpaces/SparseMatrixAssemblers.jl
+    nnzh = length(nlp.pdemeta.Hrows)
+    @show nlp.meta.nvar, nlp.pdemeta.nparam
+    ms = sparse(nlp.pdemeta.Hrows, nlp.pdemeta.Hcols, zeros(T, nnzh), nlp.meta.nvar - nlp.pdemeta.nparam, nlp.meta.nvar - nlp.pdemeta.nparam) # SparseArrays.sparse!
+    Gridap.FESpaces.numeric_loop_matrix!(ms, assem, matdata)
+    ms_lower = sparse(LowerTriangular(Gridap.FESpaces.create_from_nz(ms)))
+    vals[(nini + 1):(nini + nnzh)] .= ms_lower.nzval
+    nini += nnzh
+    =#
   end
 
   return vals
@@ -380,7 +456,9 @@ function jtprod!(nlp::GridapPDENLPModel, x::AbstractVector, v::AbstractVector, J
 end
 
 function jac_structure(nlp::GridapPDENLPModel)
-  return (nlp.pdemeta.Jrows, nlp.pdemeta.Jcols)
+  nparam = nlp.pdemeta.nparam
+  ny = num_free_dofs(nlp.pdemeta.Ypde)
+  return (vcat(nlp.pdemeta.Jkrows, nlp.pdemeta.Jyrows, nlp.pdemeta.Jurows), vcat(nlp.pdemeta.Jkcols, nlp.pdemeta.Jycols .+ nparam, nlp.pdemeta.Jucols .+ nparam .+ ny))
 end
 
 function jac_structure!(
@@ -389,8 +467,10 @@ function jac_structure!(
   cols::AbstractVector{T},
 ) where {T <: Integer}
   @lencheck nlp.meta.nnzj rows cols
-  rows .= T.(nlp.pdemeta.Jrows)
-  cols .= T.(nlp.pdemeta.Jcols)
+  nparam = nlp.pdemeta.nparam
+  ny = num_free_dofs(nlp.pdemeta.Ypde)
+  rows .= T.(vcat(nlp.pdemeta.Jkrows, nlp.pdemeta.Jyrows, nlp.pdemeta.Jurows))
+  cols .= T.(vcat(nlp.pdemeta.Jkcols, nlp.pdemeta.Jycols .+ nparam, nlp.pdemeta.Jucols .+ nparam .+ ny))
   return rows, cols
 end
 
@@ -407,6 +487,10 @@ function jac_coord!(nlp::GridapPDENLPModel, x::AbstractVector, vals::AbstractVec
     nlp.pdemeta.Xpde,
     nlp.pdemeta.Ycon,
     x,
+    nlp.pdemeta.Jyrows,
+    nlp.pdemeta.Jycols,
+    nlp.pdemeta.Jurows,
+    nlp.pdemeta.Jucols,
     vals,
     nlp.workspace.c,
     nlp.workspace.Jk,

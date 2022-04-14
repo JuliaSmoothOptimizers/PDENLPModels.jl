@@ -45,12 +45,11 @@ function controlelasticmembrane(args...; n = 3, kargs...)
   # Definition of the constraint operator
   ω = π - 1 / 8
   h(x) = -sin(ω * x[1]) * sin(ω * x[2])
-  function res(yu, v)
-    y, u = yu
-    ∫(∇(v) ⊙ ∇(y) - v * u) * dΩ #- v * h
+  function res(y, u, v)
+    ∫(∇(v) ⋅ ∇(y) - v * u ) * dΩ #- v * h
   end
-  rhs(v) = ∫(v * h) * dΩ
-  op = AffineFEOperator(res, rhs, Y, Xpde)
+  rhs(v) = ∫(v * h ) * dΩ
+  op = AffineFEOperatorControl(res, rhs, Ypde, Xpde, Ycon, Xcon)
 
   # It is easy to have a constant bounds
   umin(x) = 0.0

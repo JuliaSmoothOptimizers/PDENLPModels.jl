@@ -38,7 +38,7 @@ function burger1d(args...; n = 512, kwargs...)
     ∫(0.5 * (yd - y) * (yd - y) + 0.5 * α * u * u)dΩ
   end
 
-  function res(y, u, v) #u is the solution of the PDE and z the control
+  function res(y, u, v) #y is the solution of the PDE and u the control
     ∫(-nu * (∇(v) ⊙ ∇(y)) + dt(y, v) - v * u - v * h)dΩ
   end
   op = FEOperator(res, U, V)
@@ -99,7 +99,7 @@ function burger1d_test(; udc = false)
   solver = FESolver(nls)
 
   uh = solve(solver, op_pde)
-  sol_gridap = vcat(get_free_values(uh), 0.5 * ones(513))
+  sol_gridap = vcat(get_free_dof_values(uh), 0.5 * ones(513))
 
   Y = MultiFieldFESpace([nlp.pdemeta.Ypde, nlp.pdemeta.Ycon])
   xin = zeros(Gridap.FESpaces.num_free_dofs(Y))

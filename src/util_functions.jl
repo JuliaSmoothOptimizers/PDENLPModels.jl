@@ -1,3 +1,24 @@
+function _to_multifieldfespace(Ypde, Xpde, Ycon, Xcon)
+  if !(typeof(Xcon) <: VoidFESpace) && !(typeof(Ycon) <: VoidFESpace)
+    _xpde = _fespace_to_multifieldfespace(Xpde)
+    _xcon = _fespace_to_multifieldfespace(Xcon)
+    #Handle the case where Ypde or Ycon are single field FE space(s).
+    _ypde = _fespace_to_multifieldfespace(Ypde)
+    _ycon = _fespace_to_multifieldfespace(Ycon)
+    #Build Y (resp. X) the trial (resp. test) space of the Multi Field function [y,u]
+    X = MultiFieldFESpace(vcat(_xpde.spaces, _xcon.spaces))
+    Y = MultiFieldFESpace(vcat(_ypde.spaces, _ycon.spaces))
+  elseif (typeof(Xcon) <: VoidFESpace) ⊻ (typeof(Ycon) <: VoidFESpace)
+    throw(ErrorException("Error: Xcon or Ycon are both nothing or must be specified."))
+  else
+    #_xpde = _fespace_to_multifieldfespace(Xpde)
+    X = Xpde #_xpde
+    #_ypde = _fespace_to_multifieldfespace(Ypde)
+    Y = Ypde #_ypde
+  end
+  return Y, X
+end
+
 """
 `_split_FEFunction(:: AbstractVector,  :: FESpace, :: Union{FESpace, Nothing})`
 
@@ -16,19 +37,41 @@ function _split_FEFunction(x::AbstractVector, Ypde::FESpace, Ycon::FESpace)
   return yh, uh
 end
 
+# We should avoid this function, as it is not type stable output
+function _split_FEFunction(x::AbstractVector, Ypde::FESpace, ::VoidFESpace)
+  nvar_pde = Gridap.FESpaces.num_free_dofs(Ypde)
+  yh = FEFunction(Ypde, x[1:nvar_pde])
+  return yh, nothing
+end
+
+# Base.length(y::Gridap.MultiField.MultiFieldFEFunction) = length(Gridap.FESpaces.get_fe_space(y).spaces)
+# Base.length(a::Gridap.MultiField.MultiFieldCellField) = num_fields(a)
+
 function _split_FEFunction(x, Ypde::FESpace, Ycon::FESpace)
   ny = typeof(Ypde) <: MultiFieldFESpace ? length(Ypde.spaces) : 1
   nu = typeof(Ycon) <: MultiFieldFESpace ? length(Ycon.spaces) : 1
-  y = ny == 1 ? x[1] : [x[i] for i = 1:ny]  # the Function x[1:2] is missing I believe
-  u = nu == 1 ? x[ny + 1] : [x[i] for i = (ny + 1):(nu + ny)]
+  if typeof(Ypde) <: MultiFieldFESpace
+    y = first(x, ny)
+  else
+    y = first(x)
+  end
+  if typeof(Ycon) <: MultiFieldFESpace
+    u = first(Iterators.drop(x, ny), nu)
+  else
+    u = first(Iterators.drop(x, ny))
+  end
   return y, u
 end
 
-function _split_FEFunction(x::AbstractVector, Ypde::FESpace, Ycon::VoidFESpace)
-  nvar_pde = Gridap.FESpaces.num_free_dofs(Ypde)
-  yh = FEFunction(Ypde, x[1:nvar_pde])
-
-  return yh, nothing
+# We should avoid this function, as it is not type stable output
+function _split_FEFunction(x, Ypde::FESpace, ::VoidFESpace)
+  if Ypde <: MultiFieldFESpace
+    ny = length(Ypde.spaces)
+    y = collect(first(x, ny))
+  else
+    y = x
+  end
+  return y, nothing
 end
 
 """
@@ -106,5 +149,5 @@ end
 export dt
 
 # for the weak formulation of dy/dt
-conv(u, ∇u) = (∇u ⋅ one(∇u)) ⊙ u
+conv(u, ∇u) = (∇u ⋅ one(∇u)) ⊙ u # (∇u')⋅u
 dt(u, v) = conv ∘ (v, ∇(u))

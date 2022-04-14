@@ -71,7 +71,7 @@ function torebrachistochrone_test()
   nlp = torebrachistochrone()
   stats = ipopt(nlp, print_level = 0)
 
-  nn = Int(nlp.nvar_pde / 2)
+  nn = Int(nlp.pdemeta.nvar_pde / 2)
   φs = stats.solution[1:nn]
   θs = stats.solution[(nn + 1):(2 * nn)]
 

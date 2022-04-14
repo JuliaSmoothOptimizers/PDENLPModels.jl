@@ -1,3 +1,11 @@
+trial_check(::TrialFESpace) = true
+trial_check(::Gridap.FESpaces.DirichletFESpace) = true
+trial_check(::Gridap.FESpaces.FESpaceWithConstantFixed) = true
+trial_check(::Gridap.FESpaces.ZeroMeanFESpace) = true
+trial_check(::Gridap.FESpaces.UnconstrainedFESpace) = true # When Ycon = TrialFESpace(Xcon), we have typeof(Xcon) == typeof(Ycon)
+trial_check(::VoidFESpace) = true
+trial_check(Y::MultiFieldFESpace) = all(trial_check, Y)
+
 abstract type AbstractEnergyTerm end
 
 """
@@ -128,6 +136,12 @@ struct EnergyFETerm <: AbstractEnergyTerm
   trian::Triangulation
   Ypde::FESpace
   Ycon::FESpace
+
+  function EnergyFETerm(f, trian, Ypde, Ycon)
+    @assert trial_check(Ypde)
+    @assert trial_check(Ycon)
+    return new(f, trian, Ypde, Ycon)
+  end
 end
 
 function EnergyFETerm(f::Function, trian::Triangulation, Ypde)
@@ -153,14 +167,16 @@ function _compute_gradient!(
   X::FESpace,
 )
   @lencheck 0 κ
-  cell_yu = Gridap.FESpaces.get_cell_dof_values(yu)
-  cell_id_yu = Gridap.Arrays.IdentityVector(length(cell_yu))
-  cell_r_yu = get_array(gradient(x -> _obj_integral(tnrj, κ, x), yu))
-  #Put the result in the format expected by Gridap.FESpaces.assemble_vector!
-  vecdata_yu = [[cell_r_yu], [cell_id_yu]] #TODO would replace by Tuple work?
+  fsplit(x) = if typeof(tnrj.Ycon) <: VoidFESpace
+    return tnrj.f(x)
+  else
+    y, u = _split_FEFunction(x, tnrj.Ypde, tnrj.Ycon)
+    return tnrj.f(y, u)
+  end
+  vec = Gridap.FESpaces.collect_cell_vector(X, gradient(fsplit, yu))
   #Assemble the gradient in the "good" space
   assem = Gridap.FESpaces.SparseMatrixAssembler(Y, X)
-  Gridap.FESpaces.assemble_vector!(g, assem, vecdata_yu)
+  Gridap.FESpaces.assemble_vector!(g, assem, vec)
   return g
 end
 
@@ -216,6 +232,8 @@ struct MixedEnergyFETerm <: AbstractEnergyTerm
     Ycon::FESpace,
   )
     @assert n > 0
+    @assert trial_check(Ypde)
+    @assert trial_check(Ycon)
     return new(f, trian, n, inde, Ypde, Ycon)
   end
 end
@@ -255,18 +273,19 @@ function _compute_gradient!(
   nyu = num_free_dofs(Y)
   @lencheck tnrj.nparam + nyu g
 
-  cell_yu = Gridap.FESpaces.get_cell_dof_values(yu)
-  cell_id_yu = Gridap.Arrays.IdentityVector(length(cell_yu))
-
-  cell_r_yu = get_array(gradient(x -> _obj_integral(tnrj, κ, x), yu))
-  #Put the result in the format expected by Gridap.FESpaces.assemble_vector
-  vecdata_yu = [[cell_r_yu], [cell_id_yu]] #TODO would replace by Tuple work?
+  fsplit(x) = if typeof(tnrj.Ycon) <: VoidFESpace
+    return tnrj.f(κ, x)
+  else
+    y, u = _split_FEFunction(x, tnrj.Ypde, tnrj.Ycon)
+    return tnrj.f(κ, y, u)
+  end
+  vec = Gridap.FESpaces.collect_cell_vector(X, gradient(fsplit, yu))
   #Assemble the gradient in the "good" space
   assem = Gridap.FESpaces.SparseMatrixAssembler(Y, X)
   Gridap.FESpaces.assemble_vector!(
     view(g, (tnrj.nparam + 1):(tnrj.nparam + nyu)),
     assem,
-    vecdata_yu,
+    vec,
   )
 
   _compute_gradient_k!(view(g, 1:(tnrj.nparam)), tnrj, κ, yu)

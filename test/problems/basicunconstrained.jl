@@ -19,7 +19,8 @@ function basicunconstrained(args...; n = 2^4, kwargs...)
   dΩ = Measure(trian, degree) # CellQuadrature(trian, degree)
 
   ubis(x) = x[1]^2 + x[2]^2
-  function f(y, u)
+  function f(yu)
+    y, u = yu
     ∫(0.5 * (ubis - u) * (ubis - u) + 0.5 * y * y) * dΩ
   end
 
@@ -73,8 +74,8 @@ function basicunconstrained_test(; udc = false)
   cell_xm = lazy_map(midpoint, cell_xs) #this is a vector of size num_cells(trian)
   cell_ubis = lazy_map(ubis, cell_xm) #this is a vector of size num_cells(trian)
   # Warning: `interpolate(fs::SingleFieldFESpace, object)` is deprecated, use `interpolate(object, fs::SingleFieldFESpace)` instead.
-  solu = get_free_values(Gridap.FESpaces.interpolate(cell_ubis, Ucon))
-  soly = get_free_values(zero(Ypde))
+  solu = get_free_dof_values(Gridap.FESpaces.interpolate(cell_ubis, Ucon))
+  soly = get_free_dof_values(zero(Ypde))
   sol = vcat(soly, solu)
 
   @test obj(nlp, sol) <= 1 / n

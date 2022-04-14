@@ -70,9 +70,9 @@ end
   ::Type{M},
   nini,
   V,
-  rows::Gridap.FESpaces.BlockArrayCoo,
-  cols::Gridap.FESpaces.BlockArrayCoo,
-  vals::Gridap.FESpaces.BlockArrayCoo,
+  rows,
+  cols,
+  vals,
   strategy,
 ) where {M}
   n = nini
@@ -184,9 +184,9 @@ end
   nini,
   I,
   J,
-  rows::Gridap.FESpaces.BlockArrayCoo,
-  cols::Gridap.FESpaces.BlockArrayCoo,
-  vals::Gridap.FESpaces.BlockArrayCoo,
+  rows,
+  cols,
+  vals,
   strategy,
 ) where {M}
   n = nini

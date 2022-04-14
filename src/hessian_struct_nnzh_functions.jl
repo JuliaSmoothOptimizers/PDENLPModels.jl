@@ -7,14 +7,14 @@ The rows and cols returned by _compute_hess_structure_obj are already shifter by
 function _compute_hess_structure(tnrj::AbstractEnergyTerm, Y, X, x0, nparam)
   rk, ck, nk = _compute_hess_structure_k(tnrj, Y, X, x0, nparam)
   ro, co, no = _compute_hess_structure_obj(tnrj, Y, X, x0, nparam)
-  return vcat(rk, ro), vcat(ck, co), nk + no
+  return rk, ro, ck, co, nk, no
 end
 
 function _compute_hess_structure(tnrj::AbstractEnergyTerm, op, Y, Ypde, Ycon, X, Xpde, x0, nparam)
-  robj, cobj, nobj = _compute_hess_structure(tnrj, Y, X, x0, nparam)
+  rk, ro, ck, co, nk, no = _compute_hess_structure(tnrj, Y, X, x0, nparam)
   rck, cck, nck = _compute_hess_structure_k(op, Y, X, x0, nparam)
   rc, cc, nc = _compute_hess_structure(op, Y, Ypde, Ycon, X, Xpde, x0, nparam)
-  return vcat(robj, rck, rc), vcat(cobj, cck, cc), nobj + nck + nc
+  return rk, ro, rck, rc, ck, co, cck, cc, nk, no, nck, nc
 end
 
 function _compute_hess_structure_obj(tnrj::AbstractEnergyTerm, Y, X, x0, nparam)
@@ -26,13 +26,23 @@ function _compute_hess_structure_obj(tnrj::AbstractEnergyTerm, Y, X, x0, nparam)
   luh = _obj_integral(tnrj, κ, xh)
   lag_hess = Gridap.FESpaces._hessian(x -> _obj_integral(tnrj, κ, x), xh, luh)
 
-  matdata = Gridap.FESpaces.collect_cell_matrix(lag_hess)
+  matdata = Gridap.FESpaces.collect_cell_matrix(Y, X, lag_hess)
   assem = SparseMatrixAssembler(Y, X)
-  n = Gridap.FESpaces.count_matrix_nnz_coo(assem, matdata)
-  rows, cols, _ = Gridap.FESpaces.allocate_coo_vectors(Gridap.FESpaces.get_matrix_type(assem), n)
-  nini = fill_hessstruct_coo_numeric!(rows, cols, assem, matdata)
+  # n = Gridap.FESpaces.count_matrix_nnz_coo(assem, matdata)
+  # rows, cols, _ = Gridap.FESpaces.allocate_coo_vectors(Gridap.FESpaces.get_matrix_type(assem), n)
+  m1 = Gridap.FESpaces.nz_counter(
+    Gridap.FESpaces.get_matrix_builder(assem),
+    (Gridap.FESpaces.get_rows(assem), Gridap.FESpaces.get_cols(assem)),
+  ) # Gridap.Algebra.CounterCS
+  Gridap.FESpaces.symbolic_loop_matrix!(m1, assem, matdata)
+  m2 = Gridap.FESpaces.nz_allocation(m1) # Gridap.Algebra.InserterCSC
+  Gridap.FESpaces.symbolic_loop_matrix!(m2, assem, matdata)
+  m3 = sparse(LowerTriangular(Gridap.FESpaces.create_from_nz(m2)))
+  rows, cols, _ = findnz(m3) # If I remember correctly, this is what I wanted to avoid...
+  # Gridap.FESpaces.numeric_loop_matrix!(m2, assem, matdata)
+  nini = length(rows) # Gridap 0.15 fill_hessstruct_coo_numeric!(rows, cols, assem, matdata)
 
-  return rows[1:nini] .+ nparam, cols[1:nini] .+ nparam, nini
+  return rows[1:nini], cols[1:nini], nini
 end
 
 function _compute_hess_structure_obj(tnrj::NoFETerm, Y, X, x0, nparam)
@@ -75,10 +85,10 @@ function _compute_hess_structure(
   Ycon,
   X,
   Xpde,
-  x0,
+  x0::AbstractVector{T},
   nparam,
 ) where {T}
-  λ = zeros(Gridap.FESpaces.num_free_dofs(Ypde))
+  λ = zeros(T, Gridap.FESpaces.num_free_dofs(Ypde))
   λf = FEFunction(Xpde, λ)
   κ = @view x0[1:nparam]
   xyu = @view x0[(nparam + 1):end]
@@ -102,18 +112,33 @@ function _compute_hess_structure(
   end
   luh = split_res(xh, λf)
 
-  lag_hess = Gridap.FESpaces._hessian(x -> split_res(x, λf), xh, luh)
-  matdata = Gridap.FESpaces.collect_cell_matrix(lag_hess)
+  lag_hess = _hessianv1(x -> split_res(x, λf), xh, luh)
+  #lag_hess = Gridap.FESpaces._hessian(x -> split_res(x, λf), xh, luh)
+  #lag_hess = Gridap.FESpaces.jacobian(Gridap.FESpaces._gradient(x -> split_res(x, λf), xh, luh), xh)
+  matdata = Gridap.FESpaces.collect_cell_matrix(Y, X, lag_hess)
   assem = SparseMatrixAssembler(Y, X)
   #=
   A = Gridap.FESpaces.allocate_matrix(assem, matdata)
   rows, cols, _ = findnz(tril(A))
   =#
+  #=
   n = Gridap.FESpaces.count_matrix_nnz_coo(assem, matdata)
   rows, cols, _ = Gridap.FESpaces.allocate_coo_vectors(Gridap.FESpaces.get_matrix_type(assem), n)
   nini = fill_hessstruct_coo_numeric!(rows, cols, assem, matdata)
+  =#
+  m1 = Gridap.FESpaces.nz_counter(
+    Gridap.FESpaces.get_matrix_builder(assem),
+    (Gridap.FESpaces.get_rows(assem), Gridap.FESpaces.get_cols(assem)),
+  ) # Gridap.Algebra.CounterCS
+  Gridap.FESpaces.symbolic_loop_matrix!(m1, assem, matdata)
+  m2 = Gridap.FESpaces.nz_allocation(m1) # Gridap.Algebra.InserterCSC
+  Gridap.FESpaces.symbolic_loop_matrix!(m2, assem, matdata)
+  m3 = sparse(LowerTriangular(Gridap.FESpaces.create_from_nz(m2)))
+  rows, cols, _ = findnz(m3) # If I remember correctly, this is what I wanted to avoid...
+  # Gridap.FESpaces.numeric_loop_matrix!(m2, assem, matdata)
+  nini = length(rows) # Gridap 0.15 fill_hessstruct_coo_numeric!(rows, cols, assem, matdata)
 
-  return rows[1:nini] .+ nparam, cols[1:nini] .+ nparam, nini
+  return rows[1:nini], cols[1:nini], nini
 end
 
 function _compute_hess_structure_k(op::FEOperator, Y, X, x0, nparam)
