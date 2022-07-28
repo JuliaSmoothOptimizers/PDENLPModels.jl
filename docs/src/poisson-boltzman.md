@@ -76,8 +76,8 @@ Switching again the discrete solution as a `FEFunction` the result can written a
 yfv = stats.solution[1:Gridap.FESpaces.num_free_dofs(nlp.pdemeta.Ypde)]
 yh  = FEFunction(nlp.pdemeta.Ypde, yfv)
 ufv = stats.solution[1+Gridap.FESpaces.num_free_dofs(nlp.pdemeta.Ypde):end]
-uh  = FEFunction(nlp.Ycon, ufv)
-writevtk(nlp.tnrj.trian,"results",cellfields=["uh"=>uh, "yh"=>yh])
+uh  = FEFunction(nlp.pdemeta.Ycon, ufv)
+writevtk(nlp.pdemeta.tnrj.trian,"results",cellfields=["uh"=>uh, "yh"=>yh])
 ```
 Finally, the solution is obtained using any software reading VTK, e.g. Paraview.
 
