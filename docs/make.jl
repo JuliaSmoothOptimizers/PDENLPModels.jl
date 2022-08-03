@@ -13,6 +13,7 @@ pages = [
 
 makedocs(
   sitename = "PDENLPModels.jl",
+  strict = true,
   format = Documenter.HTML(prettyurls = get(ENV, "CI", nothing) == "true"),
   modules = [PDENLPModels],
   pages = pages,
