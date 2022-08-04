@@ -14,5 +14,4 @@ Pages = ["reference.md"]
 ​
 ```@autodocs
 Modules = [PDENLPModels]
-Private = false
 ```
