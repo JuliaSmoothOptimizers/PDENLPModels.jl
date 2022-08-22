@@ -61,7 +61,7 @@ function controlelasticmembrane(args...; n = 3, kargs...)
   return GridapPDENLPModel(
     zeros(npde + ncon),
     f,
-    trian,
+    dΩ,
     Ypde,
     Ycon,
     Xpde,

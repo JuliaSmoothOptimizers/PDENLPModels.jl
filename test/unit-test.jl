@@ -84,18 +84,18 @@ end
   @test_throws DimensionError GridapPDENLPModel(
     x0,
     fxh,
-    trian,
+    dΩ,
     Ypde,
     Xpde,
     lvar = badlvar,
     uvar = baduvar,
   )
   #@test_throws DimensionError GridapPDENLPModel(fxh, trian, Ypde, Xpde, lvar = badlvar, uvar = baduvar)
-  @test_throws DimensionError GridapPDENLPModel(badx0, fxh, trian, Ypde, Xpde)
+  @test_throws DimensionError GridapPDENLPModel(badx0, fxh, dΩ, Ypde, Xpde)
   @test_throws DimensionError GridapPDENLPModel(
     badx0,
     fxh,
-    trian,
+    dΩ,
     Ypde,
     Xpde,
     lvar = lvar,
@@ -138,7 +138,7 @@ end
   nlp = GridapPDENLPModel(x0, EFTmixed, Ypde, Ycon, Xpde, Xcon, ctermixed)
   nlp = GridapPDENLPModel(xk0, MEFTmixed, Ypde, Ycon, Xpde, Xcon, ctermixed)
   @test split_vectors(nlp, xk0) == ([0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0], [0.0])
-  nlp = GridapPDENLPModel(x0, fyuh, trian, Ypde, Ycon, Xpde, Xcon, ctermixed)
+  nlp = GridapPDENLPModel(x0, fyuh, dΩ, Ypde, Ycon, Xpde, Xcon, ctermixed)
   #nlp = GridapPDENLPModel(fxh, trian, Ypde, Ycon, Xpde, Xcon, cter)
   #nlp = GridapPDENLPModel(NT, Ypde, Xpde, cter)
   #nlp = GridapPDENLPModel(NTf, Ypde, Xpde, cter)
@@ -185,7 +185,7 @@ end
   nlp = GridapPDENLPModel(
     x0,
     fyuh,
-    trian,
+    dΩ,
     Ypde,
     Ycon,
     Xpde,
@@ -198,7 +198,7 @@ end
   nlp = GridapPDENLPModel(
     x0,
     fyuh,
-    trian,
+    dΩ,
     Ypde,
     Ycon,
     Xpde,
@@ -263,7 +263,7 @@ end
   nlp = GridapPDENLPModel(
     x0,
     fyuh,
-    trian,
+    dΩ,
     Ypde,
     Ycon,
     Xpde,
@@ -274,7 +274,7 @@ end
     lvaru = lvaru,
     uvaru = uvaru,
   )
-  #nlp = GridapPDENLPModel(f, trian, Ypde, Ycon, Xpde, Xcon, ctermixed, lvary = lvary, uvary = uvary, lvaru = lvaru, uvaru = uvaru)
+  #nlp = GridapPDENLPModel(f, dΩ, Ypde, Ycon, Xpde, Xcon, ctermixed, lvary = lvary, uvary = uvary, lvaru = lvaru, uvaru = uvaru)
   nlp = GridapPDENLPModel(
     x0,
     NT,
@@ -342,7 +342,7 @@ end
   nlp = GridapPDENLPModel(
     x0,
     fyuh,
-    trian,
+    dΩ,
     Ypde,
     Ycon,
     Xpde,
@@ -359,7 +359,7 @@ end
   nlp = GridapPDENLPModel(
     x0,
     fyuh,
-    trian,
+    dΩ,
     Ypde,
     Ycon,
     Xpde,
@@ -373,12 +373,12 @@ end
     lcon = lcon,
     ucon = ucon,
   )
-  nlp = GridapPDENLPModel(x0, fyuh, trian, Ypde, Ycon, Xpde, Xcon, caff)
-  #nlp = GridapPDENLPModel(fyuh, trian, Ypde, Ycon, Xpde, Xcon, caff)
+  nlp = GridapPDENLPModel(x0, fyuh, dΩ, Ypde, Ycon, Xpde, Xcon, caff)
+  #nlp = GridapPDENLPModel(fyuh, dΩ, Ypde, Ycon, Xpde, Xcon, caff)
   nlp = GridapPDENLPModel(
     x0,
     fyuh,
-    trian,
+    dΩ,
     Ypde,
     Ycon,
     Xpde,
@@ -388,11 +388,11 @@ end
     lcon = lcon,
     ucon = ucon,
   )
-  #nlp = GridapPDENLPModel(fyuh, trian, Ypde, Ycon, Xpde, Xcon, caff, y0 = y0, lcon = lcon, ucon = ucon)
+  #nlp = GridapPDENLPModel(fyuh, dΩ, Ypde, Ycon, Xpde, Xcon, caff, y0 = y0, lcon = lcon, ucon = ucon)
   nlp = GridapPDENLPModel(
     x0,
     fyuh,
-    trian,
+    dΩ,
     Ypde,
     Ycon,
     Xpde,
@@ -403,11 +403,11 @@ end
     lvaru = lvaru,
     uvaru = uvaru,
   )
-  #nlp = GridapPDENLPModel(fyuh, trian, Ypde, Ycon, Xpde, Xcon, caff, lvary = lvary, uvary = uvary, lvaru = lvaru, uvaru = uvaru)
+  #nlp = GridapPDENLPModel(fyuh, dΩ, Ypde, Ycon, Xpde, Xcon, caff, lvary = lvary, uvary = uvary, lvaru = lvaru, uvaru = uvaru)
   nlp = GridapPDENLPModel(
     x0,
     fyuh,
-    trian,
+    dΩ,
     Ypde,
     Ycon,
     Xpde,
@@ -421,11 +421,11 @@ end
     lcon = lcon,
     ucon = ucon,
   )
-  #nlp = GridapPDENLPModel(fxh, trian, Ypde, Ycon, Xpde, Xcon, caff, lvary = lvary, uvary = uvary, lvaru = lvaru, uvaru = uvaru, y0 = y0, lcon = lcon, ucon = ucon)
+  #nlp = GridapPDENLPModel(fxh, dΩ, Ypde, Ycon, Xpde, Xcon, caff, lvary = lvary, uvary = uvary, lvaru = lvaru, uvaru = uvaru, y0 = y0, lcon = lcon, ucon = ucon)
   @test_throws DimensionError GridapPDENLPModel(
     x0,
     fyuh,
-    trian,
+    dΩ,
     Ypde,
     Ycon,
     Xpde,
@@ -435,11 +435,11 @@ end
     lcon = badlcon,
     ucon = ucon,
   )
-  #@test_throws DimensionError GridapPDENLPModel(fyuh, trian, Ypde, Ycon, Xpde, Xcon, ctermixed, y0 = bady0, lcon = lcon, ucon = baducon)
+  #@test_throws DimensionError GridapPDENLPModel(fyuh, dΩ, Ypde, Ycon, Xpde, Xcon, ctermixed, y0 = bady0, lcon = lcon, ucon = baducon)
   @test_throws DimensionError GridapPDENLPModel(
     x0,
     fyuh,
-    trian,
+    dΩ,
     Ypde,
     Ycon,
     Xpde,
@@ -449,11 +449,11 @@ end
     lcon = lcon,
     ucon = ucon,
   )
-  #@test_throws DimensionError GridapPDENLPModel(fyuh, trian, Ypde, Ycon, Xpde, Xcon, caff, y0 = y0, lcon = badlcon, ucon = baducon)
+  #@test_throws DimensionError GridapPDENLPModel(fyuh, dΩ, Ypde, Ycon, Xpde, Xcon, caff, y0 = y0, lcon = badlcon, ucon = baducon)
   @test_throws DimensionError GridapPDENLPModel(
     x0,
     fyuh,
-    trian,
+    dΩ,
     Ypde,
     Ycon,
     Xpde,
@@ -462,11 +462,11 @@ end
     lvary = badlvary,
     uvary = baduvary,
   )
-  #@test_throws DimensionError GridapPDENLPModel(fyuh, trian, Ypde, Ycon, Xpde, Xcon, ctermixed, lvary = badlvary, uvary = baduvary)
+  #@test_throws DimensionError GridapPDENLPModel(fyuh, dΩ, Ypde, Ycon, Xpde, Xcon, ctermixed, lvary = badlvary, uvary = baduvary)
   @test_throws DimensionError GridapPDENLPModel(
     x0,
     fyuh,
-    trian,
+    dΩ,
     Ypde,
     Ycon,
     Xpde,
@@ -475,11 +475,11 @@ end
     lvaru = badlvaru,
     uvaru = baduvaru,
   )
-  #@test_throws DimensionError GridapPDENLPModel(fyuh, trian, Ypde, Ycon, Xpde, Xcon, ctermixed, lvaru = badlvaru, uvaru = baduvaru)
+  #@test_throws DimensionError GridapPDENLPModel(fyuh, dΩ, Ypde, Ycon, Xpde, Xcon, ctermixed, lvaru = badlvaru, uvaru = baduvaru)
   @test_throws DimensionError GridapPDENLPModel(
     x0,
     fyuh,
-    trian,
+    dΩ,
     Ypde,
     Ycon,
     Xpde,
@@ -491,11 +491,11 @@ end
     lcon = badlcon,
     ucon = baducon,
   )
-  #@test_throws DimensionError GridapPDENLPModel(fyuh, trian, Ypde, Ycon, Xpde, Xcon, ctermixed, lvary = badlvary, uvary = baduvary, y0 = bady0, lcon = badlcon, ucon = ucon)
+  #@test_throws DimensionError GridapPDENLPModel(fyuh, dΩ, Ypde, Ycon, Xpde, Xcon, ctermixed, lvary = badlvary, uvary = baduvary, y0 = bady0, lcon = badlcon, ucon = ucon)
   @test_throws DimensionError GridapPDENLPModel(
     x0,
     fyuh,
-    trian,
+    dΩ,
     Ypde,
     Ycon,
     Xpde,
@@ -507,12 +507,12 @@ end
     lcon = lcon,
     ucon = baducon,
   )
-  #@test_throws DimensionError GridapPDENLPModel(fyuh, trian, Ypde, Ycon, Xpde, Xcon, caff, lvary = badlvary, uvary = baduvary, y0 = bady0, lcon = lcon, ucon = baducon)
-  @test_throws DimensionError GridapPDENLPModel(badx0, fyuh, trian, Ypde, Ycon, Xpde, Xcon, cter)
+  #@test_throws DimensionError GridapPDENLPModel(fyuh, dΩ, Ypde, Ycon, Xpde, Xcon, caff, lvary = badlvary, uvary = baduvary, y0 = bady0, lcon = lcon, ucon = baducon)
+  @test_throws DimensionError GridapPDENLPModel(badx0, fyuh, dΩ, Ypde, Ycon, Xpde, Xcon, cter)
   @test_throws DimensionError GridapPDENLPModel(
     badx0,
     fyuh,
-    trian,
+    dΩ,
     Ypde,
     Ycon,
     Xpde,
@@ -525,7 +525,7 @@ end
   @test_throws DimensionError GridapPDENLPModel(
     badx0,
     fyuh,
-    trian,
+    dΩ,
     Ypde,
     Ycon,
     Xpde,
@@ -539,7 +539,7 @@ end
   @test_throws DimensionError GridapPDENLPModel(
     badx0,
     fyuh,
-    trian,
+    dΩ,
     Ypde,
     Ycon,
     Xpde,
@@ -553,11 +553,11 @@ end
     lcon = lcon,
     ucon = ucon,
   )
-  @test_throws DimensionError GridapPDENLPModel(badx0, fyuh, trian, Ypde, Ycon, Xpde, Xcon, caff)
+  @test_throws DimensionError GridapPDENLPModel(badx0, fyuh, dΩ, Ypde, Ycon, Xpde, Xcon, caff)
   @test_throws DimensionError GridapPDENLPModel(
     badx0,
     fyuh,
-    trian,
+    dΩ,
     Ypde,
     Ycon,
     Xpde,
@@ -570,7 +570,7 @@ end
   @test_throws DimensionError GridapPDENLPModel(
     badx0,
     fyuh,
-    trian,
+    dΩ,
     Ypde,
     Ycon,
     Xpde,
@@ -584,7 +584,7 @@ end
   @test_throws DimensionError GridapPDENLPModel(
     badx0,
     fyuh,
-    trian,
+    dΩ,
     Ypde,
     Ycon,
     Xpde,
