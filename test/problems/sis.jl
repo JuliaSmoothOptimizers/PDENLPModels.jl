@@ -24,11 +24,9 @@ function sis(args...; x0 = [1, 2], n = 10, a = 0.2, b = 0.7, T = 1, kwargs...)
     ∫(dt(I, p) + dt(S, q) - p * (_a * S * I - _b * I) - q * (_b * I - _a * S * I))dΩ
   end
 
-  op_sis = FEOperator(res, Y, X)
-
   ndofs = Gridap.FESpaces.num_free_dofs(Y)
   xin = zeros(ndofs)
-  return GridapPDENLPModel(xin, NoFETerm(), Y, X, op_sis)
+  return GridapPDENLPModel(xin, NoFETerm(), Y, X, res)
 end
 
 function sis_test(; x0 = [1, 2], n = 10, a = 0.2, b = 0.7, T = 1)

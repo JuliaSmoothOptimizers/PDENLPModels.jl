@@ -87,7 +87,7 @@ function GridapPDENLPModel(
   trian::Triangulation,
   Ypde::FESpace,
   Xpde::FESpace,
-  c::FEOperator;
+  c;
   kwargs...
 ) where {S}
   nvar_pde = Gridap.FESpaces.num_free_dofs(Ypde)
@@ -103,7 +103,7 @@ function GridapPDENLPModel(
   tnrj::NRJ,
   Ypde::FESpace,
   Xpde::FESpace,
-  c::FEOperator;
+  c;
   lvar::S = fill!(similar(x0), -eltype(S)(Inf)),
   uvar::S = fill!(similar(x0), eltype(S)(Inf)),
   kwargs...,
@@ -134,7 +134,7 @@ function GridapPDENLPModel(
   Ycon::FESpace,
   Xpde::FESpace,
   Xcon::FESpace,
-  c::FEOperator;
+  c;
   lvary::AbstractVector = fill!(S(undef, num_free_dofs(Ypde)), -eltype(S)(Inf)),
   uvary::AbstractVector = fill!(S(undef, num_free_dofs(Ypde)), eltype(S)(Inf)),
   lvaru::AbstractVector = fill!(S(undef, num_free_dofs(Ycon)), -eltype(S)(Inf)),
@@ -181,6 +181,12 @@ function GridapPDENLPModel(
     Y = Ypde #_ypde
   end
 
+  op = if typeof(c) <: FEOperator
+    c
+  else
+    FEOperator(c, Y, Xpde)
+  end
+
   if NRJ == NoFETerm && typeof(lvary) <: AbstractVector && typeof(uvary) <: AbstractVector
     lvar, uvar = vcat(lvary, lvaru, lvark), vcat(uvary, uvaru, uvark)
   elseif NRJ != NoFETerm
@@ -197,14 +203,14 @@ function GridapPDENLPModel(
   @lencheck nvar lvar uvar
   @lencheck ncon ucon y0
 
-  rows, cols, nnzh = _compute_hess_structure(tnrj, c, Y, Ypde, Ycon, X, Xpde, x0, nparam)
+  rows, cols, nnzh = _compute_hess_structure(tnrj, op, Y, Ypde, Ycon, X, Xpde, x0, nparam)
   _, _, nnzh_obj = _compute_hess_structure(tnrj, Y, X, x0, nparam)
 
-  if typeof(c) <: AffineFEOperator #Here we expect ncon = nvar_pde
+  if typeof(op) <: AffineFEOperator #Here we expect ncon = nvar_pde
     lin = 1:ncon
   end
   Jkrows, Jkcols, nnz_jac_k = jac_k_structure(nparam, ncon)
-  Jrows, Jcols, nini = _jacobian_struct(c, x0, Y, Xpde, Ypde, Ycon)
+  Jrows, Jcols, nini = _jacobian_struct(op, x0, Y, Xpde, Ypde, Ycon)
   nnzj = nini + nnz_jac_k
 
   meta = NLPModelMeta{T, S}(
@@ -224,7 +230,7 @@ function GridapPDENLPModel(
     name = name,
   )
 
-  pdemeta = PDENLPMeta{NRJ, typeof(c)}(
+  pdemeta = PDENLPMeta{NRJ, typeof(op)}(
     tnrj,
     Ypde,
     Ycon,
@@ -232,7 +238,7 @@ function GridapPDENLPModel(
     Xcon,
     Y,
     X,
-    c,
+    op,
     nvar_pde,
     nvar_con,
     nparam,
@@ -256,7 +262,7 @@ function GridapPDENLPModel(
   Ycon::FESpace,
   Xpde::FESpace,
   Xcon::FESpace,
-  c::FEOperator;
+  c;
   kwargs...,
 ) where {S}
   nvar = length(x0)

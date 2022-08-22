@@ -39,10 +39,9 @@ function cellincrease(args...; x0 = [0.6, 0.1], n = 10, T = 7, kwargs...)
   end
 
   Y = MultiFieldFESpace([UI, US, Ucon])
-  op_sir = FEOperator(res, Ypde, Xpde)
 
   xin = zeros(Gridap.FESpaces.num_free_dofs(Y))
-  return GridapPDENLPModel(xin, f, dΩ, Ypde, Ucon, Xpde, Vcon, op_sir)
+  return GridapPDENLPModel(xin, f, dΩ, Ypde, Ucon, Xpde, Vcon, res)
 end
 
 ################################################################
