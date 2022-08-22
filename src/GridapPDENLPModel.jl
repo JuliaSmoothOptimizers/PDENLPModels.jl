@@ -3,23 +3,23 @@
 A composite type that represents the main features of the PDE-constrained optimization problem
 
 ---
-The following arguments are accepted:
-- tnrj : structure representing the objective term
-- Ypde : TrialFESpace for the solution of the PDE
-- Ycon : TrialFESpace for the parameter
-- Xpde : TestFESpace for the solution of the PDE
-- Xcon : TestFESpace for the parameter
-- Y : concatenated TrialFESpace
-- X : concatenated TestFESpace
-- op : operator representing the PDE-constraint (nothing if no constraints)
-- nvar_pde :number of dofs in the solution functions
-- nvar_con : number of dofs in the control functions
-- nparam: : number of real unknowns
-- nnzh_obj : number of nonzeros elements in the objective hessian
-- Hrows : store the structure for the hessian of the lagrangian
-- Hcols : store the structure for the hessian of the lagrangian
-- Jrows : store the structure for the hessian of the jacobian
-- Jcols : store the structure for the hessian of the jacobian
+`PDENLPMeta` contains the following attributes:
+- `tnrj` : structure representing the objective term
+- `Ypde` : TrialFESpace for the solution of the PDE
+- `Ycon` : TrialFESpace for the parameter
+- `Xpde` : TestFESpace for the solution of the PDE
+- `Xcon` : TestFESpace for the parameter
+- `Y` : concatenated TrialFESpace
+- `X` : concatenated TestFESpace
+- `op` : operator representing the PDE-constraint (nothing if no constraints)
+- `nvar_pde` :number of dofs in the solution functions
+- `nvar_con` : number of dofs in the control functions
+- `nparam` : number of real unknowns
+- `nnzh_obj` : number of nonzeros elements in the objective hessian
+- `Hrows` : store the structure for the hessian of the lagrangian
+- `Hcols` : store the structure for the hessian of the lagrangian
+- `Jrows` : store the structure for the hessian of the jacobian
+- `Jcols` : store the structure for the hessian of the jacobian
 """
 struct PDENLPMeta{NRJ <: AbstractEnergyTerm, Op <: Union{FEOperator, Nothing}}
   # For the objective function
@@ -70,35 +70,26 @@ end
 @doc raw"""
 PDENLPModels using Gridap.jl
 
-https://github.com/gridap/Gridap.jl
-Cite: Badia, S., & Verdugo, F. (2020). Gridap: An extensible Finite Element toolbox in Julia.
-Journal of Open Source Software, 5(52), 2520.
-
 Find functions (y,u): Y -> ℜⁿ x ℜⁿ and κ ∈ ℜⁿ satisfying
 
-min      ∫_Ω​ f(κ,y,u) dΩ​
-s.t.     y solution of a PDE(κ,u)=0
-         lcon <= c(κ,y,u) <= ucon
-         lvar <= (κ,y,u)  <= uvar
-
-         ```math
-         \begin{aligned}
-         \min_{κ,y,u} \ & ∫_Ω​ f(κ,y,u) dΩ​ \\
-         \mbox{ s.t. } & y \mbox{ solution of } PDE(κ,u)=0, \\
-         & lcon <= c(κ,y,u) <= ucon, \\
-         & lvar <= (κ,y,u)  <= uvar.
-         \end{aligned}
-         ```
+```math
+\begin{aligned}
+\min_{κ,y,u} \ & ∫_Ω​ f(κ,y,u) dΩ​ \\
+\mbox{ s.t. } & y \mbox{ solution of } PDE(κ,u)=0, \\
+& lcon <= c(κ,y,u) <= ucon, \\
+& lvar <= (κ,y,u)  <= uvar.
+\end{aligned}
+```
 
 The weak formulation is then:
-res((y,u),(v,q)) = ∫ v PDE(κ,y,u) + ∫ q c(κ,y,u)
+`res((y,u),(v,q)) = ∫ v PDE(κ,y,u) + ∫ q c(κ,y,u)`
 
 where the unknown (y,u) is a MultiField see [Tutorials 7](https://gridap.github.io/Tutorials/stable/pages/t007_darcy/)
  and [8](https://gridap.github.io/Tutorials/stable/pages/t008_inc_navier_stokes/) of Gridap.
 
 Main constructor:
 
-`GridapPDENLPModel(:: NLPModelMeta, :: Counters, :: AbstractEnergyTerm, :: FESpace, :: Union{FESpace,Nothing}, :: FESpace, :: Union{FESpace,Nothing}, :: FESpace, :: Union{FESpace,Nothing}, :: Union{FEOperator, Nothing}, :: Int, :: Int, :: Int)` 
+    GridapPDENLPModel(::NLPModelMeta, ::Counters, ::PDENLPMeta, ::PDEWorkspace)
 
 The following keyword arguments are available to all constructors:
 - `name`: The name of the model (default: "Generic")
@@ -110,6 +101,20 @@ constrained problems:
 The following keyword arguments are available to the constructors for
 constrained problems explictly giving lcon and ucon:
 - `y0`: An inital estimate to the Lagrangian multipliers (default: zeros)
+
+More practical constructors are also available:
+
+- For unconstrained problems:
+`GridapPDENLPModel(::AbstractVector, ::Function, ::Union{Measure, Triangulation}, ::FESpace, ::FESpace)`
+`GridapPDENLPModel(::AbstractVector, ::AbstractEnergyTerm, ::Union{Measure, Triangulation}, ::FESpace, ::FESpace)`
+
+- For unconstrained problems with constraints ??
+`GridapPDENLPModel(::AbstractVector, ::Function, ::Union{Measure, Triangulation}, ::FESpace, ::FESpace, ::Union{Function, FEOperator})`
+`GridapPDENLPModel(::AbstractVector, ::AbstractEnergyTerm, ::FESpace, ::FESpace, ::Union{Function, FEOperator})`
+
+- For constrained problems:
+`GridapPDENLPModel(::AbstractVector, ::Function, ::Union{Measure, Triangulation}, ::FESpace, ::FESpace, ::FESpace, ::FESpace, ::Union{Function, FEOperator})`
+`GridapPDENLPModel(::AbstractVector, ::AbstractEnergyTerm, ::FESpace, ::FESpace, ::FESpace, ::FESpace, ::Union{Function, FEOperator})`
 
 Notes:
  - We handle two types of FEOperator: AffineFEOperator, and FEOperatorFromWeakForm
@@ -129,7 +134,7 @@ for field in fieldnames(PDENLPMeta)
     @doc """
         $($meth)(nlp)
         $($meth)(meta)
-    Return the value $($(QuoteNode(field))) from meta or nlp.meta.
+    Return the value `$($(QuoteNode(field)))` from meta or nlp.meta.
     """
     $meth(meta::PDENLPMeta) = getproperty(meta, $(QuoteNode(field)))
   end

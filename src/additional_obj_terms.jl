@@ -3,7 +3,7 @@ abstract type AbstractEnergyTerm end
 """
 Return the integral of the objective function
 
-`_obj_integral(:: AbstractEnergyTerm, :: FEFunctionType, :: AbstractVector)`
+    _obj_integral(:: AbstractEnergyTerm, :: FEFunctionType, :: AbstractVector)
 
 See also: `MixedEnergyFETerm`, `EnergyFETerm`, `NoFETerm`,
 `_obj_cell_integral`, `_compute_gradient_k`,
@@ -14,7 +14,7 @@ function _obj_integral end
 """
 Return the derivative of the objective function w.r.t. κ.
 
-`_compute_gradient_k!(::AbstractVector, :: AbstractEnergyTerm, :: FEFunctionType, :: AbstractVector)`
+    _compute_gradient_k!(::AbstractVector, :: AbstractEnergyTerm, :: FEFunctionType, :: AbstractVector)
 
 See also: `MixedEnergyFETerm`, `EnergyFETerm`, `NoFETerm`, `_obj_integral`,
 `_obj_cell_integral`, `_compute_hess_k_coo`
@@ -24,7 +24,7 @@ function _compute_gradient_k! end
 """
 Return the gradient of the objective function and set it in place.
 
-`_compute_gradient!(:: AbstractVector, :: EnergyFETerm, :: AbstractVector, :: FEFunctionType, :: FESpace, :: FESpace)`
+    _compute_gradient!(:: AbstractVector, :: EnergyFETerm, :: AbstractVector, :: FEFunctionType, :: FESpace, :: FESpace)
 
 See also: `MixedEnergyFETerm`, `EnergyFETerm`, `NoFETerm`, `_obj_integral`,
 `_obj_cell_integral`, `_compute_hess_k_coo`
@@ -34,7 +34,7 @@ function _compute_gradient! end
 """
 Return the values of the hessian w.r.t. κ of the objective function.
 
-`_compute_hess_k_vals!(:: AbstractVector, :: AbstractNLPModel, :: AbstractEnergyTerm, :: AbstractVector, :: AbstractVector)`
+    _compute_hess_k_vals!(:: AbstractVector, :: AbstractNLPModel, :: AbstractEnergyTerm, :: AbstractVector, :: AbstractVector)
 
 See also: `MixedEnergyFETerm`, `EnergyFETerm`, `NoFETerm`, `_obj_integral`,
 `_obj_cell_integral`, `_compute_gradient_k`
@@ -42,19 +42,17 @@ See also: `MixedEnergyFETerm`, `EnergyFETerm`, `NoFETerm`, `_obj_integral`,
 function _compute_hess_k_vals! end
 
 @doc raw"""
-FETerm modeling the objective function when there are no integral objective.
+`AbstractEnergyTerm` modeling the objective function when there are no integral objective
 
 ```math
 \begin{aligned}
- f(\kappa)
+ f(\kappa).
 \end{aligned}
- ```
+```
 
 Constructors:
-
-  `NoFETerm()`
-
-  `NoFETerm(:: Function)`
+    NoFETerm()
+    NoFETerm(:: Function)
 
 See also: `MixedEnergyFETerm`, `EnergyFETerm`, `_obj_cell_integral`, `_obj_integral`, `_compute_gradient_k!`
 """
@@ -108,19 +106,19 @@ function _compute_hess_k_vals!(
 end
 
 @doc raw"""
-FETerm modeling the objective function of the optimization problem.
+`AbstractEnergyTerm` modeling the objective function of the optimization problem
 
 ```math
 \begin{aligned}
-\int_{\Omega} f(y,u) d\Omega,
+\int_{\Omega} f(y,u) d\Omega.
 \end{aligned}
 ```
 
 Constructor:
 
-`EnergyFETerm(:: Function, :: Triangulation, :: Measure)`
+    EnergyFETerm(:: Function, :: Triangulation, :: Measure)
 
-See also: MixedEnergyFETerm, NoFETerm, `_obj_cell_integral`, `_obj_integral`,
+See also: `MixedEnergyFETerm`, `NoFETerm`, `_obj_cell_integral`, `_obj_integral`,
 `_compute_gradient_k!`
 """
 struct EnergyFETerm <: AbstractEnergyTerm
@@ -183,18 +181,18 @@ function _compute_hess_k_vals!(
 end
 
 @doc raw"""
-FETerm modeling the objective function of the optimization problem with
-functional and discrete unknowns.
+`AbstractEnergyTerm` modeling the objective function of the optimization problem with
+functional and discrete unknowns
 
 ```math
 \begin{aligned}
-\int_{\Omega} f(y,u,\kappa) d\Omega,
+\int_{\Omega} f(y,u,\kappa) d\Omega.
 \end{aligned}
 ```
 
 Constructor:
 
-`MixedEnergyFETerm(:: Function, :: Triangulation, :: Int)`
+    MixedEnergyFETerm(:: Function, :: Triangulation, :: Int)
 
 See also: `EnergyFETerm`, `NoFETerm`, `_obj_cell_integral`, `_obj_integral`,
 `_compute_gradient_k!`

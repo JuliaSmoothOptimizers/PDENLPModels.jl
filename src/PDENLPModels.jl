@@ -163,7 +163,7 @@ export reset!
 export split_vectors
 
 """
-    `split_vectors(::GridapPDENLPModel, x)`
+    split_vectors(::GridapPDENLPModel, x)
 
 Take a vector x and returns a splitting in terms of `y`, `u` and `θ`.
 """
