@@ -99,8 +99,8 @@ Main constructor:
 This is the main constructors with the attributes of the `GridapPDENLPModel`:
 - `meta::NLPModelMeta`: usual `meta` for NLPModels, see [doc here](https://juliasmoothoptimizers.github.io/NLPModels.jl/dev/models/);
 - `counters::Counters`: usual `counters` for NLPModels, see [doc here](https://juliasmoothoptimizers.github.io/NLPModels.jl/dev/tools/);
-- `pdemeta::PDENLPMeta`: metadata specific to `GridapPDENLPModel`, see [PDENLPMeta](@ref);
-- `workspace::PDEWorkspace`: see [PDEWorkspace](@ref).
+- `pdemeta::PDENLPMeta`: metadata specific to `GridapPDENLPModel`;
+- `workspace::PDEWorkspace`: Pre-allocated memory for `GridapPDENLPModel`.
 
 More practical constructors are also available.
 
