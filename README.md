@@ -29,6 +29,8 @@ s.t.     y solution of a PDE(κ,u)=0
          lvar <= (κ,y,u)  <= uvar
 ```
 
+We refer to the the repository [PDEOptimizationProblems](https://github.com/tmigot/PDEOptimizationProblems) for examples of problems of different types: calculus of variations, optimal control problem, PDE-constrained problems, and mixed PDE-contrained problems with both function and vector unknowns.
+
 ## Installation
 
 ```
