@@ -71,16 +71,14 @@ function GridapPDENLPModel(
   trian::Triangulation,
   Ypde::FESpace,
   Xpde::FESpace;
-  lvar::S = fill!(similar(x0), -eltype(S)(Inf)),
-  uvar::S = fill!(similar(x0), eltype(S)(Inf)),
-  name::String = "Generic",
+  kwargs...
 ) where {S}
   nvar_pde = Gridap.FESpaces.num_free_dofs(Ypde)
   nparam = length(x0) - nvar_pde
 
   tnrj = nparam > 0 ? MixedEnergyFETerm(f, trian, nparam, Ypde) : EnergyFETerm(f, trian, Ypde)
 
-  return GridapPDENLPModel(x0, tnrj, Ypde, Xpde, lvar = lvar, uvar = uvar, name = name)
+  return GridapPDENLPModel(x0, tnrj, Ypde, Xpde; kwargs...)
 end
 
 function GridapPDENLPModel(
@@ -90,16 +88,14 @@ function GridapPDENLPModel(
   Ypde::FESpace,
   Xpde::FESpace,
   c::FEOperator;
-  lvar::S = fill!(similar(x0), -eltype(S)(Inf)),
-  uvar::S = fill!(similar(x0), eltype(S)(Inf)),
-  name::String = "Generic",
+  kwargs...
 ) where {S}
   nvar_pde = Gridap.FESpaces.num_free_dofs(Ypde)
   nparam = length(x0) - nvar_pde
 
   tnrj = nparam > 0 ? MixedEnergyFETerm(f, trian, nparam, Ypde) : EnergyFETerm(f, trian, Ypde)
 
-  return GridapPDENLPModel(x0, tnrj, Ypde, Xpde, c, lvar = lvar, uvar = uvar, name = name)
+  return GridapPDENLPModel(x0, tnrj, Ypde, Xpde, c; kwargs...)
 end
 
 function GridapPDENLPModel(
@@ -110,8 +106,7 @@ function GridapPDENLPModel(
   c::FEOperator;
   lvar::S = fill!(similar(x0), -eltype(S)(Inf)),
   uvar::S = fill!(similar(x0), eltype(S)(Inf)),
-  name::String = "Generic",
-  lin::AbstractVector{<:Integer} = Int[],
+  kwargs...,
 ) where {S, NRJ <: AbstractEnergyTerm}
   npde = Gridap.FESpaces.num_free_dofs(Ypde)
   ndisc = length(x0) - npde
@@ -128,8 +123,7 @@ function GridapPDENLPModel(
     uvary = uvar[1:npde],
     lvark = lvar[(npde + 1):(npde + ndisc)],
     uvark = uvar[(npde + 1):(npde + ndisc)],
-    name = name,
-    lin = lin,
+    kwargs...,
   )
 end
 
@@ -263,23 +257,7 @@ function GridapPDENLPModel(
   Xpde::FESpace,
   Xcon::FESpace,
   c::FEOperator;
-  lvary::AbstractVector = fill!(S(undef, num_free_dofs(Ypde)), -eltype(S)(Inf)),
-  uvary::AbstractVector = fill!(S(undef, num_free_dofs(Ypde)), eltype(S)(Inf)),
-  lvaru::AbstractVector = fill!(S(undef, num_free_dofs(Ycon)), -eltype(S)(Inf)),
-  uvaru::AbstractVector = fill!(S(undef, num_free_dofs(Ycon)), eltype(S)(Inf)),
-  lvark::AbstractVector = fill!(
-    S(undef, max(length(x0) - num_free_dofs(Ypde) - num_free_dofs(Ycon), 0)),
-    -eltype(S)(Inf),
-  ),
-  uvark::AbstractVector = fill!(
-    S(undef, max(length(x0) - num_free_dofs(Ypde) - num_free_dofs(Ycon), 0)),
-    eltype(S)(Inf),
-  ),
-  lcon::S = fill!(S(undef, num_free_dofs(Ypde)), zero(eltype(S))),
-  ucon::S = fill!(S(undef, num_free_dofs(Ypde)), zero(eltype(S))),
-  y0::S = fill!(S(undef, num_free_dofs(Ypde)), zero(eltype(S))),
-  name::String = "Generic",
-  lin::AbstractVector{<:Integer} = Int[],
+  kwargs...,
 ) where {S}
   nvar = length(x0)
   nvar_pde = num_free_dofs(Ypde)
@@ -290,24 +268,5 @@ function GridapPDENLPModel(
     nparam > 0 ? MixedEnergyFETerm(f, trian, nparam, Ypde, Ycon) :
     EnergyFETerm(f, trian, Ypde, Ycon)
 
-  return GridapPDENLPModel(
-    x0,
-    tnrj,
-    Ypde,
-    Ycon,
-    Xpde,
-    Xcon,
-    c,
-    lvary = lvary,
-    uvary = uvary,
-    lvaru = lvaru,
-    uvaru = uvaru,
-    lvark = lvark,
-    uvark = uvark,
-    lcon = lcon,
-    ucon = ucon,
-    y0 = y0,
-    name = name,
-    lin = lin,
-  )
+  return GridapPDENLPModel(x0, tnrj, Ypde, Ycon, Xpde, Xcon, c; kwargs...)
 end
