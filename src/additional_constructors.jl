@@ -270,3 +270,8 @@ function GridapPDENLPModel(
 
   return GridapPDENLPModel(x0, tnrj, Ypde, Ycon, Xpde, Xcon, c; kwargs...)
 end
+
+function GridapPDENLPModel(x0::S, f::Function, dΩ::Measure, args...; kwargs...) where {S}
+  trian = dΩ.quad.trian
+  return GridapPDENLPModel(x0, f, trian, args...; kwargs...)
+end

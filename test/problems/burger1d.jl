@@ -49,7 +49,7 @@ function burger1d(args...; n = 512, kwargs...)
 
   Y = MultiFieldFESpace([U, Ycon])
   xin = zeros(Gridap.FESpaces.num_free_dofs(Y))
-  return GridapPDENLPModel(xin, f, trian, U, Ycon, V, Xcon, op)
+  return GridapPDENLPModel(xin, f, dΩ, U, Ycon, V, Xcon, op)
 end
 
 function burger1d_test(; udc = false)

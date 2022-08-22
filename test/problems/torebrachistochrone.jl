@@ -59,7 +59,7 @@ function torebrachistochrone(args...; n = 3, kwargs...)
   return GridapPDENLPModel(
     zeros(nU0 + nU1),
     f,
-    trian,
+    dΩ,
     U,
     V,
     lvar = xmin * ones(nU0 + nU1),

@@ -26,7 +26,7 @@ function basicunconstrained(args...; n = 2^4, kwargs...)
   Y = MultiFieldFESpace([U, Ucon])
   X = MultiFieldFESpace([V0, Xcon])
   xin = zeros(Gridap.FESpaces.num_free_dofs(Y))
-  return GridapPDENLPModel(xin, f, trian, Y, X)
+  return GridapPDENLPModel(xin, f, dΩ, Y, X)
 end
 
 function basicunconstrained_test(; udc = false)
