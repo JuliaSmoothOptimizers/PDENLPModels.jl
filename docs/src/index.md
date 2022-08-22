@@ -26,15 +26,16 @@ The current version of PDENLPModels relies on Gridap v0.15.5.
 ```@contents
 ```
 
-We refer to the folder `test/problems` for more examples of problems of different types: calculus of variations, optimal control problem, PDE-constrained problems, and mixed PDE-contrained problems with both function and vector unknowns. Without objective function, the problem reduces to a classical PDE and we refer to [Gridap tutorials](https://github.com/gridap/Tutorials) for examples.
+You can also check the tutorial [Solve a PDE-constrained optimization problem](https://jso-docs.github.io/solve-pdenlpmodels-with-jsosolvers/) on our site, [juliasmoothoptimizers.github.io](https://juliasmoothoptimizers.github.io).
 
+We refer to the folder `test/problems` for more examples of problems of different types: calculus of variations, optimal control problem, PDE-constrained problems, and mixed PDE-contrained problems with both function and vector unknowns. An alternative is to visit the repository [PDEOptimizationProblems](https://github.com/tmigot/PDEOptimizationProblems) that contains a collection of test problems. Without objective function, the problem reduces to a classical PDE and we refer to [Gridap tutorials](https://github.com/gridap/Tutorials) for examples.
 
 ## References
 
-https://github.com/gridap/Gridap.jl
-Badia, S., & Verdugo, F. (2020). Gridap: An extensible Finite Element toolbox in Julia.
+[Gridap.jl](https://github.com/gridap/Gridap.jl)
+Badia, S., Verdugo, F. (2020). Gridap: An extensible Finite Element toolbox in Julia.
 Journal of Open Source Software, 5(52), 2520.
 
 
-https://github.com/JuliaSmoothOptimizers/NLPModels.jl
-D. Orban and A. S. Siqueira and {contributors} (2020). NLPModels.jl: Data Structures for Optimization Models
+[NLPModels.jl](https://github.com/JuliaSmoothOptimizers/NLPModels.jl)
+D. Orban, A. S. Siqueira and contributors (2020). NLPModels.jl: Data Structures for Optimization Models
