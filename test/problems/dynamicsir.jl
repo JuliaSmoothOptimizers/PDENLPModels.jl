@@ -39,7 +39,6 @@ function dynamicsir(args...; x0 = [1, 2], n = 10, T = 1, kwargs...)
   dΩ = Measure(trian, degree)
   #t_Ω_nl = FETerm(res_pde_nl, trian, dΩ)
   #t_Ω = FETerm(res_pde, trian, dΩ)
-  op_sir = FEOperator(res, Ypde, Xpde)
 
   Xbcon = TestFESpace(model, reffe; conformity = :H1)
   Ybcon = TrialFESpace(Xbcon)
@@ -60,7 +59,7 @@ function dynamicsir(args...; x0 = [1, 2], n = 10, T = 1, kwargs...)
 
   ndofs = Gridap.FESpaces.num_free_dofs(Ypde) + Gridap.FESpaces.num_free_dofs(Ycon)
   xin = zeros(ndofs)
-  return GridapPDENLPModel(xin, f, dΩ, Ypde, Ycon, Xpde, Xcon, op_sir)
+  return GridapPDENLPModel(xin, f, dΩ, Ypde, Ycon, Xpde, Xcon, res)
 end
 
 function dynamicsir_test(; x0 = [1, 2], n = 10, T = 1)
