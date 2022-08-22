@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Calculus of Variations · PDENLPModels.jl</title><script data-outdated-warner src="../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../">PDENLPModels.jl</a></span></div><form class="docs-search" action="../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../">Introduction</a></li><li class="is-active"><a class="tocitem" href>Calculus of Variations</a><ul class="internal"><li><a class="tocitem" href="#The-Brachistochrone-over-a-Tore"><span>The Brachistochrone over a Tore</span></a></li></ul></li><li><a class="tocitem" href="../poisson-boltzman/">PDE-constrained optimization</a></li><li><a class="tocitem" href="../reference/">Reference</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Calculus of Variations</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Calculus of Variations</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/JuliaSmoothOptimizers/PDENLPModels.jl/blob/main/docs/src/tore.md" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Calculus-of-Variations"><a class="docs-heading-anchor" href="#Calculus-of-Variations">Calculus of Variations</a><a id="Calculus-of-Variations-1"></a><a class="docs-heading-anchor-permalink" href="#Calculus-of-Variations" title="Permalink"></a></h1><h2 id="The-Brachistochrone-over-a-Tore"><a class="docs-heading-anchor" href="#The-Brachistochrone-over-a-Tore">The Brachistochrone over a Tore</a><a id="The-Brachistochrone-over-a-Tore-1"></a><a class="docs-heading-anchor-permalink" href="#The-Brachistochrone-over-a-Tore" title="Permalink"></a></h2><p>In this example, we present how to model the classical brachistochrone problem over the torus with <code>PDENLPModels.jl</code> in polar coordinates. We want to model the following problem:</p><p class="math-container">\[\left\lbrace
+\begin{aligned}
+\min_{\varphi, \theta} \ &amp; \ \int_0^1 a^2 \dot{\varphi}^2 + (c + a \cos(\varphi))^2 \dot{\theta}^2dt,\\
+&amp; \ 0 \leq \theta, \varphi \leq 2\pi,\\
+&amp; \ \varphi(0)= 0, \varphi(1)= \pi,\\
+&amp; \ \theta(0) = 0, \theta(1) = \pi,\\
+\end{aligned}
+\right.\]</p><p>with <span>$a=1$</span> and <span>$c=3$</span>.</p><pre><code class="nohighlight hljs">  using Gridap, PDENLPModels
+
+  n = 100 #discretization size
+  domain = (0,1) 
+  model = CartesianDiscreteModel(domain, n)
+      
+  labels = get_face_labeling(model)
+  add_tag_from_tags!(labels,&quot;diri1&quot;,[2])
+  add_tag_from_tags!(labels,&quot;diri0&quot;,[1])
+
+  x0 = zeros(2) # initial values
+  xf = π * ones(2) # final values
+  
+  order = 1
+  valuetype = Float64
+  reffe = ReferenceFE(lagrangian, valuetype, order)
+  V0 = TestFESpace(
+    model,
+    reffe;
+    conformity = :H1,
+    dirichlet_tags=[&quot;diri0&quot;,&quot;diri1&quot;],
+  )
+  V1 = TestFESpace(
+    model,
+    reffe;
+    conformity = :H1,
+    dirichlet_tags=[&quot;diri0&quot;,&quot;diri1&quot;],
+  )
+  
+  U0  = TrialFESpace(V0, [x0[1], xf[1]])
+  U1  = TrialFESpace(V0, [x0[2], xf[2]])
+  
+  V = MultiFieldFESpace([V0, V1])
+  U = MultiFieldFESpace([U0, U1])
+  nU0 = Gridap.FESpaces.num_free_dofs(U0)
+  nU1 = Gridap.FESpaces.num_free_dofs(U1)
+  
+  trian = Triangulation(model)
+  degree = 1
+  dΩ = Measure(trian, degree)
+
+  # The function under the integral:
+  # To use the function cos in Gridap: `operate(cos, x)` vaut cos(x)
+  # The square function is not available, so: `x*x` holds for $x^2$, 
+  # and `∇(φ) ⊙ ∇(φ)` for `φ&#39;^2`.
+  a = 1
+  c = 3
+  function f(x)
+    φ, θ = x
+    ∫(a * a * ∇(φ) ⊙ ∇(φ) + (c + a * (cos ∘ φ)) * (c + a * (cos ∘ φ)) * ∇(θ) ⊙ ∇(θ))dΩ
+  end
+
+  # boundaries
+  xmin = 0
+  xmax = 2*π
+  
+  nlp = GridapPDENLPModel(
+    zeros(nU0 + nU1),
+    f,
+    trian,
+    U,
+    V,
+    lvar = xmin * ones(nU0+nU1),
+    uvar = xmax * ones(nU0+nU1),
+  )</code></pre><p>Then, one can solve the problem with Ipopt via <a href="https://github.com/JuliaSmoothOptimizers/NLPModelsIpopt.jl">NLPModelsIpopt.jl</a> and plot the solution.</p><pre><code class="nohighlight hljs">using NLPModelsIpopt
+
+stats = ipopt(nlp, print_level = 0)
+
+nn = Int(nlp.pdemeta.nvar_pde/2)
+φs = stats.solution[1:nn]
+θs = stats.solution[nn+1:2*nn]
+
+xs = (c .+ a * cos.(φs)) .* cos.(θs)
+ys = (c .+ a * cos.(φs)) .* sin.(θs)
+zs = a * sin.(φs)
+
+L = stats.objective
+
+plotlyjs()
+
+linspace(from, to, npoints) = range(from, stop=to, length=npoints)
+
+#plot a torus
+M = 100
+αs = linspace(0, 2π, M)
+βs = linspace(0, 2π, M)
+Xs = (c .+ a * cos.(αs)) * cos.(βs)&#39;
+Ys = (c .+ a * cos.(αs)) * sin.(βs)&#39;
+Zs = (a * sin.(αs)) * ones(M)&#39;
+plot3d(Xs, Ys, Zs, st=:surface, grid=false, c=:grays, axis=false, colorbar=false)
+plot3d!(xs, ys, zs, linewidth=4, color=:red, title=@sprintf(&quot;Geodesic on a Torus (length=%4.f)&quot;, L), legend=false)</code></pre><p><img src="../fig/torus.png" alt="Geodesic over the tore"/></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../">« Introduction</a><a class="docs-footer-nextpage" href="../poisson-boltzman/">PDE-constrained optimization »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.22 on <span class="colophon-date" title="Monday 22 August 2022 17:36">Monday 22 August 2022</span>. Using Julia version 1.8.0.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
