@@ -10,6 +10,9 @@ using NLPModels
 #PDE modeling
 using Gridap
 
+import Gridap.FESpaces.num_free_dofs
+export num_free_dofs
+
 function Gridap.Arrays.testargs(k::Gridap.Arrays.PosNegReindex, i::Integer)
   # @check length(k.values_pos) !=0 || length(k.values_neg) != 0 "This map has empty domain"
   #if !(eltype(k.values_pos) == eltype(k.values_neg))
@@ -45,8 +48,6 @@ const FEFunctionType =
 const CellFieldType = Union{Gridap.MultiField.MultiFieldCellField, Gridap.CellData.GenericCellField}
 
 struct VoidFESpace <: FESpace end
-
-import Gridap.FESpaces.num_free_dofs
 
 num_free_dofs(::VoidFESpace) = 0
 
