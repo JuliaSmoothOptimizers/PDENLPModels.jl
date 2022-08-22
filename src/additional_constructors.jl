@@ -71,7 +71,7 @@ function GridapPDENLPModel(
   trian::Triangulation,
   Ypde::FESpace,
   Xpde::FESpace;
-  kwargs...
+  kwargs...,
 ) where {S}
   nvar_pde = Gridap.FESpaces.num_free_dofs(Ypde)
   nparam = length(x0) - nvar_pde
@@ -88,7 +88,7 @@ function GridapPDENLPModel(
   Ypde::FESpace,
   Xpde::FESpace,
   c;
-  kwargs...
+  kwargs...,
 ) where {S}
   nvar_pde = Gridap.FESpaces.num_free_dofs(Ypde)
   nparam = length(x0) - nvar_pde
