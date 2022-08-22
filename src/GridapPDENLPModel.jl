@@ -48,6 +48,11 @@ struct PDENLPMeta{NRJ <: AbstractEnergyTerm, Op <: Union{FEOperator, Nothing}}
   Jcols::AbstractVector{Int}
 end
 
+"""
+    PDEWorkspace
+
+Pre-allocated memory for `GridapPDENLPModel`.
+"""
 struct PDEWorkspace{T, S, M}
   Hvals::S # vector of values of the Hessian matrix
   Jvals::S # vector of values of the Jacobian matrix
@@ -68,10 +73,8 @@ function PDEWorkspace(T, S, nvar, ncon, nparam, nnzh, nnzj)
 end
 
 @doc raw"""
-PDENLPModels using Gridap.jl
-
-Find functions (y,u): Y -> ℜⁿ x ℜⁿ and κ ∈ ℜⁿ satisfying
-
+`GridapPDENLPModel` returns an instance of an [`AbstractNLPModel`](https://github.com/JuliaSmoothOptimizers/NLPModels.jl) using [Gridap.jl](https://github.com/gridap/Gridap.jl) for the discretization of the domain with finite-elements.
+Given a domain `Ω ⊂ ℜᵈ` Find a state function y: `Ω -> Y`, a control function u: `Ω -> U` and an algebraic vector κ ∈ ℜⁿ satisfying
 ```math
 \begin{aligned}
 \min_{κ,y,u} \ & ∫_Ω​ f(κ,y,u) dΩ​ \\
@@ -81,45 +84,137 @@ Find functions (y,u): Y -> ℜⁿ x ℜⁿ and κ ∈ ℜⁿ satisfying
 \end{aligned}
 ```
 
-The weak formulation is then:
+The [weak formulation of the PDE](https://en.wikipedia.org/wiki/Weak_formulation) is then:
 `res((y,u),(v,q)) = ∫ v PDE(κ,y,u) + ∫ q c(κ,y,u)`
 
-where the unknown (y,u) is a MultiField see [Tutorials 7](https://gridap.github.io/Tutorials/stable/pages/t007_darcy/)
+where the unknown `(y,u)` is a `MultiField` see [Tutorials 7](https://gridap.github.io/Tutorials/stable/pages/t007_darcy/)
  and [8](https://gridap.github.io/Tutorials/stable/pages/t008_inc_navier_stokes/) of Gridap.
+
+## Constructors
 
 Main constructor:
 
     GridapPDENLPModel(::NLPModelMeta, ::Counters, ::PDENLPMeta, ::PDEWorkspace)
 
+This is the main constructors with the attributes of the `GridapPDENLPModel`:
+- `meta::NLPModelMeta`: usual `meta` for NLPModels, see [doc here](https://juliasmoothoptimizers.github.io/NLPModels.jl/dev/models/);
+- `counters::Counters`: usual `counters` for NLPModels, see [doc here](https://juliasmoothoptimizers.github.io/NLPModels.jl/dev/tools/);
+- `pdemeta::PDENLPMeta`: metadata specific to `GridapPDENLPModel`, see [PDENLPMeta](@ref);
+- `workspace::PDEWorkspace`: see [PDEWorkspace](@ref).
+
+More practical constructors are also available.
+
+- For unconstrained problems:
+
+    GridapPDENLPModel(x0, ::Function, ::Union{Measure, Triangulation}, Ypde::FESpace, Xpde::FESpace; kwargs...)
+
+    GridapPDENLPModel(x0, ::AbstractEnergyTerm, ::Union{Measure, Triangulation}, Ypde::FESpace, Xpde::FESpace; kwargs...)
+
+- For constrained problems without controls:
+
+    GridapPDENLPModel(x0, ::Function, ::Union{Measure, Triangulation}, Ypde::FESpace, Xpde::FESpace, c::Union{Function, FEOperator}; kwargs...)
+
+    GridapPDENLPModel(x0, ::AbstractEnergyTerm, Ypde::FESpace, Xpde::FESpace, c::Union{Function, FEOperator}; kwargs...)
+
+- For general constrained problems:
+
+    GridapPDENLPModel(x0, ::Function, ::Union{Measure, Triangulation}, Ypde::FESpace, Ycon::FESpace, Xpde::FESpace, Xcon::FESpace, c::Union{Function, FEOperator}; kwargs...)
+
+    GridapPDENLPModel(x0, ::AbstractEnergyTerm, Ypde::FESpace, Ycon::FESpace, Xpde::FESpace, Xcon::FESpace, c::Union{Function, FEOperator}; kwargs...)
+
+where the different arguments are:
+- `x0`: initial guess for the system of size `≥ num_free_dofs(Ypde) + num_free_dofs(Ycon)`;
+- `f`: objective function, the number of arguments depend on the application `(y)` or `(y,u)` or `(y,u,θ)`;
+- `Ypde`: trial space for the state;
+- `Ycon`: trial space for the control (`VoidFESpace` if none);
+- `Xpde`: test space for the state;
+- `Xcon`: test space for the control (`VoidFESpace` if none);
+- `c`: operator/function for the PDE-constraint, were we assume by default that the right-hand side is zero (otw. use `lcon` and `ucon` keywords), the number of arguments depend on the application `(y,v)` or `(y,u,v)` or `(y,u,θ,v)`.
+
+If `length(x0) > num_free_dofs(Ypde) + num_free_dofs(Ycon)`, then the additional components are considered algebraic variables.
+
+The function `f` and `c` must return integrals complying with Gridap's functions with a `Measure/Triangulation` given in the arguments of `GridapPDENLPModel`.
+Internally, the objective function `f` and the `Measure/Triangulation` are combined to instantiate an `AbstractEnergyTerm`.
+
 The following keyword arguments are available to all constructors:
 - `name`: The name of the model (default: "Generic")
 The following keyword arguments are available to the constructors for
 constrained problems:
-- `lin`: An array of indexes of the linear constraints
-(default: `Int[]` or 1:ncon if c is an AffineFEOperator)
+- `lin`: An array of indexes of the linear constraints (default: `Int[]`)
 
 The following keyword arguments are available to the constructors for
 constrained problems explictly giving lcon and ucon:
 - `y0`: An inital estimate to the Lagrangian multipliers (default: zeros)
 
-More practical constructors are also available:
-
-- For unconstrained problems:
-`GridapPDENLPModel(::AbstractVector, ::Function, ::Union{Measure, Triangulation}, ::FESpace, ::FESpace)`
-`GridapPDENLPModel(::AbstractVector, ::AbstractEnergyTerm, ::Union{Measure, Triangulation}, ::FESpace, ::FESpace)`
-
-- For unconstrained problems with constraints ??
-`GridapPDENLPModel(::AbstractVector, ::Function, ::Union{Measure, Triangulation}, ::FESpace, ::FESpace, ::Union{Function, FEOperator})`
-`GridapPDENLPModel(::AbstractVector, ::AbstractEnergyTerm, ::FESpace, ::FESpace, ::Union{Function, FEOperator})`
-
-- For constrained problems:
-`GridapPDENLPModel(::AbstractVector, ::Function, ::Union{Measure, Triangulation}, ::FESpace, ::FESpace, ::FESpace, ::FESpace, ::Union{Function, FEOperator})`
-`GridapPDENLPModel(::AbstractVector, ::AbstractEnergyTerm, ::FESpace, ::FESpace, ::FESpace, ::FESpace, ::Union{Function, FEOperator})`
+The bounds on the variables are given as `AbstractVector` via keywords arguments as well:
+- either with `lvar` and `uvar`, or,
+- `lvary`, `lvaru`, `lvark`, and `uvary`, `uvaru`, `uvark`.
 
 Notes:
- - We handle two types of FEOperator: AffineFEOperator, and FEOperatorFromWeakForm
- - If lcon and ucon are not given, they are assumed zeros.
- - If the type can't be deduced from the argument, it is Float64.
+ - We handle two types of `FEOperator`: `AffineFEOperator`, and `FEOperatorFromWeakForm`.
+ - If `lcon` and `ucon` are not given, they are assumed zeros.
+ - If the type can't be deduced from the argument, it is `Float64`.
+
+## Example
+
+```julia
+using Gridap, PDENLPModels
+
+  # Definition of the domain
+  n = 100
+  domain = (-1, 1, -1, 1)
+  partition = (n, n)
+  model = CartesianDiscreteModel(domain, partition)
+
+  # Definition of the spaces:
+  valuetype = Float64
+  reffe = ReferenceFE(lagrangian, valuetype, 2)
+  Xpde = TestFESpace(model, reffe; conformity = :H1, dirichlet_tags = "boundary")
+  y0(x) = 0.0
+  Ypde = TrialFESpace(Xpde, y0)
+
+  reffe_con = ReferenceFE(lagrangian, valuetype, 1)
+  Xcon = TestFESpace(model, reffe_con; conformity = :H1)
+  Ycon = TrialFESpace(Xcon)
+
+  # Integration machinery
+  trian = Triangulation(model)
+  degree = 1
+  dΩ = Measure(trian, degree)
+
+  # Objective function:
+  yd(x) = -x[1]^2
+  α = 1e-2
+  function f(y, u)
+    ∫(0.5 * (yd - y) * (yd - y) + 0.5 * α * u * u) * dΩ
+  end
+
+  # Definition of the constraint operator
+  ω = π - 1 / 8
+  h(x) = -sin(ω * x[1]) * sin(ω * x[2])
+  function res(y, u, v)
+    ∫(∇(v) ⊙ ∇(y) - v * u - v * h) * dΩ
+  end
+
+  # initial guess
+  npde = num_free_dofs(Ypde)
+  ncon = num_free_dofs(Ycon)
+  xin = zeros(npde + ncon)
+
+  nlp = GridapPDENLPModel(xin, f, trian, Ypde, Ycon, Xpde, Xcon, res, name = "Control elastic membrane")
+```
+
+You can also check the tutorial [Solve a PDE-constrained optimization problem](https://jso-docs.github.io/solve-pdenlpmodels-with-jsosolvers/) on JSO's website, [juliasmoothoptimizers.github.io](https://juliasmoothoptimizers.github.io).
+
+We refer to the folder `test/problems` for more examples of problems of different types:
+  - calculus of variations,
+  - optimal control problem,
+  - PDE-constrained problems,
+  - mixed PDE-contrained problems with both function and algebraic unknowns. 
+An alternative is to visit the repository [PDEOptimizationProblems](https://github.com/tmigot/PDEOptimizationProblems) that contains a collection of test problems.
+
+Without objective function, the problem reduces to a classical PDE and we refer to [Gridap tutorials](https://github.com/gridap/Tutorials) for examples.
+
 """
 mutable struct GridapPDENLPModel{T, S, NRJ, Op} <: AbstractNLPModel{T, S}
   meta::NLPModelMeta{T, S}

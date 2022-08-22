@@ -29,7 +29,7 @@ s.t.     y solution of a PDE(κ,u)=0
          lvar <= (κ,y,u)  <= uvar
 ```
 
-We refer to the the repository [PDEOptimizationProblems](https://github.com/tmigot/PDEOptimizationProblems) for examples of problems of different types: calculus of variations, optimal control problem, PDE-constrained problems, and mixed PDE-contrained problems with both function and vector unknowns.
+We refer to the the repository [PDEOptimizationProblems](https://github.com/tmigot/PDEOptimizationProblems) for examples of problems of different types: calculus of variations, optimal control problem, PDE-constrained problems, and mixed PDE-contrained problems with both function and algebraic unknowns.
 
 ## Installation
 
@@ -66,7 +66,6 @@ using Gridap, PDENLPModels
   reffe_con = ReferenceFE(lagrangian, valuetype, 1)
   Xcon = TestFESpace(model, reffe_con; conformity = :H1)
   Ycon = TrialFESpace(Xcon)
-  Y = MultiFieldFESpace([Ypde, Ycon])
 
   # Integration machinery
   trian = Triangulation(model)
@@ -86,14 +85,13 @@ using Gridap, PDENLPModels
   function res(y, u, v)
     ∫(∇(v) ⊙ ∇(y) - v * u - v * h) * dΩ
   end
-  op = FEOperator(res, Y, Xpde)
 
   # initial guess
-  npde = Gridap.FESpaces.num_free_dofs(Ypde)
-  ncon = Gridap.FESpaces.num_free_dofs(Ycon)
+  npde = num_free_dofs(Ypde)
+  ncon = num_free_dofs(Ycon)
   xin = zeros(npde + ncon)
 
-  nlp = GridapPDENLPModel(xin, f, trian, Ypde, Ycon, Xpde, Xcon, op, name = "Control elastic membrane")
+  nlp = GridapPDENLPModel(xin, f, trian, Ypde, Ycon, Xpde, Xcon, res, name = "Control elastic membrane")
 ```
 
 ## References
