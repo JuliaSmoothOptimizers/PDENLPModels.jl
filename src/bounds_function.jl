@@ -1,7 +1,7 @@
 export bounds_functions_to_vectors
 
 """
-`(lvar, uvar) = bounds_functions_to_vectors(Y :: MultiFieldFESpace, Ycon :: Union{FESpace, Nothing},  Ypde :: FESpace, trian :: Triangulation, lyfunc :: Union{Function, AbstractVector}, uyfunc :: Union{Function, AbstractVector}, lufunc :: Union{Function, AbstractVector}, uufunc :: Union{Function, AbstractVector})`
+    bounds_functions_to_vectors(Y :: MultiFieldFESpace, Ycon :: Union{FESpace, Nothing},  Ypde :: FESpace, trian :: Triangulation, lyfunc :: Union{Function, AbstractVector}, uyfunc :: Union{Function, AbstractVector}, lufunc :: Union{Function, AbstractVector}, uufunc :: Union{Function, AbstractVector})
 
 Return the bounds `lvar` and `uvar`.
 """
@@ -171,7 +171,7 @@ function bounds_functions_to_vectors(
 end
 
 """
-_functions_to_vectors!(nini :: Int, nfields :: Int, trian :: Triangulation, lfunc :: Function, ufunc :: Function, cell_xm :: Gridap.Arrays.AppliedArray, Y :: FESpace, lvar :: AbstractVector, uvar :: AbstractVector)
+    _functions_to_vectors!(nini :: Int, nfields :: Int, trian :: Triangulation, lfunc :: Function, ufunc :: Function, cell_xm :: Gridap.Arrays.AppliedArray, Y :: FESpace, lvar :: AbstractVector, uvar :: AbstractVector)
 
 Iterate for `k = 1` to `nfields` and switch `lfunc[k]` and `ufunc[k]` to vectors, 
 allocated in `lvar` and `uvar` in place starting from `nini + 1`.

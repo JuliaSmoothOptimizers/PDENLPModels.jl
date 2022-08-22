@@ -1,8 +1,11 @@
 """
+    _compute_hess_structure(::AbstractEnergyTerm, Y, X, x0, nparam)
+    _compute_hess_structure::AbstractEnergyTerm, op, Y, Ypde, Ycon, X, Xpde, x0, nparam)
+
 Return a triplet with the structure (rows, cols) and the number of non-zeros elements
 in the hessian w.r.t. y and u of the objective function.
 
-The rows and cols returned by _compute_hess_structure_obj are already shifter by `nparam`.
+The rows and cols returned by `_compute_hess_structure_obj` are already shifter by `nparam`.
 """
 function _compute_hess_structure(tnrj::AbstractEnergyTerm, Y, X, x0, nparam)
   rk, ck, nk = _compute_hess_structure_k(tnrj, Y, X, x0, nparam)

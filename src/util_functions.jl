@@ -1,8 +1,8 @@
 """
-`_split_FEFunction(:: AbstractVector,  :: FESpace, :: Union{FESpace, Nothing})`
+    _split_FEFunction(:: AbstractVector,  :: FESpace, :: Union{FESpace, Nothing})
 
 Split the vector x into two FEFunction corresponding to the solution `y` and the control `u`.
-Returns nothing for the control `u` if Ycon == nothing.
+Returns nothing for the control `u` if `Ycon == nothing`.
 
 Do not verify the compatible length.
 """
@@ -32,10 +32,10 @@ function _split_FEFunction(x::AbstractVector, Ypde::FESpace, Ycon::VoidFESpace)
 end
 
 """
-`_split_vector(:: AbstractVector,  :: FESpace, :: Union{FESpace, Nothing})`
+    _split_vector(:: AbstractVector,  :: FESpace, :: Union{FESpace, Nothing})
 
 Split the vector x into three vectors: y, u, k.
-Returns nothing for the control `u` if Ycon == nothing.
+Returns nothing for the control `u` if `Ycon == nothing`.
 
 Do not verify the compatible length.
 """
@@ -62,7 +62,7 @@ function _split_vector(x::AbstractVector, Ypde::FESpace, Ycon::VoidFESpace)
 end
 
 """
-    `_split_vectors(x, Ypde, Ycon)`
+    _split_vectors(x, Ypde, Ycon)
 
 Take a vector x and returns a splitting in terms of `y`, `u` and `θ`.
 """
