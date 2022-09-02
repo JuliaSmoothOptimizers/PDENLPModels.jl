@@ -461,8 +461,8 @@ function jprod_nln!(nlp::GridapPDENLPModel, x::AbstractVector, v::AbstractVector
   @lencheck nlp.meta.nvar x v
   @lencheck nlp.meta.ncon Jv
   increment!(nlp, :neval_jprod_nln)
-  rows, cols = jac_structure_nln(nlp)
-  vals = jac_coord_nln!(nlp, x, nlp.workspace.Jvals)
+  rows, cols = jac_nln_structure(nlp)
+  vals = jac_nln_coord!(nlp, x, nlp.workspace.Jvals)
   decrement!(nlp, :neval_jac_nln)
   coo_prod!(rows, cols, vals, v, Jv)
   return Jv
@@ -472,18 +472,18 @@ function jtprod_nln!(nlp::GridapPDENLPModel, x::AbstractVector, v::AbstractVecto
   @lencheck nlp.meta.nvar x Jtv
   @lencheck nlp.meta.ncon v
   increment!(nlp, :neval_jtprod_nln)
-  rows, cols = jac_structure_nln(nlp)
-  vals = jac_coord_nln!(nlp, x, nlp.workspace.Jvals)
+  rows, cols = jac_nln_structure(nlp)
+  vals = jac_nln_coord!(nlp, x, nlp.workspace.Jvals)
   decrement!(nlp, :neval_jac_nln)
   coo_prod!(cols, rows, vals, v, Jtv)
   return Jtv
 end
 
-function jac_structure_nln(nlp::GridapPDENLPModel)
+function jac_nln_structure(nlp::GridapPDENLPModel)
   return (nlp.pdemeta.Jrows, nlp.pdemeta.Jcols)
 end
 
-function jac_structure_nln!(
+function jac_nln_structure!(
   nlp::GridapPDENLPModel,
   rows::AbstractVector{T},
   cols::AbstractVector{T},
@@ -494,7 +494,7 @@ function jac_structure_nln!(
   return rows, cols
 end
 
-function jac_coord_nln!(nlp::GridapPDENLPModel, x::AbstractVector, vals::AbstractVector)
+function jac_nln_coord!(nlp::GridapPDENLPModel, x::AbstractVector, vals::AbstractVector)
   @lencheck nlp.meta.nvar x
   @lencheck nlp.meta.nnzj vals
   increment!(nlp, :neval_jac_nln)
@@ -513,7 +513,7 @@ function jac_coord_nln!(nlp::GridapPDENLPModel, x::AbstractVector, vals::Abstrac
   )
 end
 
-function jac_coord_nln!(
+function jac_nln_coord!(
   nlp::GridapPDENLPModel{T, S, NRJ, Nothing},
   x::AbstractVector,
   vals::AbstractVector,
