@@ -207,7 +207,7 @@ function GridapPDENLPModel(
   _, _, nnzh_obj = _compute_hess_structure(tnrj, Y, X, x0, nparam)
 
   if typeof(op) <: AffineFEOperator #Here we expect ncon = nvar_pde
-    lin = 1:ncon
+    # lin = 1:ncon
   end
   Jkrows, Jkcols, nnz_jac_k = jac_k_structure(nparam, ncon)
   Jrows, Jcols, nini = _jacobian_struct(op, x0, Y, Xpde, Ypde, Ycon)
