@@ -1,6 +1,6 @@
 # PDENLPModels.jl Documentation
 
-PDENLPModels specializes the [NLPModel API](https://github.com/JuliaSmoothOptimizers/NLPModels.jl) to optimization problem with partial differential equation in the constraints. The package relies on [Gridap.jl](https://github.com/gridap/Gridap.jl) for the modeling and the computation of the derivatives.
+PDENLPModels specializes the [NLPModel API](https://github.com/JuliaSmoothOptimizers/NLPModels.jl) to optimization problems with partial differential equations in the constraints. The package relies on [Gridap.jl](https://github.com/gridap/Gridap.jl) for the modeling and the computation of the derivatives.
 
 We consider optimization problems of the form: find functions (y,u) and κ ∈ ℜⁿ satisfying
 ```math
