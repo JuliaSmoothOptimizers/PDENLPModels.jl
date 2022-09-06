@@ -488,7 +488,7 @@ function jac_nln_structure!(
   rows::AbstractVector{T},
   cols::AbstractVector{T},
 ) where {T <: Integer}
-  @lencheck nlp.meta.nnzj rows cols
+  @lencheck nlp.meta.nln_nnzj rows cols
   rows .= T.(nlp.pdemeta.Jrows)
   cols .= T.(nlp.pdemeta.Jcols)
   return rows, cols
@@ -496,7 +496,7 @@ end
 
 function jac_nln_coord!(nlp::GridapPDENLPModel, x::AbstractVector, vals::AbstractVector)
   @lencheck nlp.meta.nvar x
-  @lencheck nlp.meta.nnzj vals
+  @lencheck nlp.meta.nln_nnzj vals
   increment!(nlp, :neval_jac_nln)
   return _jac_coord!(
     nlp.pdemeta.op,
@@ -519,7 +519,7 @@ function jac_nln_coord!(
   vals::AbstractVector,
 ) where {T, S, NRJ}
   @lencheck nlp.meta.nvar x
-  @lencheck nlp.meta.nnzj vals
+  @lencheck nlp.meta.nln_nnzj vals
   increment!(nlp, :neval_jac_nln)
   return vals
 end

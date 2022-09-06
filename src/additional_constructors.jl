@@ -222,6 +222,7 @@ function GridapPDENLPModel(
     y0 = y0,
     lcon = lcon,
     ucon = ucon,
+    nln_nnzj = nnzj,
     nnzj = nnzj,
     nnzh = nnzh,
     lin = lin,
