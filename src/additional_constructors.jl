@@ -206,12 +206,21 @@ function GridapPDENLPModel(
   rows, cols, nnzh = _compute_hess_structure(tnrj, op, Y, Ypde, Ycon, X, Xpde, x0, nparam)
   _, _, nnzh_obj = _compute_hess_structure(tnrj, Y, X, x0, nparam)
 
-  if typeof(op) <: AffineFEOperator #Here we expect ncon = nvar_pde
-    # lin = 1:ncon
-  end
   Jkrows, Jkcols, nnz_jac_k = jac_k_structure(nparam, ncon)
   Jrows, Jcols, nini = _jacobian_struct(op, x0, Y, Xpde, Ypde, Ycon)
   nnzj = nini + nnz_jac_k
+
+  if typeof(op) <: AffineFEOperator #Here we expect ncon = nvar_pde
+    if (nnz_jac_k > 0) || (nparam > 0)
+      @warn "AffineFEOperator not implemented with additional constraints and algebraic variables."
+    end
+    lin = 1:ncon
+    lin_nnzj = nnzj
+    nln_nnzj = 0
+  else
+    lin_nnzj = 0
+    nln_nnzj = nnzj
+  end
 
   meta = NLPModelMeta{T, S}(
     nvar,
@@ -222,7 +231,8 @@ function GridapPDENLPModel(
     y0 = y0,
     lcon = lcon,
     ucon = ucon,
-    nln_nnzj = nnzj,
+    lin_nnzj = lin_nnzj,
+    nln_nnzj = nln_nnzj,
     nnzj = nnzj,
     nnzh = nnzh,
     lin = lin,
