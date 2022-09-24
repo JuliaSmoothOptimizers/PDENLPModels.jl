@@ -523,3 +523,44 @@ function jac_coord!(
   increment!(nlp, :neval_jac)
   return vals
 end
+
+function jac_op!(
+  nlp::AbstractNLPModel{T, S},
+  x::AbstractVector{T},
+  Jv::AbstractVector,
+  Jtv::AbstractVector,
+) where {T, S}
+  @lencheck nlp.meta.nvar x Jtv
+  @lencheck nlp.meta.ncon Jv
+  rows = nlp.pdemeta.Jrows
+  cols = nlp.pdemeta.Jcols
+  vals = jac_coord!(nlp, x, nlp.workspace.Jvals)
+  return jac_op!(nlp, rows, cols, vals, Jv, Jtv)
+end
+
+function hess_op!(
+  nlp::AbstractNLPModel,
+  x::AbstractVector,
+  Hv::AbstractVector;
+  obj_weight::Real = one(eltype(x)),
+)
+  @lencheck nlp.meta.nvar x Hv
+  rows = nlp.pdemeta.Hrows
+  cols = nlp.pdemeta.Hcols
+  vals = hess_coord!(nlp, x, nlp.workspace.Hvals, obj_weight = obj_weight)
+  return hess_op!(nlp, rows, cols, vals, Hv, obj_weight = obj_weight)
+end
+
+function hess_op!(
+  nlp::AbstractNLPModel,
+  x::AbstractVector,
+  y::AbstractVector,
+  Hv::AbstractVector;
+  obj_weight::Real = one(eltype(x)),
+)
+  @lencheck nlp.meta.nvar x Hv
+  rows = nlp.pdemeta.Hrows
+  cols = nlp.pdemeta.Hcols
+  vals = hess_coord!(nlp, x, y, nlp.workspace.Hvals, obj_weight = obj_weight)
+  return hess_op!(nlp, rows, cols, vals, Hv, obj_weight = obj_weight)
+end
