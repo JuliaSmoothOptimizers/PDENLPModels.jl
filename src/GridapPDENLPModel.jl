@@ -548,7 +548,7 @@ function hess_op!(
   rows = nlp.pdemeta.Hrows
   cols = nlp.pdemeta.Hcols
   vals = hess_coord!(nlp, x, nlp.workspace.Hvals, obj_weight = obj_weight)
-  return hess_op!(nlp, rows, cols, vals, Hv, obj_weight = obj_weight)
+  return hess_op!(nlp, rows, cols, vals, Hv)
 end
 
 function hess_op!(
@@ -562,5 +562,5 @@ function hess_op!(
   rows = nlp.pdemeta.Hrows
   cols = nlp.pdemeta.Hcols
   vals = hess_coord!(nlp, x, y, nlp.workspace.Hvals, obj_weight = obj_weight)
-  return hess_op!(nlp, rows, cols, vals, Hv, obj_weight = obj_weight)
+  return hess_op!(nlp, rows, cols, vals, Hv)
 end
