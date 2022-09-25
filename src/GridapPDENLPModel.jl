@@ -525,11 +525,11 @@ function jac_coord!(
 end
 
 function jac_op!(
-  nlp::AbstractNLPModel{T, S},
-  x::AbstractVector{T},
+  nlp::GridapPDENLPModel,
+  x::AbstractVector,
   Jv::AbstractVector,
   Jtv::AbstractVector,
-) where {T, S}
+)
   @lencheck nlp.meta.nvar x Jtv
   @lencheck nlp.meta.ncon Jv
   rows = nlp.pdemeta.Jrows
@@ -539,7 +539,7 @@ function jac_op!(
 end
 
 function hess_op!(
-  nlp::AbstractNLPModel,
+  nlp::GridapPDENLPModel,
   x::AbstractVector,
   Hv::AbstractVector;
   obj_weight::Real = one(eltype(x)),
@@ -552,7 +552,7 @@ function hess_op!(
 end
 
 function hess_op!(
-  nlp::AbstractNLPModel,
+  nlp::GridapPDENLPModel,
   x::AbstractVector,
   y::AbstractVector,
   Hv::AbstractVector;
