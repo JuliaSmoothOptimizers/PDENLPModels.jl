@@ -29,7 +29,9 @@ bibliography: paper.bib
 
 # Summary
 
-\texttt{PDENLPModels.jl} is a Julia [@bezanson2017julia] package for modeling and discretizing optimization problems with mixed algebraic and  partial differential equations (PDE) in the constraints. The general form of the problems over some domain $\Omega \subset \mathbb{R}^d$ is
+Shape optimization, optimal control, and parameter estimation of systems governed by partial differential equations (PDE) give rise to a class of problems known as PDE-constrained optimization.
+\texttt{PDENLPModels.jl} is a Julia [@bezanson2017julia] package for modeling and discretizing optimization problems with mixed algebraic and PDE in the constraints. 
+The general form of the problems over some domain $\Omega \subset \mathbb{R}^d$ is
 \begin{equation*}
   \begin{array}{lll}
     \underset{y, u, \theta}{\text{minimize}} \int_\Omega J(y, u, \theta)d\Omega \ \mbox{ subject to} & e(y, u, \theta) = 0, & \mbox{(governing PDE on $\Omega$)} \\
