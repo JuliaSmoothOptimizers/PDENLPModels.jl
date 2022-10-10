@@ -14,7 +14,7 @@ In this example, we present how to model the classical brachistochrone problem [
 ```
 with $a=1$ and $c=3$. We also refer to [2] for the analytical solutions of this problem.
 
-```
+```julia
   using Gridap, PDENLPModels
 
   n = 100 #discretization size
@@ -82,7 +82,7 @@ with $a=1$ and $c=3$. We also refer to [2] for the analytical solutions of this 
   )
 ```
 Then, one can solve the problem with Ipopt via [NLPModelsIpopt.jl](https://github.com/JuliaSmoothOptimizers/NLPModelsIpopt.jl) and plot the solution.
-```
+```julia
 using NLPModelsIpopt
 
 stats = ipopt(nlp, print_level = 0)
