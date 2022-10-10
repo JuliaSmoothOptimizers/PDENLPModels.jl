@@ -1,7 +1,7 @@
 # PDE-contrained optimization
 ## Poisson-Boltzman problem
 
-We consider here a 2D Poisson-Boltzmann problem
+In this tutorial, we solve a control problem where the constraint is a 2D Poisson-Boltzman equation:
 ```math
 \left\lbrace
 \begin{aligned}
@@ -20,6 +20,7 @@ with the forcing term $h(x_1,x_2)=-\sin(\omega x_1) \sin(\omega x_2)$, $\omega =
     \end{cases}
 \end{aligned}
 ```
+We refer to [1] for more details on Poisson-Boltzman equations.
 
 The implementation as a `GridapPDENLPModel` is given as follows.
 
@@ -82,3 +83,10 @@ writevtk(nlp.pdemeta.tnrj.trian,"results",cellfields=["uh"=>uh, "yh"=>yh])
 Finally, the solution is obtained using any software reading VTK, e.g. Paraview.
 
 ![Solution of P-B equation](fig/2dPBy.png)![Control of P-B equation](fig/2dPBu.png)
+
+## References
+
+> [1] Michael J. Holst
+> The Poisson-Boltzmann equation: Analysis and multilevel numerical solution.
+> Applied Mathematics and CRPC, California Institute of Technology. (1994).
+> [Hols94d.pdf](https://ccom.ucsd.edu/~mholst/pubs/dist/Hols94d.pdf)
