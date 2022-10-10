@@ -1,7 +1,7 @@
 # Calculus of Variations
 ## The Brachistochrone over a Tore
 
-In this example, we present how to model the classical brachistochrone problem over the torus with `PDENLPModels.jl` in polar coordinates. We want to model the following problem:
+In this example, we present how to model the classical brachistochrone problem [1] over the torus with [PDENLPModels.jl](https://github.com/JuliaSmoothOptimizers/PDENLPModels.jl) in polar coordinates. We want to model the following problem:
 ```math
 \left\lbrace
 \begin{aligned}
@@ -12,7 +12,7 @@ In this example, we present how to model the classical brachistochrone problem o
 \end{aligned}
 \right.
 ```
-with $a=1$ and $c=3$.
+with $a=1$ and $c=3$. We also refer to [2] for the analytical solutions of this problem.
 
 ```
   using Gridap, PDENLPModels
@@ -112,3 +112,14 @@ plot3d(Xs, Ys, Zs, st=:surface, grid=false, c=:grays, axis=false, colorbar=false
 plot3d!(xs, ys, zs, linewidth=4, color=:red, title=@sprintf("Geodesic on a Torus (length=%4.f)", L), legend=false)
 ```
 ![Geodesic over the tore](fig/torus.png)
+
+## References
+
+> [1] Weisstein, Eric W. 
+> Brachistochrone Problem.
+> From MathWorld--A Wolfram Web Resource. 
+> [mathworld.wolfram.com/BrachistochroneProblem.html](https://mathworld.wolfram.com/BrachistochroneProblem.html)
+
+> [2] Mark L. Irons
+> The Curvature and Geodesics of the Torus (2005).
+> [torus.geodesics.pdf](http://www.rdrop.com/~half/math/torus/torus.geodesics.pdf)
