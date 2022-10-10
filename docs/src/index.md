@@ -21,10 +21,12 @@ We consider optimization problems of the form: find functions (y,u) and κ ∈ �
 ```
 The current version of PDENLPModels relies on Gridap v0.15.5.
 
-## Examples
+## Table of Contents
 
 ```@contents
 ```
+
+## Examples
 
 You can also check the tutorial [Solve a PDE-constrained optimization problem](https://jso-docs.github.io/solve-pdenlpmodels-with-jsosolvers/) on our site, [juliasmoothoptimizers.github.io](https://juliasmoothoptimizers.github.io).
 
