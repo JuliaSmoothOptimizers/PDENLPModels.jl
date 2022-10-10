@@ -29,7 +29,7 @@ bibliography: paper.bib
 
 # Summary
 
-Shape optimization, optimal control, and parameter estimation of systems governed by partial differential equations (PDE) give rise to a class of problems known as PDE-constrained optimization.
+Shape optimization, optimal control, and parameter estimation of systems governed by partial differential equations (PDE) give rise to a class of problems known as PDE-constrained optimization [@hinze2008optimization].
 \texttt{PDENLPModels.jl} is a Julia [@bezanson2017julia] package for modeling and discretizing optimization problems with mixed algebraic and PDE in the constraints. 
 The general form of the problems over some domain $\Omega \subset \mathbb{R}^d$ is
 \begin{equation*}
