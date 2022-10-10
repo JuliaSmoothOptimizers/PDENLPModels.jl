@@ -24,7 +24,7 @@ We refer to [1] for more details on Poisson-Boltzman equations.
 
 The implementation as a `GridapPDENLPModel` is given as follows.
 
-```
+```julia
     using Gridap, PDENLPModels
     #Domain
     n = 100
@@ -73,7 +73,7 @@ using NLPModelsIpopt
 stats = ipopt(nlp, print_level = 0)
 ```
 Switching again the discrete solution as a `FEFunction` the result can written as a VTK-file using Gridap's facilities.
-```
+```julia
 yfv = stats.solution[1:Gridap.FESpaces.num_free_dofs(nlp.pdemeta.Ypde)]
 yh  = FEFunction(nlp.pdemeta.Ypde, yfv)
 ufv = stats.solution[1+Gridap.FESpaces.num_free_dofs(nlp.pdemeta.Ypde):end]
