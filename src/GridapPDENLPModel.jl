@@ -597,6 +597,23 @@ function jac_nln_op!(
   return jac_nln_op!(nlp, rows, cols, vals, Jv, Jtv)
 end
 
+function jac_op!(
+  nlp::GridapPDENLPModel,
+  x::AbstractVector,
+  Jv::AbstractVector,
+  Jtv::AbstractVector,
+)
+  @lencheck nlp.meta.nvar x Jtv
+  @lencheck nlp.meta.ncon Jv
+  rows = nlp.pdemeta.Jrows
+  cols = nlp.pdemeta.Jcols
+  if nlp.meta.nnln > 0 && nlp.meta.nlin > 0
+    @warn "PDENLPModels do not handle mixed linear and nonlinear constraints (yet)."
+  end
+  vals = jac_coord!(nlp, x, nlp.workspace.Jvals)
+  return jac_op!(nlp, rows, cols, vals, Jv, Jtv)
+end
+
 function hess_op!(
   nlp::GridapPDENLPModel,
   x::AbstractVector,
