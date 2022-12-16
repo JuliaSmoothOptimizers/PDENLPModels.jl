@@ -1,0 +1,65 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: >-
+  PDENLPModels.jl: A NLPModel API for optimization problems with PDE-constraints
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Tangi
+    family-names: Migot
+    email: tangi.migot@gmail.com
+    affiliation: >-
+      GERAD and Department of Mathematics and
+      Industrial Engineering, Polytechnique Montréal,
+      QC, Canada.
+    orcid: 'https://orcid.org/0000-0001-7729-2513'
+  - given-names: Dominique
+    family-names: Orban
+    email: dominique.orban@gerad.ca
+    orcid: 'https://orcid.org/0000-0002-8017-7687'
+    affiliation: >-
+      GERAD and Department of Mathematics and
+      Industrial Engineering, Polytechnique Montréal,
+      QC, Canada
+  - affiliation: 'Netherlands eScience Center, Amsterdam, NL'
+    orcid: 'https://orcid.org/0000-0003-4451-281X'
+    email: abel.s.siqueira@gmail.com
+    given-names: Abel
+    family-names: Soares Siqueira
+identifiers:
+  - description: Zenodo archive
+    type: doi
+    value: 10.5281/zenodo.5056628
+preferred-citation:
+  type: article
+  authors:
+  - family-names: "Migot"
+    given-names: "Tangi"
+    orcid: "https://orcid.org/0000-0001-7729-2513"
+  - family-names: "Orban"
+    given-names: "Dominique"
+    orcid: "https://orcid.org/0000-0002-8017-7687"
+  - family-names: "Soares Siqueira"
+    given-names: "Abel"
+    orcid: "https://orcid.org/0000-0003-4451-281X"
+  doi: "10.21105/joss.04736"
+  journal: "The Journal of Open Source Software"
+  month: 12
+  start: 4736 # First page number
+  title: "PDENLPModels.jl: A NLPModel API for optimization problems with PDE-constraints"
+  issue: 17
+  volume: 80
+  year: 2022
+keywords:
+  - Nonlinear Optimization
+  - Julia
+  - Nonlinear Programming
+  - PDE-constrained Optimization
+  - Optimal Control
+license: MPL-2.0
+repository-code: >-
+  https://github.com/JuliaSmoothOptimizers/PDENLPModels.jl
