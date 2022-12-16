@@ -524,12 +524,7 @@ function jac_coord!(
   return vals
 end
 
-function jac_op!(
-  nlp::GridapPDENLPModel,
-  x::AbstractVector,
-  Jv::AbstractVector,
-  Jtv::AbstractVector,
-)
+function jac_op!(nlp::GridapPDENLPModel, x::AbstractVector, Jv::AbstractVector, Jtv::AbstractVector)
   @lencheck nlp.meta.nvar x Jtv
   @lencheck nlp.meta.ncon Jv
   rows = nlp.pdemeta.Jrows
