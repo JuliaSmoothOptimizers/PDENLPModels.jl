@@ -51,8 +51,8 @@ preferred-citation:
   month: 12
   start: 4736 # First page number
   title: "PDENLPModels.jl: A NLPModel API for optimization problems with PDE-constraints"
-  issue: 17
-  volume: 80
+  issue: 80
+  volume: 7
   year: 2022
 keywords:
   - Nonlinear Optimization
