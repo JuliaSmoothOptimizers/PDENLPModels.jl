@@ -20,14 +20,19 @@
 PDENLPModels specializes the [NLPModel API](https://github.com/JuliaSmoothOptimizers/NLPModels.jl) to optimization problems with partial differential equations in the constraints. The package relies on [Gridap.jl](https://github.com/gridap/Gridap.jl) for the modeling and the computation of the derivatives. Find tutorials for using Gridap [here](https://github.com/gridap/Tutorials).
 
 We consider optimization problems of the form:
-```math
-Find functions (y,u): Y -> ℜⁿ x ℜⁿ and κ ∈ ℜⁿ satisfying
 
-min      ∫_Ω​ f(κ,y,u) dΩ​
-s.t.     y solution of a PDE(κ,u)=0
-         lcon <= c(κ,y,u) <= ucon
-         lvar <= (κ,y,u)  <= uvar
-```
+$$
+\begin{aligned}
+\text{Find functions}  & (y,u): \\
+& Y \rightarrow ℜⁿ \times ℜⁿ \text{and} \; \kappa \in ℜⁿ \; \text{satisfying} \\
+
+& \min      ∫_Ω​ f(κ,y,u) dΩ​ \\
+& \text{s.t.}  \\
+&         y  \; \text{solution of a} \; PDE(κ,u)=0 \\
+&        \text{lcon} \le c(\kappa,y,u) \le \text{ucon} \\
+&        \text{lvar} \le (\kappa,y,u)  \le \text{uvar} \\
+\end{aligned}
+$$
 
 We refer to the the repository [PDEOptimizationProblems](https://github.com/tmigot/PDEOptimizationProblems) for examples of problems of different types: calculus of variations, optimal control problem, PDE-constrained problems, and mixed PDE-contrained problems with both function and algebraic unknowns.
 
