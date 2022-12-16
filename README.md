@@ -14,8 +14,8 @@
 [codecov-url]: https://codecov.io/gh/JuliaSmoothOptimizers/PDENLPModels.jl
 [release-img]: https://img.shields.io/github/v/release/JuliaSmoothOptimizers/PDENLPModels.jl.svg?style=flat-square
 [release-url]: https://github.com/JuliaSmoothOptimizers/PDENLPModels.jl/releases
-[doi-img]: https://zenodo.org/badge/DOI/10.5281/zenodo.5056629.svg
-[doi-url]: https://doi.org/10.5281/zenodo.5056629
+[doi-img]: https://joss.theoj.org/papers/10.21105/joss.04736/status.svg
+[doi-url]: https://doi.org/10.21105/joss.04736
 
 PDENLPModels specializes the [NLPModel API](https://github.com/JuliaSmoothOptimizers/NLPModels.jl) to optimization problems with partial differential equations in the constraints. The package relies on [Gridap.jl](https://github.com/gridap/Gridap.jl) for the modeling and the computation of the derivatives. Find tutorials for using Gridap [here](https://github.com/gridap/Tutorials).
 
