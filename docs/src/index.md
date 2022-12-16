@@ -1,6 +1,6 @@
 # PDENLPModels.jl Documentation
 
-PDENLPModels specializes the [NLPModel API](https://github.com/JuliaSmoothOptimizers/NLPModels.jl) to optimization problems with partial differential equations in the constraints. The package relies on [Gridap.jl](https://github.com/gridap/Gridap.jl) for the modeling and the computation of the derivatives.
+PDENLPModels is a Julia package that specializes the [NLPModel API](https://github.com/JuliaSmoothOptimizers/NLPModels.jl) for modeling and discretizing optimization problems with mixed algebraic and PDE in the constraints.
 
 We consider optimization problems of the form: find functions (y,u) and κ ∈ ℜⁿ satisfying
 ```math
@@ -14,6 +14,16 @@ We consider optimization problems of the form: find functions (y,u) and κ ∈ �
 \right.
 ```
 
+The main challenges in modeling such a problem are to be able to discretize the domain and generate corresponding discretizations of the objective and constraints, and their evaluate derivatives with respect to all variables.
+We use [Gridap.jl](https://github.com/gridap/Gridap.jl) to define the domain, meshes, function spaces, and finite-element families to approximate unknowns, and to model functionals and sets of PDEs in a weak form. 
+PDENLPModels extends [Gridap.jl](https://github.com/gridap/Gridap.jl)'s differentiation facilities to also obtain derivatives useful for optimization, i.e., first and second derivatives of the objective and constraint functions with respect to controls and finite-dimensional variables.
+
+After discretization of the domain $\Omega$, the integral, and the derivatives, the resulting problem is a nonlinear optimization problem.
+PDENLPModels exports the `GridapPDENLPModel` type, an instance of an `AbstractNLPModel`, as defined in [NLPModels.jl](https://github.com/JuliaSmoothOptimizers/NLPModels.jl), which provides access to objective and constraint function values, to their first and second derivatives, and to any information that a solver might request from a model. 
+The role of [NLPModels.jl](https://github.com/JuliaSmoothOptimizers/NLPModels.jl) is to define an API that users and solvers can rely on. It is the role of other packages to implement facilities that create models compliant with the NLPModels API. We refer to [juliasmoothoptimizers.github.io](https://juliasmoothoptimizers.github.io) for tutorials on the NLPModel API.
+
+As such, PDENLPModels offers an interface between generic PDE-constrained optimization problems and cutting-edge optimization solvers such as Artelys Knitro via [NLPModelsKnitro.jl](https://github.com/JuliaSmoothOptimizers/NLPModelsKnitro.jl), Ipopt via [NLPModelsIpopt.jl](https://github.com/JuliaSmoothOptimizers/NLPModelsIpopt.jl) , [DCISolver.jl](https://github.com/JuliaSmoothOptimizers/DCISolver.jl), [Percival.jl](https://github.com/JuliaSmoothOptimizers/Percival.jl), and any solver accepting an `AbstractNLPModel` as input, see [JuliaSmoothOptimizers](https://juliasmoothoptimizers.github.io).
+
 ## Installation
 
 ```
@@ -21,10 +31,12 @@ We consider optimization problems of the form: find functions (y,u) and κ ∈ �
 ```
 The current version of PDENLPModels relies on Gridap v0.15.5.
 
-## Examples
+## Table of Contents
 
 ```@contents
 ```
+
+## Examples
 
 You can also check the tutorial [Solve a PDE-constrained optimization problem](https://jso-docs.github.io/solve-pdenlpmodels-with-jsosolvers/) on our site, [juliasmoothoptimizers.github.io](https://juliasmoothoptimizers.github.io).
 
