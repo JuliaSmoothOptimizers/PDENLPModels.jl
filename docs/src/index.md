@@ -24,6 +24,11 @@ The role of [NLPModels.jl](https://github.com/JuliaSmoothOptimizers/NLPModels.jl
 
 As such, PDENLPModels offers an interface between generic PDE-constrained optimization problems and cutting-edge optimization solvers such as Artelys Knitro via [NLPModelsKnitro.jl](https://github.com/JuliaSmoothOptimizers/NLPModelsKnitro.jl), Ipopt via [NLPModelsIpopt.jl](https://github.com/JuliaSmoothOptimizers/NLPModelsIpopt.jl) , [DCISolver.jl](https://github.com/JuliaSmoothOptimizers/DCISolver.jl), [Percival.jl](https://github.com/JuliaSmoothOptimizers/Percival.jl), and any solver accepting an `AbstractNLPModel` as input, see [JuliaSmoothOptimizers](https://juliasmoothoptimizers.github.io).
 
+> Migot, T., Orban D., & Siqueira A. S.
+> PDENLPModels.jl: A NLPModel API for optimization problems with PDE-constraints
+> Journal of Open Source Software 7(80), 4736 (2022).
+> [10.21105/joss.04736](https://doi.org/10.21105/joss.04736)
+
 ## Installation
 
 ```
