@@ -96,6 +96,12 @@ using Gridap, PDENLPModels
 
 ## References
 
+
+> Migot, T., Orban D., & Siqueira A. S.
+> PDENLPModels.jl: A NLPModel API for optimization problems with PDE-constraints
+> Journal of Open Source Software 7(80), 4736 (2022).
+> [10.21105/joss.04736](https://doi.org/10.21105/joss.04736)
+>
 > Badia, S., & Verdugo, F.
 > Gridap: An extensible Finite Element toolbox in Julia.
 > Journal of Open Source Software, 5(52), 2520 (2020).
