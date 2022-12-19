@@ -64,7 +64,7 @@ end
     @testset "Problem $(nlp.meta.name)" begin
       @info "$(problem) consistency"
       @testset "Consistency" begin
-        @time consistent_nlps([nlp, nlp])
+        @time consistent_nlps([nlp, nlp], linear_api = true)
       end
       @info "$(problem) check dimension"
       @testset "Check dimensions" begin
@@ -80,7 +80,7 @@ end
       @info "$(problem) coord"
       if local_test # issue with windows and macos 1, because hess_coord is not ideal
         @testset "Test coord memory" begin
-          @time coord_memory_nlp(nlp)
+          @time coord_memory_nlp(nlp, linear_api = true)
         end
       end
     end

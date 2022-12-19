@@ -8,20 +8,6 @@ end
 
 include("test_autodiff.jl")
 
-function _from_terms_to_residual!(
-  op::AffineFEOperator,
-  x::AbstractVector{T},
-  nparam::Integer,
-  Y::FESpace,
-  Ypde::FESpace,
-  Ycon::FESpace,
-  res::AbstractVector,
-) where {T}
-  mul!(res, get_matrix(op), x)
-  axpy!(-one(T), get_vector(op), res)
-  return res
-end
-
 function _jacobian_struct(
   op::AffineFEOperator,
   x::AbstractVector{T},
@@ -32,24 +18,6 @@ function _jacobian_struct(
 ) where {T <: Number}
   rows, cols, _ = findnz(get_matrix(op))
   return rows, cols, length(rows)
-end
-
-function _jac_coord!(
-  op::AffineFEOperator,
-  nparam::Integer,
-  ncon::Integer,
-  Y::FESpace,
-  Ypde::FESpace,
-  Xpde::FESpace,
-  Ycon::FESpace,
-  x::AbstractVector,
-  vals::AbstractVector,
-  c::AbstractVector,
-  Jk,
-)
-  _, _, V = findnz(get_matrix(op))
-  vals .= V
-  return vals
 end
 
 function _from_terms_to_residual!(
