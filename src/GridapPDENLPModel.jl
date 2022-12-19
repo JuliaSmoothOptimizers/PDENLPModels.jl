@@ -470,7 +470,12 @@ function cons_lin!(
   axpy!(-one(T), get_vector(op), c)
 end
 
-function jprod_nln!(nlp::GridapPDENLPModel, x::AbstractVector, v::AbstractVector, Jv::AbstractVector)
+function jprod_nln!(
+  nlp::GridapPDENLPModel,
+  x::AbstractVector,
+  v::AbstractVector,
+  Jv::AbstractVector,
+)
   @lencheck nlp.meta.nvar x v
   @lencheck nlp.meta.nnln Jv
   increment!(nlp, :neval_jprod_nln)
@@ -481,7 +486,12 @@ function jprod_nln!(nlp::GridapPDENLPModel, x::AbstractVector, v::AbstractVector
   return Jv
 end
 
-function jprod_lin!(nlp::GridapPDENLPModel{T, S, NRJ, AffineFEOperator}, x::AbstractVector, v::AbstractVector, Jv::AbstractVector) where {T, S, NRJ}
+function jprod_lin!(
+  nlp::GridapPDENLPModel{T, S, NRJ, AffineFEOperator},
+  x::AbstractVector,
+  v::AbstractVector,
+  Jv::AbstractVector,
+) where {T, S, NRJ}
   @lencheck nlp.meta.nvar x v
   @lencheck nlp.meta.nlin Jv
   increment!(nlp, :neval_jprod_lin)
@@ -492,7 +502,12 @@ function jprod_lin!(nlp::GridapPDENLPModel{T, S, NRJ, AffineFEOperator}, x::Abst
   return Jv
 end
 
-function jtprod_nln!(nlp::GridapPDENLPModel, x::AbstractVector, v::AbstractVector, Jtv::AbstractVector)
+function jtprod_nln!(
+  nlp::GridapPDENLPModel,
+  x::AbstractVector,
+  v::AbstractVector,
+  Jtv::AbstractVector,
+)
   @lencheck nlp.meta.nvar x Jtv
   @lencheck nlp.meta.nnln v
   increment!(nlp, :neval_jtprod_nln)
@@ -503,7 +518,12 @@ function jtprod_nln!(nlp::GridapPDENLPModel, x::AbstractVector, v::AbstractVecto
   return Jtv
 end
 
-function jtprod_lin!(nlp::GridapPDENLPModel{T, S, NRJ, AffineFEOperator}, x::AbstractVector, v::AbstractVector, Jtv::AbstractVector) where {T, S, NRJ}
+function jtprod_lin!(
+  nlp::GridapPDENLPModel{T, S, NRJ, AffineFEOperator},
+  x::AbstractVector,
+  v::AbstractVector,
+  Jtv::AbstractVector,
+) where {T, S, NRJ}
   @lencheck nlp.meta.nvar x Jtv
   @lencheck nlp.meta.nlin v
   increment!(nlp, :neval_jtprod_lin)
@@ -574,7 +594,11 @@ function jac_nln_coord!(
   return vals
 end
 
-function jac_lin_coord!(nlp::GridapPDENLPModel{T, S, NRJ, AffineFEOperator}, x::AbstractVector, vals::AbstractVector) where {T, S, NRJ}
+function jac_lin_coord!(
+  nlp::GridapPDENLPModel{T, S, NRJ, AffineFEOperator},
+  x::AbstractVector,
+  vals::AbstractVector,
+) where {T, S, NRJ}
   @lencheck nlp.meta.nvar x
   @lencheck nlp.meta.lin_nnzj vals
   increment!(nlp, :neval_jac_lin)
@@ -597,12 +621,7 @@ function jac_nln_op!(
   return jac_nln_op!(nlp, rows, cols, vals, Jv, Jtv)
 end
 
-function jac_op!(
-  nlp::GridapPDENLPModel,
-  x::AbstractVector,
-  Jv::AbstractVector,
-  Jtv::AbstractVector,
-)
+function jac_op!(nlp::GridapPDENLPModel, x::AbstractVector, Jv::AbstractVector, Jtv::AbstractVector)
   @lencheck nlp.meta.nvar x Jtv
   @lencheck nlp.meta.ncon Jv
   rows = nlp.pdemeta.Jrows
