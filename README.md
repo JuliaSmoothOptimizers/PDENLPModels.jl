@@ -19,15 +19,18 @@
 
 PDENLPModels specializes the [NLPModel API](https://github.com/JuliaSmoothOptimizers/NLPModels.jl) to optimization problems with partial differential equations in the constraints. The package relies on [Gridap.jl](https://github.com/gridap/Gridap.jl) for the modeling and the computation of the derivatives. Find tutorials for using Gridap [here](https://github.com/gridap/Tutorials).
 
-We consider optimization problems of the form:
-```math
-Find functions (y,u): Y -> ℜⁿ x ℜⁿ and κ ∈ ℜⁿ satisfying
+We consider optimization problems of the form: Find functions $(y,u): Y \times U \rightarrow ℜⁿ \times ℜⁿ$ and $κ \in ℜⁿ$ satisfying
 
-min      ∫_Ω​ f(κ,y,u) dΩ​
-s.t.     y solution of a PDE(κ,u)=0
-         lcon <= c(κ,y,u) <= ucon
-         lvar <= (κ,y,u)  <= uvar
-```
+$$
+\begin{equation}
+   \begin{array}{cl} 
+   \min_{\kappa,y,u} & \int_\Omega f(\kappa,y,u) d\Omega \\ 
+   \text{ s.t. } & y \text{ solution of a } PDE(\kappa,u)=0, \\
+   & lcon \leq c(\kappa,y,u) \leq ucon, \\
+   & lvar \leq (\kappa,y,u) \leq uvar,\\
+   \end{array} 
+\end{equation}
+$$
 
 We refer to the the repository [PDEOptimizationProblems](https://github.com/tmigot/PDEOptimizationProblems) for examples of problems of different types: calculus of variations, optimal control problem, PDE-constrained problems, and mixed PDE-contrained problems with both function and algebraic unknowns.
 
@@ -40,12 +43,13 @@ The current version of PDENLPModels relies on Gridap v0.15.5.
 
 ## Example
 
-```math
-min_{y ∈ H^1_0,u ∈ H^1}   0.5 ∫_Ω​ |y(x) - yd(x)|^2dx + 0.5 * α * ∫_Ω​ |u|^2
- s.t.         -Δy = u + h,   for    x ∈  Ω
-               y  = 0,       for    x ∈ ∂Ω
-where yd(x) = -x[1]^2, h(x) = 1 and α = 1e-2.
-```
+$$
+\begin{equation}
+   \min_{y \in H^1_0,u \in H^1} \frac{1}{2} \int_{\Omega} |y(x) - y_d(x)|^2dx + \frac{\alpha}{2} \int_{\Omega} |u|^2 \quad \text{ s.t. } -\Delta y = u + h,   \text{ for }    x \in \Omega, y = 0 \text{ for } x \in \partial \Omega,
+\end{equation}
+$$
+
+where $y_d(x) = -x_1^2$, $h(x) = 1$ and $\alpha = 10^{-2}$.
 
 ```julia
 using Gridap, PDENLPModels
