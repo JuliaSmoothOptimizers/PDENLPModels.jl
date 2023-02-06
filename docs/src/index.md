@@ -43,7 +43,7 @@ The current version of PDENLPModels relies on Gridap v0.15.5.
 
 ## Examples
 
-You can also check the tutorial [Solve a PDE-constrained optimization problem](https://jso-docs.github.io/solve-pdenlpmodels-with-jsosolvers/) on our site, [juliasmoothoptimizers.github.io](https://juliasmoothoptimizers.github.io).
+You can also check the tutorial [Solve a PDE-constrained optimization problem](https://juliasmoothoptimizers.github.io/tutorials/introduction-to-pdenlpmodels/) on our site, [juliasmoothoptimizers.github.io](https://juliasmoothoptimizers.github.io).
 
 We refer to the folder `test/problems` for more examples of problems of different types: calculus of variations, optimal control problem, PDE-constrained problems, and mixed PDE-contrained problems with both function and vector unknowns. An alternative is to visit the repository [PDEOptimizationProblems](https://github.com/tmigot/PDEOptimizationProblems) that contains a collection of test problems. Without objective function, the problem reduces to a classical PDE and we refer to [Gridap tutorials](https://github.com/gridap/Tutorials) for examples.
 
