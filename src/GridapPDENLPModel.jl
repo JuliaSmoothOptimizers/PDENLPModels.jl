@@ -204,7 +204,7 @@ using Gridap, PDENLPModels
   nlp = GridapPDENLPModel(xin, f, trian, Ypde, Ycon, Xpde, Xcon, res, name = "Control elastic membrane")
 ```
 
-You can also check the tutorial [Solve a PDE-constrained optimization problem](https://jso-docs.github.io/solve-pdenlpmodels-with-jsosolvers/) on JSO's website, [juliasmoothoptimizers.github.io](https://juliasmoothoptimizers.github.io).
+You can also check the tutorial [Solve a PDE-constrained optimization problem](https://juliasmoothoptimizers.github.io/tutorials/introduction-to-pdenlpmodels/) on JSO's website, [juliasmoothoptimizers.github.io](https://juliasmoothoptimizers.github.io).
 
 We refer to the folder `test/problems` for more examples of problems of different types:
   - calculus of variations,
