@@ -67,7 +67,7 @@ function get_nnz_hess_k(tnrj::AbstractEnergyTerm, nvar, nparam)
   return nnz_hess_k
 end
 
-function _compute_hess_structure(op::AffineFEOperator, Y, Ypde, Ycon, X, Xpde, x0, nparam) where {T}
+function _compute_hess_structure(op::AffineFEOperator, Y, Ypde, Ycon, X, Xpde, x0, nparam)
   return Int[], Int[], 0
 end
 
@@ -80,7 +80,7 @@ function _compute_hess_structure(
   Xpde,
   x0,
   nparam,
-) where {T}
+)
   λ = zeros(Gridap.FESpaces.num_free_dofs(Ypde))
   λf = FEFunction(Xpde, λ)
   κ = @view x0[1:nparam]
