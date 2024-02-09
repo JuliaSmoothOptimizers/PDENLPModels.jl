@@ -30,6 +30,7 @@ authors:
     email: abel.s.siqueira@gmail.com
     given-names: Abel
     family-names: Soares Siqueira
+  - given-names: contributors
 identifiers:
   - description: Zenodo archive
     type: doi
