@@ -1,0 +1,8 @@
+PackageName: "PDENLPModels"
+PackageOwner: "JuliaSmoothOptimizers"
+PackageUUID: "80da258d-c172-4540-9646-64f172512520"
+_src_path: "https://github.com/JuliaSmoothOptimizers/JSOBestieTemplate.jl"
+_commit: "v0.13.0"
+AddBreakage: true
+AddBenchmark: false
+AddBenchmarkCI: true
