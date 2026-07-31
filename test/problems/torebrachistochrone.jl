@@ -96,5 +96,4 @@ function torebrachistochrone_test()
   plot3d(Xs, Ys, Zs, st=:surface, grid=false, c=:grays, axis=false, colorbar=false)
   plot3d!(xs, ys, zs, linewidth=4, color=:red, title=@sprintf("Geodesic on a Torus (length=%4.f)", L), legend=false)
   =#
-
 end
